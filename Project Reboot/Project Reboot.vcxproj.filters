@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Resource Files\Util">
+      <UniqueIdentifier>{38294f1b-4eb2-4525-93e1-b504cf8f1fe8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Util">
+      <UniqueIdentifier>{73e799bb-ac5b-4257-bf91-566e2a17fb6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Gameplay">
+      <UniqueIdentifier>{3319a8ef-d3ca-4df4-b182-820673e5a542}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Gameplay">
+      <UniqueIdentifier>{e0dc3b76-ebe1-45a1-82f5-5167af3a9fc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Net">
+      <UniqueIdentifier>{df4f3c26-0094-4db6-ae23-69647640816b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Net">
+      <UniqueIdentifier>{1f905840-ed63-457e-8cdf-7967d15172af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Unreal">
+      <UniqueIdentifier>{fcfcaf89-6ca6-430b-8d68-b67271cb6685}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Unreal">
+      <UniqueIdentifier>{f2f19a8a-b7c0-48c8-bbad-f11637c97715}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="loot.cpp">
+      <Filter>Source Files\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="interaction.cpp">
+      <Filter>Source Files\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="harvesting.cpp">
+      <Filter>Source Files\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="inventory.cpp">
+      <Filter>Source Files\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="server.cpp">
+      <Filter>Source Files\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="structs.cpp">
+      <Filter>Source Files\Unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="log.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="helper.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="abilities.cpp">
+      <Filter>Source Files\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="mem.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="gui.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="loot.h">
+      <Filter>Resource Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="interaction.h">
+      <Filter>Resource Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="harvesting.h">
+      <Filter>Resource Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="inventory.h">
+      <Filter>Resource Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="patterns.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="server.h">
+      <Filter>Resource Files\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="definitions.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="structs.h">
+      <Filter>Resource Files\Unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>Resource Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="helper.h">
+      <Filter>Resource Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="abilities.h">
+      <Filter>Resource Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="mem.h">
+      <Filter>Resource Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="enums.h">
+      <Filter>Resource Files\Unreal</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
