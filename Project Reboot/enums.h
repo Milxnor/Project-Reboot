@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <format>
+#include <iostream>
 
 // TODO Better file name
 
@@ -103,4 +104,84 @@ enum EObjectFlags
 	RF_Dynamic = 0x04000000,
 	RF_WillBeLoaded = 0x08000000,
 	RF_HasExternalPackage = 0x10000000,
+};
+
+struct FText
+{
+	char UnknownData[0x18];
+};
+
+enum class EAthenaGamePhase : uint8_t
+{
+	None = 0,
+	Setup = 1,
+	Warmup = 2,
+	Aircraft = 3,
+	SafeZones = 4,
+	EndGame = 5,
+	Count = 6,
+	EAthenaGamePhase_MAX = 7
+};
+
+enum class EFortCustomPartType : uint8_t
+{
+	Head = 0,
+	Body = 1,
+	Hat = 2,
+	Backpack = 3,
+	Charm = 4,
+	Face = 5,
+	NumTypes = 6,
+	EFortCustomPartType_MAX = 7
+};
+
+template<class TEnum>
+struct TEnumAsByte
+{
+	uint8_t Value;
+
+	TEnumAsByte(TEnum _value)
+		: Value((uint8_t)_value)
+	{
+	}
+
+	TEnumAsByte() : Value(0) {}
+
+	TEnum Get()
+	{
+		return (TEnum)Value;
+	}
+};
+
+struct FFastArraySerializerItem
+{
+	int                                                ReplicationID;                                            // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+	int                                                ReplicationKey;                                           // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+};
+
+enum class EFortQuickBars : uint8_t // This isn't always correct due to them adding Creative Quickbars but for our usage it's fine.
+{
+	Primary = 0,
+	Secondary = 1,
+	Max_None = 2,
+	EFortQuickBars_MAX = 3
+};
+
+struct FGuid
+{
+	unsigned int A;
+	unsigned int B;
+	unsigned int C;
+	unsigned int D;
+
+	bool operator==(const FGuid& other)
+	{
+		return A == other.A && B == other.B && C == other.C && D == other.D;
+	}
+
+	void Describe()
+	{
+		std::cout << std::format("{} {} {} {}\n", A, B, C, D);
+	}
 };

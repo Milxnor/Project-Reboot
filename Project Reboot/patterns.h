@@ -5,18 +5,23 @@
 #include "definitions.h"
 #include "mem.h"
 
-static FString(*GetEngineVersion)();
+inline FString(*GetEngineVersion)();
 
-static uint64_t InitHostAddress = 0;
-static uint64_t StaticFindObjectAddress = 0;
-static uint64_t StaticLoadObjectAddress = 0;
-static uint64_t ProcessEventAddress = 0;
-static uint64_t SetWorldAddress = 0;
-static uint64_t PauseBeaconRequestsAddress = 0;
-static uint64_t ObjectsAddress = 0;
-static uint64_t InitListenAddress = 0;
+inline uint64_t InitHostAddress = 0;
+inline uint64_t StaticFindObjectAddress = 0;
+inline uint64_t StaticLoadObjectAddress = 0;
+inline uint64_t ProcessEventAddress = 0;
+inline uint64_t SetWorldAddress = 0;
+inline uint64_t PauseBeaconRequestsAddress = 0;
+inline uint64_t ObjectsAddress = 0;
+inline uint64_t InitListenAddress = 0;
+inline uint64_t TickFlushAddress = 0;
+inline uint64_t KickPlayerAddress = 0;
+inline uint64_t ValidationFailureAddress = 0;
+inline uint64_t ReallocAddress = 0;
+inline uint64_t NoReserveAddress = 0;
 
-void InitializePatterns()
+static void InitializePatterns()
 {
 	auto SpawnActorAddr = Memory::FindPattern("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB");
 
@@ -36,6 +41,11 @@ void InitializePatterns()
 	std::string PauseBeaconRequestsPattern = "";
 	std::string ObjectsPattern = "";
 	std::string InitListenPattern = "";
+	std::string TickFlushPattern = "";
+	std::string KickPlayerPattern = "";
+	std::string ValidationFailurePattern = "";
+	std::string ReallocPattern = "";
+	std::string NoReservePattern = "";
 
 	// TODO REWRITE HERE
 
@@ -99,6 +109,8 @@ void InitializePatterns()
 		Fortnite_Version = 1.8;
 	}
 
+	Fortnite_Season = std::floor(Fortnite_Version);
+
 	// TO HERE
 
 	// Now we have the engine version and fn 
@@ -109,6 +121,9 @@ void InitializePatterns()
 	{
 		Offset_InternalOffset = 0x44;
 		SuperStructOffset = sizeof(UObject) + 8;
+		ChildPropertiesOffset = SuperStructOffset + 8;
+		PropertiesSizeOffset = ChildPropertiesOffset + 8;
+		Defines::ServerReplicateActorsOffset = Fortnite_Season == 5 ? 0x54 : 0x56;
 	}
 
 	// pattners
@@ -153,6 +168,11 @@ void InitializePatterns()
 		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B 99 ? ? ? ? 48 85 DB 0F 84 ? ? ? ? 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9";
 		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
 		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB 98 FE FF FF 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 00 01 00 00 49 89 5B 18 48 8D 05 ? ? ? ?";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "40 53 55 41 56 48 81 EC ? ? ? ? 33 ED";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ?? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
 	}
 
 	if (Engine_Version == 422)
@@ -233,6 +253,11 @@ void InitializePatterns()
 	PauseBeaconRequestsAddress = Memory::FindPattern(PauseBeaconRequestsPattern);
 	ObjectsAddress = Memory::FindPattern(ObjectsPattern, false, 7, true);
 	InitListenAddress = Memory::FindPattern(InitListenPattern);
+	TickFlushAddress = Memory::FindPattern(TickFlushPattern);
+	KickPlayerAddress = Memory::FindPattern(KickPlayerPattern);
+	ValidationFailureAddress = Memory::FindPattern(ValidationFailurePattern);
+	ReallocAddress = Memory::FindPattern(ReallocPattern);
+	NoReserveAddress = Memory::FindPattern(NoReservePattern);
 
 	std::cout << "InitHostAddress: " << InitHostAddress << '\n';
 	std::cout << "StaticFindObjectAddress: " << StaticFindObjectAddress << '\n';
@@ -242,6 +267,11 @@ void InitializePatterns()
 	std::cout << "PauseBeaconRequestsAddress: " << PauseBeaconRequestsAddress << '\n';
 	std::cout << "ObjectsAddress: " << ObjectsAddress << '\n';
 	std::cout << "InitListenAddress: " << InitListenAddress << '\n';
+	std::cout << "TickFlushAddress: " << TickFlushAddress << '\n';
+	std::cout << "KickPlayerAddress: " << KickPlayerAddress << '\n';
+	std::cout << "ValidationFailureAddress: " << ValidationFailureAddress << '\n';
+	std::cout << "ReallocAddress: " << ReallocAddress << '\n';
+	std::cout << "NoReserveAddress: " << NoReserveAddress << '\n';
 
 	Defines::InitHost = decltype(Defines::InitHost)(InitHostAddress);
 	StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddress);
@@ -250,7 +280,12 @@ void InitializePatterns()
 	Defines::SetWorld = decltype(Defines::SetWorld)(SetWorldAddress);
 	Defines::PauseBeaconRequests = decltype(Defines::PauseBeaconRequests)(PauseBeaconRequestsAddress);
 	Defines::InitListen = decltype(Defines::InitListen)(InitListenAddress);
-	
+	Defines::TickFlush = decltype(Defines::TickFlush)(TickFlushAddress);
+	Defines::KickPlayer = decltype(Defines::KickPlayer)(KickPlayerAddress);
+	Defines::ValidationFailure = decltype(Defines::ValidationFailure)(ValidationFailureAddress);
+	FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddress);
+	Defines::NoReservation = decltype(Defines::NoReservation)(NoReserveAddress);
+
 	if (Engine_Version >= 421)
 		NewObjects = decltype(NewObjects)(ObjectsAddress);
 	else

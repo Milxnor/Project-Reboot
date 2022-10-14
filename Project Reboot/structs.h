@@ -14,6 +14,14 @@ inline int Engine_Version; // NOTE: 427 == 4.26.1
 inline int Fortnite_Season;
 inline int Offset_InternalOffset = 0x0;
 inline int SuperStructOffset = 0x0;
+inline int ChildPropertiesOffset = 0x0;
+inline int PropertiesSizeOffset = 0x0;
+
+namespace FMemory
+{
+	inline void (*Free)(void* Original);
+	inline void* (*Realloc)(void* Original, SIZE_T Count, uint32_t Alignment /* = DEFAULT_ALIGNMENT */);
+}
 
 template <class ElementType>
 struct TArray
@@ -26,6 +34,32 @@ struct TArray
 	{
 		return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i));
 	}
+
+	inline ElementType* AtPtr(int i, int Size = sizeof(ElementType)) const
+	{
+		return (ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i));
+	}
+
+	inline int Num() const { return ArrayNum; }
+
+	void Reserve(int Number, int Size = sizeof(ElementType))
+	{
+		Data = (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
+	}
+
+	int Add(const ElementType& New, int Size = sizeof(ElementType))
+	{
+		Reserve(1, Size);
+
+		if (Data)
+		{
+			memcpy_s((ElementType*)(__int64(Data) + (ArrayNum * Size)), Size, (void*)&New, Size);
+			++ArrayNum;
+			return ArrayNum; // - 1;
+		}
+
+		return -1;
+	};
 };
 
 class FString
@@ -58,6 +92,11 @@ public:
 	{
 		Set(str);
 	}
+
+	void Free()
+	{
+		VirtualFree(this, 0, MEM_RELEASE);
+	}
 };
 
 struct FName
@@ -79,10 +118,13 @@ struct UObject
 	std::string GetPathName();
 	std::string GetFullName();
 
-	void ProcessEvent(struct UFunction* Function, void* Parameters);
+	void ProcessEvent(struct UFunction* Function, void* Parameters = nullptr);
 
-	int GetOffset(const std::string& MemberName);
+	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false);
+	int GetOffsetSlow(const std::string& MemberName);
 };
+
+struct UField : UObject { UField* Next; };
 
 struct FActorSpawnParameters
 {
@@ -192,7 +234,7 @@ inline FChunkedFixedUObjectArray* NewObjects;
 
 static UObject* GetObjectByIndex(int Index) { return OldObjects ? OldObjects->GetObjectById(Index) : NewObjects->GetObjectById(Index); }
 
-struct UFunction {};
+struct UFunction : UObject {};
 
 #define ANY_PACKAGE ((UObject*)-1)
 
@@ -222,7 +264,7 @@ UObject* GetDefaultObject(UObject* Class);
 template <typename ObjectType = UObject>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, UObject* InOuter = nullptr); // Calls StaticFindObject
 
-
+int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
 
 
 
@@ -240,3 +282,103 @@ struct FURL
 	TArray<FString>                             Op;                                                       // 0x0048(0x0010) (ZeroConstructor)
 	FString                                     Portal;                                                   // 0x0058(0x0010) (ZeroConstructor)
 };
+
+namespace FastTArray
+{
+	inline UObject* FastArraySerializerStruct = nullptr;
+
+	struct FFastArraySerializerOL
+	{
+		char ItemMap[0x50];
+		int32_t IDCounter;
+		int32_t ArrayReplicationKey;
+
+		char GuidReferencesMap[0x50];
+
+		int32_t CachedNumItems;
+		int32_t CachedNumItemsToConsiderForWriting;
+
+		void MarkItemDirty(FFastArraySerializerItem* Item)
+		{
+			if (Item->ReplicationID == -1)
+			{
+				Item->ReplicationID = ++IDCounter;
+				if (IDCounter == -1)
+					IDCounter++;
+			}
+
+			Item->ReplicationKey++;
+			MarkArrayDirty();
+		}
+
+		void MarkArrayDirty()
+		{
+			// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
+			IncrementArrayReplicationKey();
+
+			// Invalidate the cached item counts so that they're recomputed during the next write
+			CachedNumItems = -1;
+			CachedNumItemsToConsiderForWriting = -1;
+		}
+
+		void IncrementArrayReplicationKey()
+		{
+			ArrayReplicationKey++;
+
+			if (ArrayReplicationKey == -1)
+				ArrayReplicationKey++;
+		}
+	};
+
+	static void MarkArrayDirty(void* Array)
+	{
+		((FFastArraySerializerOL*)Array)->MarkArrayDirty();
+	}
+
+	static void MarkItemDirty(void* Array, FFastArraySerializerItem* Item)
+	{
+		((FFastArraySerializerOL*)Array)->MarkItemDirty(Item);
+	}
+
+	/* inline void IncrementArrayReplicationKey(void* Array)
+	{
+		static auto ArrayReplicationKeyOffset = FastArraySerializerStruct->GetOffset("ArrayReplicationKey", true);
+
+		auto ArrayReplicationKey = Get<int>(Array, ArrayReplicationKeyOffset);
+
+		(*ArrayReplicationKey)++;
+
+		if (*ArrayReplicationKey == -1)
+			(*ArrayReplicationKey)++;
+	}
+
+	inline void MarkArrayDirty(void* Array)
+	{
+		// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
+		IncrementArrayReplicationKey(Array);
+
+		// Invalidate the cached item counts so that they're recomputed during the next write
+		static auto CachedNumItemsOffset = FastArraySerializerStruct->GetOffset("CachedNumItems", true);
+		*Get<int>(Array, CachedNumItemsOffset) = -1;
+
+		static auto CachedNumItemsToConsiderForWritingOffset = FastArraySerializerStruct->GetOffset("CachedNumItemsToConsiderForWriting", true);
+		*Get<int>(Array, CachedNumItemsToConsiderForWritingOffset) = -1;
+	}
+
+	inline void MarkItemDirty(void* Array, FFastArraySerializerItem* Item)
+	{
+		static auto IDCounterOffset = FastArraySerializerStruct->GetOffset("IDCounter", true);
+
+		if (Item->ReplicationID == -1)
+		{
+			auto IDCounter = Get<int>(Array, IDCounterOffset);
+			Item->ReplicationID = ++(*IDCounter);
+
+			if (*IDCounter == -1)
+				(*IDCounter)++;
+		}
+
+		Item->ReplicationKey++;
+		MarkArrayDirty(Array);
+	} */
+}

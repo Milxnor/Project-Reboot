@@ -89,7 +89,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>../other/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>fmt.lib;spdlog.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Onecore.lib;minhook.x64.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -112,7 +112,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>../other/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>fmt.lib;spdlog.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Onecore.lib;minhook.x64.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -131,7 +131,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>../other/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>fmt.lib;spdlog.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Onecore.lib;minhook.x64.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,8 +145,9 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>../other/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../other/inc;../other/inc/spdlog/include/</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -155,11 +156,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>../other/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Onecore.lib;minhook.x64.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="abilities.cpp" />
+    <ClCompile Include="building.cpp" />
     <ClCompile Include="harvesting.cpp" />
     <ClCompile Include="helper.cpp" />
     <ClCompile Include="interaction.cpp" />
@@ -169,11 +171,14 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="mem.cpp" />
+    <ClCompile Include="mem.h" />
+    <ClCompile Include="processevent.cpp" />
     <ClCompile Include="server.cpp" />
     <ClCompile Include="structs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="abilities.h" />
+    <ClInclude Include="building.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="enums.h" />
     <ClInclude Include="gui.h" />
@@ -183,8 +188,8 @@
     <ClInclude Include="inventory.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="loot.h" />
-    <ClInclude Include="mem.h" />
     <ClInclude Include="patterns.h" />
+    <ClInclude Include="processevent.h" />
     <ClInclude Include="server.h" />
     <ClInclude Include="structs.h" />
   </ItemGroup>

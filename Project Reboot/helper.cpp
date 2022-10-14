@@ -1,10 +1,30 @@
 #include "helper.h"
 #include <format>
 
-UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rotation)
+UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rotation, UObject* Owner)
 {
 	FActorSpawnParameters SpawnParameters{};
+	SpawnParameters.Owner = Owner;
 	return SpawnActorO(Helper::GetWorld(), Class, &Location, &Rotation, SpawnParameters);
+}
+
+UObject* Helper::Easy::SpawnObject(UObject* Class, UObject* Outer)
+{
+	if (!Class || !Outer)
+		return nullptr;
+
+	struct {
+		UObject* ObjectClass;
+		UObject* Outer;
+		UObject* ReturnValue;
+	} params{ Class, Outer };
+
+	static auto GSC = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+	static auto fn = FindObject<UFunction>("Function /Script/Engine.GameplayStatics.SpawnObject");
+
+	GSC->ProcessEvent(fn, &params);
+
+	return params.ReturnValue;
 }
 
 UObject* Helper::GetWorld()
@@ -15,10 +35,9 @@ UObject* Helper::GetWorld()
 	auto GameViewport = *Get<UObject*>(Engine, GameViewportOffset);
 
 	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
-	(uint32_t*)(__int64(Engine) + FindObject("World", PropertyClass, FindObject("Class /Script/Engine.GameViewportClient")));
 
-	static auto WorldOffset = 0x78; // GameViewport->GetOffset("World"); // IDK WHY NO WORK
-	std::cout << "WorldOffset: " << WorldOffset << '\n';
+	static auto WorldOffset = GameViewport->GetOffsetSlow("World");
+	// std::cout << "WorldOffset: " << WorldOffset << '\n';
 
 	auto World = *Get<UObject*>(GameViewport, WorldOffset);
 
@@ -64,7 +83,66 @@ UObject* Helper::GetLocalPlayerController()
 	return *Get<UObject*>(LocalPlayer, PlayerControllerOffset);
 }
 
-FName Helper::Conversion::StringToName(FString String)
+UObject* Helper::GetPlayerStateFromController(UObject* Controller)
+{
+	static auto PlayerStateOffset = Controller->GetOffset("PlayerState");
+
+	return *Get<UObject*>(Controller, PlayerStateOffset);
+}
+
+UObject* Helper::GetPawnFromController(UObject* Controller)
+{
+	static auto PawnOffset = Controller->GetOffsetSlow("Pawn");
+
+	return *Get<UObject*>(Controller, PawnOffset);
+}
+
+UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCharacterParts)
+{
+	static auto PawnClass = FindObject(("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
+
+	auto Pawn = Helper::Easy::SpawnActor(PawnClass, Location);
+
+	if (!Pawn)
+		return Pawn;
+
+	static auto SetReplicateMovementFn = FindObject<UFunction>("Function /Script/Engine.Actor.SetReplicateMovement");
+	bool bReplicateMovement = true;
+	Pawn->ProcessEvent(SetReplicateMovementFn, &bReplicateMovement);
+
+	static auto Possess = FindObject<UFunction>("Function /Script/Engine.Controller.Possess");
+
+	Controller->ProcessEvent(Possess, &Pawn);
+
+	if (bAssignCharacterParts)
+	{
+		static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+
+		ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
+		ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+	}
+
+	return Pawn;
+}
+
+void Helper::ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
+{
+	struct { TEnumAsByte<EFortCustomPartType> Part; UObject* ChosenCharacterPart; } SCP_params{ Part, ChosenCharacterPart };
+
+	static auto ServerChoosePart = FindObject<UFunction>("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart");
+
+	Pawn->ProcessEvent(ServerChoosePart, &SCP_params);
+}
+
+void Helper::SetOwner(UObject* Actor, UObject* Owner)
+{
+	static auto SetOwner = FindObject<UFunction>("Function /Script/Engine.Actor.SetOwner");
+
+	Actor->ProcessEvent(SetOwner, &Owner);
+}
+
+FName Helper::Conversion::StringToName(FString& String)
 {
 	static auto fn = FindObject<UFunction>(("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
 	static auto KSL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));

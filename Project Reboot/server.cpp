@@ -1,3 +1,6 @@
+#include <MinHook.h>
+
+#include "patterns.h"
 #include "server.h"
 
 void Server::PauseBeaconRequests(bool bPause)
@@ -84,45 +87,113 @@ bool Server::Listen(int Port)
 	UObject* World = Helper::GetWorld();
 
 	static auto NetDriverNameOffset = NetDriver->GetOffset("NetDriverName");
-	*Get<FName>(NetDriver, NetDriverNameOffset) = Helper::Conversion::StringToName(L"GameNetDriver");
+	
+	FString NetDriverNameFStr = L"GameNetDriver"; // to free
+	*Get<FName>(NetDriver, NetDriverNameOffset) = Helper::Conversion::StringToName(NetDriverNameFStr);
 
 	auto InitListenResult = Defines::InitListen(NetDriver, World, InURL, false, Error);
 
 	// end setup
 
-	PauseBeaconRequests(World);
+	static auto LevelCollectionStruct = FindObject("ScriptStruct /Script/Engine.LevelCollection");
+	static auto LevelCollectionsOffset = World->GetOffset("LevelCollections");
+	auto LevelCollections = Get<TArray<UObject>>(World, LevelCollectionsOffset);
+
+	if (LevelCollections && LevelCollections->Data)
+	{
+		static auto LevelCollectionSize = Helper::GetSizeOfClass(LevelCollectionStruct);
+
+		auto FirstLevelCollection = LevelCollections->AtPtr(0, LevelCollectionSize);
+
+		static auto LC_NetDriverOffset = LevelCollectionStruct->GetOffset("NetDriver", true);
+
+		*Get<UObject*>(FirstLevelCollection, LC_NetDriverOffset) = NetDriver;
+		*Get<UObject*>(LevelCollections->AtPtr(1, LevelCollectionSize), LC_NetDriverOffset) = NetDriver;
+	}
+
+	PauseBeaconRequests(false);
 
 	static auto ReplicationDriverOffset = NetDriver->GetOffset("ReplicationDriver");
 	auto ReplicationDriver = *Get<UObject*>(NetDriver, ReplicationDriverOffset);
 
 	Defines::ServerReplicateActors = decltype(Defines::ServerReplicateActors)(ReplicationDriver->VFTable[Defines::ServerReplicateActorsOffset]);
 
-	static auto LevelCollectionsOffset = World->GetOffset("LevelCollections");
-	auto LevelCollections = Get<TArray<UObject*>>(World, LevelCollectionsOffset);
+	static auto World_NetDriverOffset = World->GetOffsetSlow("NetDriver");
 
-	if (LevelCollections && LevelCollections->Data)
-	{
-		static auto LevelCollectionSize = 0x78;
-
-		auto FirstLevelCollection = LevelCollections->At(0, LevelCollectionSize);
-		static auto LC_NetDriverOffset = 0x10; // FirstLevelCollection->GetOffset("NetDriver");
-		
-		std::cout << "LC_NetDriverOffset: " << LC_NetDriverOffset << '\n';
-
-		*Get<UObject*>(FirstLevelCollection, LC_NetDriverOffset) = NetDriver;
-		*Get<UObject*>(LevelCollections->At(1, LevelCollectionSize), LC_NetDriverOffset) = NetDriver;
-	}
-
-	if (false)
-	{
-		static auto World_NetDriverOffset = World->GetOffset("NetDriver");
-		std::cout << "World_NetDriverOffset: " << World_NetDriverOffset << '\n';
-
-		if (World_NetDriverOffset != 0)
-			*Get<UObject*>(World, World_NetDriverOffset) = NetDriver;
-	}
+	if (World_NetDriverOffset != 0)
+		*Get<UObject*>(World, World_NetDriverOffset) = NetDriver;
 
 	std::cout << "Listening on port: " << Port << '\n';
 
 	return true;
+}
+
+void Server::Hooks::Initialize()
+{
+	std::cout << MH_StatusToString(MH_CreateHook((PVOID)TickFlushAddress, Server::Hooks::TickFlush, (PVOID*)&Defines::TickFlush)) << '\n';
+	std::cout << MH_StatusToString(MH_EnableHook((PVOID)TickFlushAddress)) << '\n';
+
+	std::cout << MH_StatusToString(MH_CreateHook((PVOID)KickPlayerAddress, Server::Hooks::KickPlayer, (PVOID*)&Defines::KickPlayer)) << '\n';
+	std::cout << MH_StatusToString(MH_EnableHook((PVOID)KickPlayerAddress)) << '\n';
+
+	std::cout << MH_StatusToString(MH_CreateHook((PVOID)ValidationFailureAddress, Server::Hooks::ValidationFailure, (PVOID*)&Defines::ValidationFailure)) << '\n';
+	std::cout << MH_StatusToString(MH_EnableHook((PVOID)ValidationFailureAddress)) << '\n';
+
+	std::cout << MH_StatusToString(MH_CreateHook((PVOID)NoReserveAddress, Server::Hooks::NoReservation, (PVOID*)&Defines::NoReservation)) << '\n';
+	std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
+}
+
+void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
+{
+	auto World = Helper::GetWorld();
+
+	if (World)
+	{
+		static auto NetDriverOffset = World->GetOffsetSlow("NetDriver");
+		auto NetDriver = *Get<UObject*>(World, NetDriverOffset);
+
+		if (NetDriver)
+		{
+			if (Fortnite_Version <= 3.3)
+			{
+				// ReplicateActors(NetDriver, World);
+			}
+			else
+			{
+				static auto ReplicationDriverOffset = NetDriver->GetOffset("ReplicationDriver");
+				auto ReplicationDriver = *Get<UObject*>(NetDriver, ReplicationDriverOffset);
+
+				if (ReplicationDriver && Defines::ServerReplicateActors)
+				{
+					Defines::ServerReplicateActors(ReplicationDriver);
+				}
+				else
+					std::cout << "skidda; " << Defines::ServerReplicateActors << '\n';
+			}
+		}
+		else
+			std::cout << "No World netDriver??\n";
+	}
+	else
+		std::cout << "no world?!?!\n";
+
+	return Defines::TickFlush(thisNetDriver, DeltaSeconds);
+}
+
+void Server::Hooks::KickPlayer(UObject* GameSession, UObject* Controller, FText a3)
+{
+	std::cout << "KickPlayer!\n";
+	return;
+}
+
+char Server::Hooks::ValidationFailure(__int64* a1, __int64 a2)
+{
+	std::cout << "Validation Failure!\n";
+	return false;
+}
+
+__int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a4)
+{
+	std::cout << "No Reserve!\n";
+	return 0;
 }

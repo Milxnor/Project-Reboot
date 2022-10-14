@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Windows.h>
-#include <vector>
 #include <string>
+#include <vector>
+#include <Windows.h>
 
 namespace Memory
 {

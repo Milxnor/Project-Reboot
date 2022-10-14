@@ -11,6 +11,11 @@ std::string UObject::GetName()
 
 	KismetSystemLibrary->ProcessEvent(GetObjectNameFunction, &GetObjectName_Params);
 
+	auto Ret = GetObjectName_Params.ReturnValue;
+	auto RetStr = Ret.ToString();
+
+	Ret.Free();
+
 	return GetObjectName_Params.ReturnValue.ToString();
 }
 
@@ -23,7 +28,12 @@ std::string UObject::GetPathName()
 
 	KismetSystemLibrary->ProcessEvent(GetPathNameFunction, &GetPathName_Params);
 
-	return GetPathName_Params.ReturnValue.ToString();
+	auto Ret = GetPathName_Params.ReturnValue;
+	auto RetStr = Ret.ToString();
+
+	Ret.Free();
+
+	return RetStr;
 }
 
 std::string UObject::GetFullName()
@@ -45,6 +55,14 @@ ObjectType* FindObject(const std::string& ObjectName, UObject* Class, UObject* I
 	return (ObjectType*)StaticFindObjectO(Class, InOuter, ObjectNameWide, false);
 }
 
+int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct)
+{
+	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
+
+	return *(uint32_t*)(__int64(FindObject(MemberName, PropertyClass, bExactStruct ? FindObject(StructName) : FindObjectSlow(StructName, false))) 
+		+ Offset_InternalOffset);
+}
+
 UObject* GetDefaultObject(UObject* Class)
 {
 	auto name = Class->GetFullName();
@@ -60,24 +78,59 @@ UObject* GetDefaultObject(UObject* Class)
 	return FindObject(DefaultAbilityName);
 }
 
-int UObject::GetOffset(const std::string& MemberName)
+int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct)
 {
 	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
 
 	UObject* Property = nullptr;
 
-	UObject* super = ClassPrivate;
-
-	while (super && !Property)
+	if (bIsSuperStruct)
 	{
-		Property = FindObject(MemberName, PropertyClass, super);
+		Property = FindObject(MemberName, PropertyClass, this);
+	}
+	else
+	{
+		UObject* super = ClassPrivate;
 
-		super = *(UObject**)(__int64(super) + SuperStructOffset);
+		while (super && !Property)
+		{
+			Property = FindObject(MemberName, PropertyClass, super);
+
+			super = *(UObject**)(__int64(super) + SuperStructOffset);
+		}
 	}
 
 	if (!Property) // Didn't find property
+	{
+		std::cout << "Failed to find " << MemberName << '\n';
 		return 0;
+	}
 
 	auto offsetPtr = (uint32_t*)(__int64(Property) + Offset_InternalOffset);
 	return offsetPtr ? *offsetPtr : 0;
+}
+
+int UObject::GetOffsetSlow(const std::string& MemberName)
+{
+	for (auto CurrentClass = ClassPrivate; CurrentClass; CurrentClass = *(UObject**)(__int64(CurrentClass) + SuperStructOffset))
+	{
+		auto Property = *(UField**)(__int64(CurrentClass) + ChildPropertiesOffset);
+
+		if (Property)
+		{
+			while (Property)
+			{
+				auto PropName = Property->GetName();
+
+				if (PropName == MemberName)
+				{
+					return *(int*)(__int64(Property) + Offset_InternalOffset);
+				}
+
+				Property = Property->Next;
+			}
+		}
+	}
+
+	return 0;
 }
