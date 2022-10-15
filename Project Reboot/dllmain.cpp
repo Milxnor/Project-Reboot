@@ -8,6 +8,8 @@
 #include "processevent.h"
 #include "inventory.h"
 #include "abilities.h"
+#include "build.h"
+#include "edit.h"
 
 DWORD WINAPI Input(LPVOID)
 {
@@ -18,12 +20,47 @@ DWORD WINAPI Input(LPVOID)
             Server::Listen();
             Server::Hooks::Initialize();
 
-            std::cout << "Wtf!\n";
-            std::cout << "ProcessEventAddress: " << ProcessEventAddress << '\n';
-            std::cout << "ProcessEventO: " << ProcessEventO << '\n';
+            std::cout << "nice!\n";
 
             MH_CreateHook((PVOID)ProcessEventAddress, ProcessEventDetour, (PVOID*)&ProcessEventO);
             MH_EnableHook((PVOID)ProcessEventAddress);
+
+            Defines::bLogProcessEvent = true;
+        }
+
+        else if (GetAsyncKeyState(VK_F2) & 1)
+        {
+            Defines::bLogProcessEvent = !Defines::bLogProcessEvent;
+            std::cout << "Set Defines::bLogProcessEvent to " << Defines::bLogProcessEvent << '\n';
+        }
+
+        else if (GetAsyncKeyState(VK_F3) & 1)
+        {
+            static auto BuildingItemCollectorClass = FindObject("Class /Script/FortniteGame.BuildingItemCollectorActor");
+
+            auto BuildingItemCollectorActorActors = Helper::GetAllActorsOfClass(BuildingItemCollectorClass);
+
+            for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
+            {
+                std::cout << "A!\n";
+
+                static auto CollectorUnitInfoClass = FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") ? FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") :
+                    FindObject("ScriptStruct /Script/FortniteGame.ColletorUnitInfo");
+
+                static auto CollectorUnitInfoClassSize = Helper::GetSizeOfClass(CollectorUnitInfoClass);
+
+                static auto ItemCollectionsOffset = BuildingItemCollectorActor->GetOffset("ItemCollections");
+
+                TArray<__int64>* ItemCollections = Get<TArray<__int64>>(BuildingItemCollectorActor, ItemCollectionsOffset); // CollectorUnitInfo
+
+                static auto OutputItemOffset = CollectorUnitInfoClass->GetOffset("OutputItemOffset", true);
+
+                static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
+
+                *Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
+                *Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
+                *Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
+            }
         }
 
         Sleep(1000 / 30);
@@ -71,6 +108,11 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatch);
     AddHook(("Function /Script/Engine.PlayerController.ServerAcknowledgePossession"), ServerAcknowledgePossession);
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
+    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), Build::ServerCreateBuildingActor);
+
+    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), Editing::ServerBeginEditingBuildingActorHook);
+    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), Editing::ServerEditBuildingActorHook);
+    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), Editing::ServerEndEditingBuildingActorHook);
 
     return 0;
 }

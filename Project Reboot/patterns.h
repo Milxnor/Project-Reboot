@@ -20,6 +20,9 @@ inline uint64_t KickPlayerAddress = 0;
 inline uint64_t ValidationFailureAddress = 0;
 inline uint64_t ReallocAddress = 0;
 inline uint64_t NoReserveAddress = 0;
+inline uint64_t InternalTryActivateAbilityAddress = 0;
+inline uint64_t GiveAbilityAddress = 0;
+inline uint64_t CantBuildAddress = 0;
 
 static void InitializePatterns()
 {
@@ -46,6 +49,9 @@ static void InitializePatterns()
 	std::string ValidationFailurePattern = "";
 	std::string ReallocPattern = "";
 	std::string NoReservePattern = "";
+	std::string InternalTryActivateAbilityPattern = "";
+	std::string GiveAbilityPattern = "";
+	std::string CantBuildPattern = "";
 
 	// TODO REWRITE HERE
 
@@ -173,6 +179,9 @@ static void InitializePatterns()
 		ValidationFailurePattern = "40 53 55 41 56 48 81 EC ? ? ? ? 33 ED";
 		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
 		NoReservePattern = "48 89 5C 24 ?? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
+		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 	}
 
 	if (Engine_Version == 422)
@@ -258,6 +267,9 @@ static void InitializePatterns()
 	ValidationFailureAddress = Memory::FindPattern(ValidationFailurePattern);
 	ReallocAddress = Memory::FindPattern(ReallocPattern);
 	NoReserveAddress = Memory::FindPattern(NoReservePattern);
+	InternalTryActivateAbilityAddress = Memory::FindPattern(InternalTryActivateAbilityPattern);
+	GiveAbilityAddress = Memory::FindPattern(GiveAbilityPattern);
+	CantBuildAddress = Memory::FindPattern(CantBuildPattern);
 
 	std::cout << "InitHostAddress: " << InitHostAddress << '\n';
 	std::cout << "StaticFindObjectAddress: " << StaticFindObjectAddress << '\n';
@@ -272,6 +284,9 @@ static void InitializePatterns()
 	std::cout << "ValidationFailureAddress: " << ValidationFailureAddress << '\n';
 	std::cout << "ReallocAddress: " << ReallocAddress << '\n';
 	std::cout << "NoReserveAddress: " << NoReserveAddress << '\n';
+	std::cout << "InternalTryActivateAbilityAddress: " << InternalTryActivateAbilityAddress << '\n';
+	std::cout << "GiveAbilityAddress: " << GiveAbilityAddress << '\n';
+	std::cout << "CantBuildAddress: " << CantBuildAddress << '\n';
 
 	Defines::InitHost = decltype(Defines::InitHost)(InitHostAddress);
 	StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddress);
@@ -285,6 +300,9 @@ static void InitializePatterns()
 	Defines::ValidationFailure = decltype(Defines::ValidationFailure)(ValidationFailureAddress);
 	FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddress);
 	Defines::NoReservation = decltype(Defines::NoReservation)(NoReserveAddress);
+	Defines::InternalTryActivateAbility = decltype(Defines::InternalTryActivateAbility)(InternalTryActivateAbilityAddress);
+	Defines::GiveAbility = decltype(Defines::GiveAbility)(GiveAbilityAddress);
+	Defines::CantBuild = decltype(Defines::CantBuild)(CantBuildAddress);
 
 	if (Engine_Version >= 421)
 		NewObjects = decltype(NewObjects)(ObjectsAddress);

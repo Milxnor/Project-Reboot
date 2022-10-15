@@ -49,8 +49,14 @@ UObject* GetQuickBars(UObject* Controller)
 
 void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySerializerItem* ModifiedItem)
 {
-	auto WorldInventory = GetWorldInventory(Controller);
 	auto Inventory = GetInventory(Controller);
+
+	if (ModifiedItem)
+		FastTArray::MarkItemDirty(Inventory, ModifiedItem);
+	else if (bAddOrRemove)
+		FastTArray::MarkArrayDirty(Inventory);
+
+	auto WorldInventory = GetWorldInventory(Controller);
 
 	static auto WorldHandleInvUpdate = FindObject<UFunction>("Function /Script/FortniteGame.FortInventory.HandleInventoryLocalUpdate");
 
@@ -96,16 +102,11 @@ void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySeriali
 				Controller->ProcessEvent(UpdateQuickBars);
 		} */
 	}
-
-	if (ModifiedItem)
-		FastTArray::MarkItemDirty(Inventory, ModifiedItem);
-	else if (bAddOrRemove)
-		FastTArray::MarkArrayDirty(Inventory);
 }
 
 UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count, bool bUpdate)
 {
-	if (!Controller || !ItemDefinition)
+	if (!ItemDefinition)
 		return nullptr;
 
 	static auto FortWorldItemClass = FindObjectSlow("Class /Script/FortniteGame.FortWorldItem", false);
@@ -136,7 +137,6 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 		*FFortItemEntry::GetCount(ItemEntry) = Count;
 
 		GetItemInstances(Controller)->Add(ItemInstance);
-
 		GetReplicatedEntries(Controller)->Add(*ItemEntry, SizeOfItemEntryStruct);
 
 		if (bUpdate)
@@ -159,11 +159,9 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* ItemDefinition, co
 	static auto EquipWeaponDefinition = FindObject<UFunction>("Function /Script/FortniteGame.FortPawn.EquipWeaponDefinition");
 
 	auto Pawn = Helper::GetPawnFromController(Controller);
+	Pawn->ProcessEvent(EquipWeaponDefinition, &params);
 
-	if (EquipWeaponDefinition)
-		Pawn->ProcessEvent(EquipWeaponDefinition, &params);
-
-	Helper::SetOwner(params.Wep, Pawn);
+	// Helper::SetOwner(params.Wep, Pawn);
 	
 	return params.Wep;
 }
@@ -183,6 +181,29 @@ UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
 				auto ItemGuid = UFortItem::GetGuid(ItemInstance);
 
 				if (ItemGuid && (*ItemGuid) == Guid)
+					return ItemInstance;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+UObject* Inventory::FindItemInInventory(UObject* Controller, UObject* Definition)
+{
+	auto ItemInstances = GetItemInstances(Controller);
+
+	if (ItemInstances)
+	{
+		for (int i = 0; i < ItemInstances->Num(); i++)
+		{
+			auto ItemInstance = ItemInstances->At(i);
+
+			if (ItemInstance)
+			{
+				auto definition = UFortItem::GetDefinition(ItemInstance);
+
+				if (definition && (*definition) == Definition)
 					return ItemInstance;
 			}
 		}

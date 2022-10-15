@@ -161,7 +161,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="abilities.cpp" />
-    <ClCompile Include="building.cpp" />
+    <ClCompile Include="build.cpp" />
+    <ClCompile Include="calendar.cpp" />
+    <ClCompile Include="calendar.h" />
+    <ClCompile Include="edit.cpp" />
+    <ClCompile Include="events.cpp" />
     <ClCompile Include="harvesting.cpp" />
     <ClCompile Include="helper.cpp" />
     <ClCompile Include="interaction.cpp" />
@@ -178,9 +182,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="abilities.h" />
-    <ClInclude Include="building.h" />
+    <ClInclude Include="build.h" />
     <ClInclude Include="definitions.h" />
+    <ClInclude Include="edit.h" />
     <ClInclude Include="enums.h" />
+    <ClInclude Include="events.h" />
     <ClInclude Include="gui.h" />
     <ClInclude Include="harvesting.h" />
     <ClInclude Include="helper.h" />

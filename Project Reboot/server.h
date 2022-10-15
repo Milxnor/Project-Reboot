@@ -5,10 +5,10 @@
 
 namespace Server
 {
-	static bool bUseBeacons = true;
-	static bool bListening = false;
-	static UObject* BeaconHost = nullptr;
-	static UObject* NetDriver = nullptr;
+	inline bool bUseBeacons = true;
+	inline bool bListening = false;
+	inline UObject* BeaconHost = nullptr;
+	inline UObject* NetDriver = nullptr;
 
 	// Calls BeaconHost->PauseBeaconRequests and then SetWorld
 	void PauseBeaconRequests(bool bPause);

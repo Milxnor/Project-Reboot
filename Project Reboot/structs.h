@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <string>
 #include <locale>
+#include <vector>
 
 #include "enums.h"
 
@@ -60,6 +61,43 @@ struct TArray
 
 		return -1;
 	};
+
+	std::vector<ElementType> ToVector()
+	{
+		std::vector<ElementType> vector;
+
+		for (int i = 0; i < ArrayNum; i++)
+			vector.push_back(this->At(i));
+
+		return vector;
+	}
+
+	inline bool RemoveAt(const int Index) // , int Size = sizeof(ElementType)) // NOT MINE
+	{
+		if (Index < ArrayNum)
+		{
+			if (Index != ArrayNum - 1)
+			{
+				// memcpy_s((ElementType*)(__int64(Data) + (Index * Size)), Size, (ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
+				Data[Index] = Data[ArrayNum - 1];
+			}
+
+			--ArrayNum;
+
+			return true;
+		}
+
+		return false;
+	};
+
+	void Free()
+	{
+		// if (Data)
+			VirtualFree(this, 0, MEM_RELEASE);
+
+		// ArrayNum = 0;
+		// ArrayMax = 0;
+	}
 };
 
 class FString
@@ -95,7 +133,7 @@ public:
 
 	void Free()
 	{
-		VirtualFree(this, 0, MEM_RELEASE);
+		Data.Free();
 	}
 };
 

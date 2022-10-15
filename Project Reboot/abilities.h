@@ -2,21 +2,12 @@
 
 #include "structs.h"
 
-struct FGameplayAbilitySpecHandle
-{
-    int Handle;
-
-    void GenerateNewHandle()
-    {
-        // Must be in C++ to avoid duplicate statics across execution units
-        static int32_t GHandle = 1;
-        Handle = GHandle++;
-    }
-};
-
 namespace Abilities
 {
 	inline UObject* GameplayAbilitySpecClass = nullptr;
 
+    void ClientActivateAbilityFailed(UObject* ASC, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey);
 	void* GenerateNewSpec(UObject* DefaultObject);
+    UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability);
+    void* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass);
 }

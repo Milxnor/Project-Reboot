@@ -185,3 +185,29 @@ struct FGuid
 		std::cout << std::format("{} {} {} {}\n", A, B, C, D);
 	}
 };
+
+struct PadHex18 { char Pad[0x18]; };
+struct PadHex10 { char Pad[0x10]; };
+struct PadHexC8 { char Pad[0xC8]; };
+
+struct FGameplayAbilitySpecHandle
+{
+	int Handle;
+
+	void GenerateNewHandle()
+	{
+		// Must be in C++ to avoid duplicate statics across execution units
+		static int32_t GHandle = 1;
+		Handle = GHandle++;
+	}
+};
+
+enum class EFortResourceType : uint8_t
+{
+	Wood = 0,
+	Stone = 1,
+	Metal = 2,
+	Permanite = 3,
+	None = 4,
+	EFortResourceType_MAX = 5
+};

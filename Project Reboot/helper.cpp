@@ -57,6 +57,26 @@ UObject* Helper::GetEngine()
 	return Engine;
 }
 
+UObject* Helper::GetGameMode()
+{
+	auto World = GetWorld();
+
+	static auto AuthorityGameModeOffset = World->GetOffset("AuthorityGameMode");
+	auto AuthorityGameMode = *Get<UObject*>(World, AuthorityGameModeOffset);
+
+	return AuthorityGameMode;
+}
+
+UObject* Helper::GetGameState()
+{
+	auto GameMode = Helper::GetGameMode();
+
+	static auto GameStateOffset = GameMode->GetOffset("GameState");
+	auto GameState = *Get<UObject*>(GameMode, GameStateOffset);
+
+	return GameState;
+}
+
 UObject* Helper::GetLocalPlayerController()
 {
 	auto Engine = GetEngine();
@@ -142,17 +162,80 @@ void Helper::SetOwner(UObject* Actor, UObject* Owner)
 	Actor->ProcessEvent(SetOwner, &Owner);
 }
 
+UObject* Helper::GetAbilitySystemComponent(UObject* Pawn)
+{
+	static auto AbilitySystemComponentOffset = Pawn->GetOffset("AbilitySystemComponent");
+
+	return *Get<UObject*>(Pawn, AbilitySystemComponentOffset);
+}
+
+void Helper::InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations, UObject* ReplacedBuilding)
+{
+	struct {
+		UObject* BuildingOwner; // ABuildingActor
+		UObject* SpawningController;
+		bool bUsePlayerBuildAnimations; // I think this is not on some versions
+		UObject* ReplacedBuilding; // this also not on like below 18.00
+	} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations, ReplacedBuilding };
+
+	static auto fn = FindObject<UFunction>("Function /Script/FortniteGame.BuildingActor.InitializeKismetSpawnedBuildingActor");
+	BuildingActor->ProcessEvent(fn, &IBAParams);
+}
+
+UObject** Helper::GetPlaylist()
+{
+	auto GameState = Helper::GetGameState();
+
+	if (Fortnite_Version >= 6.10)
+	{
+		static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
+
+		if (BasePlaylistOffset)
+		{
+			static auto CurrentPlaylistInfoOffset = GameState->GetOffset("CurrentPlaylistInfo");
+			auto PlaylistInfo = (void*)(__int64(GameState) + CurrentPlaylistInfoOffset); // gameState->Member<void>(("CurrentPlaylistInfo"));
+
+			auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
+
+			return BasePlaylist;
+		}
+	}
+	else
+	{
+		static auto CurrentPlaylistDataOffset = GameState->GetOffset("CurrentPlaylistData");
+
+		auto PlaylistData = (UObject**)(__int64(GameState) + CurrentPlaylistDataOffset);
+
+		return PlaylistData;
+	}
+}
+
+std::vector<UObject*> Helper::GetAllActorsOfClass(UObject* Class)
+{
+	static auto GetAllActorsOfClass = FindObject<UFunction>("Function /Script/Engine.GameplayStatics.GetAllActorsOfClass");
+	static auto DefaultGameplayStatics = FindObject("GameplayStatics /Script/Engine.Default__GameplayStatics");
+
+	TArray<UObject*> Array;
+
+	struct { UObject* World; UObject* Class; TArray<UObject*> Array; } GetAllActorsOfClass_Params{GetWorld(), Class, Array};
+
+	DefaultGameplayStatics->ProcessEvent(GetAllActorsOfClass, &GetAllActorsOfClass_Params);
+
+	auto Ret = Array.Data ? Array.ToVector() : std::vector<UObject*>();
+
+	Array.Free();
+
+	return Ret;
+}
+
 FName Helper::Conversion::StringToName(FString& String)
 {
-	static auto fn = FindObject<UFunction>(("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
-	static auto KSL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
+	static auto Conv_StringToName = FindObject<UFunction>(("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
+	static auto Default__KismetStringLibrary = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
 
-	struct {
-		FString InString;
-		FName ReturnValue;
-	} params{ String };
+	struct { FString InString; FName ReturnValue; } Conv_StringToName_Params{ String };
 
-	KSL->ProcessEvent(fn, &params);
+	Default__KismetStringLibrary->ProcessEvent(Conv_StringToName, &Conv_StringToName_Params);
 
-	return params.ReturnValue;
+	return Conv_StringToName_Params.ReturnValue;
 }

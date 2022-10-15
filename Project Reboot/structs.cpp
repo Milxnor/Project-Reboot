@@ -59,8 +59,15 @@ int FindOffsetStruct(const std::string& StructName, const std::string& MemberNam
 {
 	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
 
-	return *(uint32_t*)(__int64(FindObject(MemberName, PropertyClass, bExactStruct ? FindObject(StructName) : FindObjectSlow(StructName, false))) 
-		+ Offset_InternalOffset);
+	auto Prop = FindObject(MemberName, PropertyClass, bExactStruct ? FindObjectSlow(StructName, false) : FindObject(StructName));
+
+	if (!Prop)
+	{
+		std::cout << "Failed to find " << MemberName << '\n';
+		return 0;
+	}
+
+	return *(uint32_t*)(__int64(Prop) + Offset_InternalOffset);
 }
 
 UObject* GetDefaultObject(UObject* Class)

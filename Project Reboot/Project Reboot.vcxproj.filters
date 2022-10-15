@@ -71,7 +71,7 @@
     <ClCompile Include="mem.cpp">
       <Filter>Source\Util</Filter>
     </ClCompile>
-    <ClCompile Include="building.cpp">
+    <ClCompile Include="build.cpp">
       <Filter>Source\Gameplay</Filter>
     </ClCompile>
     <ClCompile Include="processevent.cpp">
@@ -79,6 +79,18 @@
     </ClCompile>
     <ClCompile Include="mem.h">
       <Filter>Headers\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="edit.cpp">
+      <Filter>Source\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="calendar.h">
+      <Filter>Headers\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="calendar.cpp">
+      <Filter>Source\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="events.cpp">
+      <Filter>Source\Gameplay</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -115,7 +127,7 @@
     <ClInclude Include="enums.h">
       <Filter>Headers\Unreal</Filter>
     </ClInclude>
-    <ClInclude Include="building.h">
+    <ClInclude Include="build.h">
       <Filter>Headers\Gameplay</Filter>
     </ClInclude>
     <ClInclude Include="processevent.h">
@@ -126,6 +138,12 @@
     </ClInclude>
     <ClInclude Include="log.h">
       <Filter>Headers\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="edit.h">
+      <Filter>Headers\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="events.h">
+      <Filter>Headers\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

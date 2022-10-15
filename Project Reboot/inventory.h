@@ -25,7 +25,7 @@ namespace FFortItemEntry
 
 	static int* GetCount(__int64* Entry)
 	{
-		static auto CountOffset = ItemEntryStruct->GetOffset("Count", true);
+		static auto CountOffset = 0xC; // FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"), true); // i tried everything
 		auto Count = (int*)(__int64(&*Entry) + CountOffset);
 
 		return Count;
@@ -69,6 +69,7 @@ namespace Inventory
 	// FINDERS
 
 	UObject* FindItemInInventory(UObject* Controller, const FGuid& Guid); // Returns an item instance
+	UObject* FindItemInInventory(UObject* Controller, UObject* Definition); // Returns an item instance
 
 	// HOOKS
 
