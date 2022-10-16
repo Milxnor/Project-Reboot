@@ -9,6 +9,7 @@ static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, v
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters);
 bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Parameters);
 bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters);
+static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func);
 void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters);

@@ -55,12 +55,10 @@ namespace Build
 		if (!BuildingClass)
 			return false;
 
-		bool bCanBuild = true;
-
 		__int64 v32[2]{};
 		char dababy;
 
-		bCanBuild = !Defines::CantBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy);
+		bool bCanBuild = !Defines::CantBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy);
 
 		if (bCanBuild)
 		{
@@ -75,9 +73,11 @@ namespace Build
 
 				MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
 
+				auto MatCount = UFortItem::GetCount(MatInstance);
+
 				bool bShouldDestroy = true;
 
-				if (MatInstance) // && Helper::IsStructurallySupported(BuildingActor)
+				if (MatCount && *MatCount >= 10 && MatInstance) // && Helper::IsStructurallySupported(BuildingActor)
 				{
 					Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 
@@ -97,5 +97,17 @@ namespace Build
 				}
 			}
 		}
+
+		return false;
+	}
+
+	bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
+	{
+
+	}
+
+	bool ServerCreateBuildingAndSpawnDeco(UObject* DecoTool, UFunction*, void* Parameters)
+	{
+		// First, the params were Location and Rotation, then BuildingLocation, BuildingRotation, Location, and Rotation.
 	}
 }

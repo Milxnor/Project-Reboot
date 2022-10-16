@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include "structs.h"
+
 namespace Calendar
 {
 	void FixLocations();
-	
+	void SetWaterLevel(int WaterLevel = 0);
 }

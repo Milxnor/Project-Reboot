@@ -92,6 +92,12 @@
     <ClCompile Include="events.cpp">
       <Filter>Source\Gameplay</Filter>
     </ClCompile>
+    <ClCompile Include="teams.cpp">
+      <Filter>Source\Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="datatables.cpp">
+      <Filter>Source\Unreal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -144,6 +150,12 @@
     </ClInclude>
     <ClInclude Include="events.h">
       <Filter>Headers\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="team.h">
+      <Filter>Headers\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="datatables.h">
+      <Filter>Headers\Unreal</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

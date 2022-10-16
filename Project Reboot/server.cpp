@@ -20,16 +20,19 @@ void Server::SetWorld(UObject* World)
 	}
 	else
 	{
-		int SetWorldVTableIndex = Fortnite_Version < 19.00 ? 0x72 : 0x7A;
+		if (!Defines::SetWorld)
+		{
+			int SetWorldIndex = Fortnite_Version < 19.00 ? 0x72 : (Fortnite_Version >= 20.00 ? (Fortnite_Version >= 21 ? 0x7C : 0x7B) : 0x7A); // s13-s18 = 0x72 s19 = 0x7A s20 = 7B s21 = 7c 
 
-		if (Fortnite_Version >= 20.00)
-			SetWorldVTableIndex = 0x7B;
+			std::cout << "SetWorldIndex: " << SetWorldIndex << '\n';
 
-		if (Fortnite_Version >= 21.00)
-			SetWorldVTableIndex = 0x7C;
+			Defines::SetWorld = decltype(Defines::SetWorld)(NetDriver->VFTable[SetWorldIndex]);
+		}
 
-		Defines::SetWorld = decltype(Defines::SetWorld)(NetDriver->VFTable[SetWorldVTableIndex]);
-		Defines::SetWorld(NetDriver, World);
+		if (Defines::SetWorld)
+			Defines::SetWorld(NetDriver, World);
+		else
+			std::cout << "Invalid SetWorld!\n";
 	}
 }
 
@@ -113,10 +116,13 @@ bool Server::Listen(int Port)
 
 	PauseBeaconRequests(false);
 
-	static auto ReplicationDriverOffset = NetDriver->GetOffset("ReplicationDriver");
-	auto ReplicationDriver = *Get<UObject*>(NetDriver, ReplicationDriverOffset);
+	if (Fortnite_Version >= 3.3)
+	{
+		static auto ReplicationDriverOffset = NetDriver->GetOffset("ReplicationDriver");
+		auto ReplicationDriver = *Get<UObject*>(NetDriver, ReplicationDriverOffset);
 
-	Defines::ServerReplicateActors = decltype(Defines::ServerReplicateActors)(ReplicationDriver->VFTable[Defines::ServerReplicateActorsOffset]);
+		Defines::ServerReplicateActors = decltype(Defines::ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
+	}
 
 	static auto World_NetDriverOffset = World->GetOffsetSlow("NetDriver");
 
@@ -161,21 +167,33 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 			else
 			{
 				static auto ReplicationDriverOffset = NetDriver->GetOffset("ReplicationDriver");
-				auto ReplicationDriver = *Get<UObject*>(NetDriver, ReplicationDriverOffset);
+				auto ReplicationDriver = Get<UObject*>(NetDriver, ReplicationDriverOffset);
 
-				if (ReplicationDriver && Defines::ServerReplicateActors)
+				if (ReplicationDriver)
 				{
-					Defines::ServerReplicateActors(ReplicationDriver);
+					Defines::ServerReplicateActors(*ReplicationDriver);
 				}
-				else
-					std::cout << "skidda; " << Defines::ServerReplicateActors << '\n';
 			}
 		}
-		else
-			std::cout << "No World netDriver??\n";
 	}
-	else
-		std::cout << "no world?!?!\n";
+
+	if (Defines::bShouldSpawnFloorLoot) // TODO move this
+	{
+		static auto SpawnIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
+		static auto BRIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C");
+
+		if (!SpawnIsland_FloorLoot || !BRIsland_FloorLoot) // Map has not loaded to the point where there are floor loot actors
+		{
+			SpawnIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
+			BRIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C");
+		}
+		else
+		{
+			Defines::bShouldSpawnFloorLoot = false;
+
+
+		}
+	}
 
 	return Defines::TickFlush(thisNetDriver, DeltaSeconds);
 }

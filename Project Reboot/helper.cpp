@@ -88,12 +88,9 @@ UObject* Helper::GetLocalPlayerController()
 		return nullptr;
 
 	static auto LocalPlayersOffset = GameInstance->GetOffset("LocalPlayers");
-	auto LocalPlayers = Get<TArray<UObject*>>(GameInstance, LocalPlayersOffset);
+	auto& LocalPlayers = *Get<TArray<UObject*>>(GameInstance, LocalPlayersOffset);
 
-	if (!LocalPlayers)
-		return nullptr;
-
-	auto LocalPlayer = LocalPlayers->At(0);
+	auto LocalPlayer = LocalPlayers.At(0);
 	
 	if (!LocalPlayer)
 		return nullptr;
@@ -126,9 +123,9 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 	if (!Pawn)
 		return Pawn;
 
-	static auto SetReplicateMovementFn = FindObject<UFunction>("Function /Script/Engine.Actor.SetReplicateMovement");
-	bool bReplicateMovement = true;
-	Pawn->ProcessEvent(SetReplicateMovementFn, &bReplicateMovement);
+	// static auto SetReplicateMovementFn = FindObject<UFunction>("Function /Script/Engine.Actor.SetReplicateMovement");
+	// bool bReplicateMovement = true;
+	// Pawn->ProcessEvent(SetReplicateMovementFn, &bReplicateMovement);
 
 	static auto Possess = FindObject<UFunction>("Function /Script/Engine.Controller.Possess");
 
@@ -208,9 +205,11 @@ UObject** Helper::GetPlaylist()
 
 		return PlaylistData;
 	}
+
+	return nullptr;
 }
 
-std::vector<UObject*> Helper::GetAllActorsOfClass(UObject* Class)
+TArray<UObject*> Helper::GetAllActorsOfClass(UObject* Class)
 {
 	static auto GetAllActorsOfClass = FindObject<UFunction>("Function /Script/Engine.GameplayStatics.GetAllActorsOfClass");
 	static auto DefaultGameplayStatics = FindObject("GameplayStatics /Script/Engine.Default__GameplayStatics");
@@ -221,11 +220,28 @@ std::vector<UObject*> Helper::GetAllActorsOfClass(UObject* Class)
 
 	DefaultGameplayStatics->ProcessEvent(GetAllActorsOfClass, &GetAllActorsOfClass_Params);
 
-	auto Ret = Array.Data ? Array.ToVector() : std::vector<UObject*>();
+	auto Ret = Array; // Array.Data ? Array.ToVector() : std::vector<UObject*>();
 
-	Array.Free();
+	// Array.Free();
 
 	return Ret;
+}
+
+bool Helper::IsInAircraft(UObject* Controller)
+{
+	return false;
+}
+
+UObject* Helper::GetCurrentWeapon(UObject* Pawn)
+{
+	static auto CurrentWeaponOffset = Pawn->GetOffset("CurrentWeapon");
+
+	return *Get<UObject*>(Pawn, CurrentWeaponOffset);
+}
+
+UObject* Helper::GetWeaponData(UObject* Weapon)
+{
+	return nullptr;
 }
 
 FName Helper::Conversion::StringToName(FString& String)

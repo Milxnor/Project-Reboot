@@ -23,8 +23,9 @@ inline uint64_t NoReserveAddress = 0;
 inline uint64_t InternalTryActivateAbilityAddress = 0;
 inline uint64_t GiveAbilityAddress = 0;
 inline uint64_t CantBuildAddress = 0;
+inline uint64_t ReplaceBuildingActorAddress = 0;
 
-static void InitializePatterns()
+static bool InitializePatterns()
 {
 	auto SpawnActorAddr = Memory::FindPattern("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB");
 
@@ -52,6 +53,7 @@ static void InitializePatterns()
 	std::string InternalTryActivateAbilityPattern = "";
 	std::string GiveAbilityPattern = "";
 	std::string CantBuildPattern = "";
+	std::string ReplaceBuildingActorPattern = "";
 
 	// TODO REWRITE HERE
 
@@ -121,18 +123,7 @@ static void InitializePatterns()
 
 	// Now we have the engine version and fn 
 
-	// offsets
-
-	if (Engine_Version == 421)
-	{
-		Offset_InternalOffset = 0x44;
-		SuperStructOffset = sizeof(UObject) + 8;
-		ChildPropertiesOffset = SuperStructOffset + 8;
-		PropertiesSizeOffset = ChildPropertiesOffset + 8;
-		Defines::ServerReplicateActorsOffset = Fortnite_Season == 5 ? 0x54 : 0x56;
-	}
-
-	// pattners
+	// patterns
 
 	if (Engine_Version == 416)
 	{
@@ -156,12 +147,22 @@ static void InitializePatterns()
 
 	if (Engine_Version == 420)
 	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		// StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
+		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 45 33 F6 48 8D 05 ? ? ? ?";
 		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 63 41 0C 45 33 F6";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
+		SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B B1 ? ? ? ? 48 8B FA 48 8B D9 48 85 F6 74 5C";
+		PauseBeaconRequestsPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 63 41 0C 45 33 F6";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8D 1C C8 81 4B ? ? ? ? ? 49 63 76 30";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 7B E8 48 8B F9 4D 89 63 E0 45 33 E4";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "40 53 55 41 56 48 81 EC ? ? ? ? 33 ED";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		// NoReservePattern = "48 89 5C 24 ?? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 56 57 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B F0 4C 8B F2 48 8B D9 7E 61";
+		CantBuildPattern = "48 89 54 24 ? 55 56 41 56 48 83 EC 50";
 	}
 
 	if (Engine_Version == 421)
@@ -178,60 +179,118 @@ static void InitializePatterns()
 		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
 		ValidationFailurePattern = "40 53 55 41 56 48 81 EC ? ? ? ? 33 ED";
 		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
-		NoReservePattern = "48 89 5C 24 ?? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		NoReservePattern = "40 53 41 56 48 81 EC ? ? ? ? 48 8B 01 48 8B DA 4C 8B F1 FF 90";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
+		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
+		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
+
+		if (Fortnite_Season == 5)
+			ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1";
+	}
+
+	if (Engine_Version == 422)
+	{
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
+		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 45 33 F6 48 8D 05 ? ? ? ?";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
+		SetWorldPattern = "48 89 74 24 ? 57 48 83 EC 20 48 8B F2 48 8B F9 48 8B 91";
+		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ?";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0";
+		KickPlayerPattern = "40 53 41 56 48 81 EC ? ? ? ? 48 8B 01 48 8B DA 4C 8B F1";
+		ValidationFailurePattern = "40 53 56 41 56 48 81 EC ? ? ? ? 45 33 F6 48 8B DA"; // 2nd string
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
+		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
+		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
+	}
+
+	if (Engine_Version == 423)
+	{
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
+		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 45 33 F6 48 8D 05 ? ? ? ?";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
+		SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97";
+		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ?";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "40 55 53 41 54 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 E4 48 8B DA 44 89 65 50";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
+		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
+		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
+
+		if (Fortnite_Season == 10)
+			ValidationFailurePattern = "40 53 41 56 48 81 EC ? ? ? ? 48 8B 01 48 8B DA 4C 8B F1 FF 90 ? ? ? ? 48 8B 0D";
+	}
+
+	if (Engine_Version == 424)
+	{
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
+		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 45 33 F6 48 8D 05 ? ? ? ?";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
+		SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97";
+		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ?";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "40 55 53 41 54 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 E4 48 8B DA 44 89 65 50";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
 		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 	}
 
-	if (Engine_Version == 422)
-	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
-	}
-
-	if (Engine_Version == 423)
-	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
-	}
-
-	if (Engine_Version == 424)
-	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
-	}
-
 	if (Engine_Version == 425)
 	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
+		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 45 33 F6 48 8D 05 ? ? ? ?";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
+		SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97";
+		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ?";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		// ValidationFailurePattern = "40 55 53 41 54 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 E4 48 8B DA 44 89 65 50";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
+		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 	}
 
 	if (Engine_Version == 426)
 	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
+		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 68 45 33"; // 14.60
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
+		PauseBeaconRequestsPattern = "40 57 48 83 EC 30 48 8B F9 84 D2 74 62 80 3D ? ? ? ? ? 72 22 48 8D 05"; // 14.60
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 4D 89 7B"; // 14.60
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 DB 48 8B F2 89 9D ? ? ? ? 4C 8B E9 E8 ? ? ? ? "; // 14.60
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ?? 56 41 56 41 57 48 81 EC";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 8B 81 ? ? ? ? 49"; // 14.60
+		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 	}
 
 	if (Engine_Version == 427) // 4.26.1
@@ -240,7 +299,6 @@ static void InitializePatterns()
 		StaticFindObjectPattern = "";
 		StaticLoadObjectPattern = "";
 		ProcessEventPattern = "";
-		SetWorldPattern = "";
 		PauseBeaconRequestsPattern = "";
 	}
 
@@ -253,6 +311,38 @@ static void InitializePatterns()
 		SetWorldPattern = "";
 		PauseBeaconRequestsPattern = "";
 	}
+
+	if (Engine_Version == 420)
+		ServerReplicateActorsOffset = 0x53;
+	else if (Engine_Version == 421)
+		ServerReplicateActorsOffset = Fortnite_Season == 5 ? 0x54 : 0x56;
+	else if (Engine_Version >= 422 && Engine_Version <= 424)
+		ServerReplicateActorsOffset = Fortnite_Version >= 7.40 && Fortnite_Version < 8.40 ? 0x57 : 
+			Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 0x5A) : 0x56;
+
+		// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, other S11 is 0x5A
+
+	else if (Fortnite_Season == 12 || Fortnite_Season == 13)
+		ServerReplicateActorsOffset = 0x5D;
+	else if (Fortnite_Season == 14)
+		ServerReplicateActorsOffset = 0x5E;
+	else if (Fortnite_Season >= 15 && Engine_Version < 500) // 15-18 = 0x5E
+		ServerReplicateActorsOffset = 0x5E;
+	else if (Fortnite_Season == 19)
+		ServerReplicateActorsOffset = 0x66;
+	else
+		ServerReplicateActorsOffset = 0x67; // S20
+
+	Offset_InternalOffset = Engine_Version >= 425 && Engine_Version < 500 ? 0x4C : 0x44;
+	SuperStructOffset = Engine_Version >= 422 ? 0x40 : 0x30;
+	ChildPropertiesOffset = Engine_Version >= 425 ? 0x50 : SuperStructOffset + 8;
+	PropertiesSizeOffset = ChildPropertiesOffset + 8;
+
+	std::cout << std::format("Offset_InternalOffset: 0x{:x}\n", Offset_InternalOffset);
+	std::cout << std::format("SuperStructOffset: 0x{:x}\n", SuperStructOffset);
+	std::cout << std::format("ChildPropertiesOffset: 0x{:x}\n", ChildPropertiesOffset);
+	std::cout << std::format("PropertiesSizeOffset: 0x{:x}\n", PropertiesSizeOffset);
+	std::cout << std::format("ServerReplicateActorsOffset: 0x{:x}\n", ServerReplicateActorsOffset);
 
 	InitHostAddress = Memory::FindPattern(InitHostPattern);
 	StaticFindObjectAddress = Memory::FindPattern(StaticFindObjectPattern);
@@ -270,23 +360,30 @@ static void InitializePatterns()
 	InternalTryActivateAbilityAddress = Memory::FindPattern(InternalTryActivateAbilityPattern);
 	GiveAbilityAddress = Memory::FindPattern(GiveAbilityPattern);
 	CantBuildAddress = Memory::FindPattern(CantBuildPattern);
+	ReplaceBuildingActorAddress = Memory::FindPattern(ReplaceBuildingActorPattern);
 
-	std::cout << "InitHostAddress: " << InitHostAddress << '\n';
-	std::cout << "StaticFindObjectAddress: " << StaticFindObjectAddress << '\n';
-	std::cout << "StaticLoadObjectAddress: " << StaticLoadObjectAddress << '\n';
-	std::cout << "ProcessEventAddress: " << ProcessEventAddress << '\n';
-	std::cout << "SetWorldAddress: " << SetWorldAddress << '\n';
-	std::cout << "PauseBeaconRequestsAddress: " << PauseBeaconRequestsAddress << '\n';
-	std::cout << "ObjectsAddress: " << ObjectsAddress << '\n';
-	std::cout << "InitListenAddress: " << InitListenAddress << '\n';
-	std::cout << "TickFlushAddress: " << TickFlushAddress << '\n';
-	std::cout << "KickPlayerAddress: " << KickPlayerAddress << '\n';
-	std::cout << "ValidationFailureAddress: " << ValidationFailureAddress << '\n';
-	std::cout << "ReallocAddress: " << ReallocAddress << '\n';
-	std::cout << "NoReserveAddress: " << NoReserveAddress << '\n';
-	std::cout << "InternalTryActivateAbilityAddress: " << InternalTryActivateAbilityAddress << '\n';
-	std::cout << "GiveAbilityAddress: " << GiveAbilityAddress << '\n';
-	std::cout << "CantBuildAddress: " << CantBuildAddress << '\n';
+	auto Base = (uintptr_t)GetModuleHandleW(0);
+
+	std::cout << std::format("InitHostAddress: 0x{:x}\n", (uintptr_t)InitHostAddress - Base);
+	std::cout << std::format("StaticFindObjectAddress: 0x{:x}\n", (uintptr_t)StaticFindObjectAddress - Base);
+	std::cout << std::format("StaticLoadObjectAddress: 0x{:x}\n", (uintptr_t)StaticLoadObjectAddress - Base);
+	std::cout << std::format("ProcessEventAddress: 0x{:x}\n", (uintptr_t)ProcessEventAddress - Base);
+	std::cout << std::format("SetWorldAddress: 0x{:x}\n", (uintptr_t)SetWorldAddress - Base);
+	std::cout << std::format("PauseBeaconRequestsAddress: 0x{:x}\n", (uintptr_t)PauseBeaconRequestsAddress - Base);
+	std::cout << std::format("ObjectsAddress: 0x{:x}\n", (uintptr_t)ObjectsAddress - Base);
+	std::cout << std::format("InitListenAddress: 0x{:x}\n", (uintptr_t)InitListenAddress - Base);
+	std::cout << std::format("TickFlushAddress: 0x{:x}\n", (uintptr_t)TickFlushAddress - Base);
+	std::cout << std::format("KickPlayerAddress: 0x{:x}\n", (uintptr_t)KickPlayerAddress - Base);
+	std::cout << std::format("ValidationFailureAddress: 0x{:x}\n", (uintptr_t)ValidationFailureAddress - Base);
+	std::cout << std::format("ReallocAddress: 0x{:x}\n", (uintptr_t)ReallocAddress - Base);
+	std::cout << std::format("NoReserveAddress: 0x{:x}\n", (uintptr_t)NoReserveAddress - Base);
+	std::cout << std::format("InternalTryActivateAbilityAddress: 0x{:x}\n", (uintptr_t)InternalTryActivateAbilityAddress - Base);
+	std::cout << std::format("GiveAbilityAddress: 0x{:x}\n", (uintptr_t)GiveAbilityAddress - Base);
+	std::cout << std::format("CantBuildAddress: 0x{:x}\n", (uintptr_t)CantBuildAddress - Base);
+	std::cout << std::format("ReplaceBuildingActorAddress: 0x{:x}\n", (uintptr_t)ReplaceBuildingActorAddress - Base);
+
+	if (!InitHostAddress || !StaticFindObjectAddress || !ProcessEventAddress || !ObjectsAddress)
+		return false;
 
 	Defines::InitHost = decltype(Defines::InitHost)(InitHostAddress);
 	StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddress);
@@ -303,13 +400,14 @@ static void InitializePatterns()
 	Defines::InternalTryActivateAbility = decltype(Defines::InternalTryActivateAbility)(InternalTryActivateAbilityAddress);
 	Defines::GiveAbility = decltype(Defines::GiveAbility)(GiveAbilityAddress);
 	Defines::CantBuild = decltype(Defines::CantBuild)(CantBuildAddress);
+	Defines::ReplaceBuildingActor = decltype(Defines::ReplaceBuildingActor)(ReplaceBuildingActorAddress);
 
 	if (Engine_Version >= 421)
 		NewObjects = decltype(NewObjects)(ObjectsAddress);
 	else
 		OldObjects = decltype(OldObjects)(ObjectsAddress);
 
-	std::cout << NewObjects->Num() << '\n';
-
 	// toFree.Free();
+
+	return true;
 }

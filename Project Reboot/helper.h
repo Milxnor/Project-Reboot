@@ -28,7 +28,10 @@ namespace Helper
 	UObject* GetAbilitySystemComponent(UObject* Pawn);
 	void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false, UObject* ReplacedBuilding = nullptr);
 	UObject** GetPlaylist();
-	std::vector<UObject*> GetAllActorsOfClass(UObject* Class); // Vector!?!? We use a vector so we can ensure that the TArray gets free'd and theres no memory leak.
+	TArray<UObject*> GetAllActorsOfClass(UObject* Class);
+	bool IsInAircraft(UObject* Controller);
+	UObject* GetCurrentWeapon(UObject* Pawn);
+	UObject* GetWeaponData(UObject* Weapon);
 
 	namespace Conversion
 	{

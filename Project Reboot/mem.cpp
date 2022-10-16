@@ -2,6 +2,9 @@
 
 unsigned long long Memory::FindPattern(std::string signatureStr, bool bRelative, uint32_t offset, bool bIsVar)
 {
+	if (signatureStr.empty())
+		return 0;
+
 	auto signature = signatureStr.c_str();
 	auto base_address = (uint64_t)GetModuleHandleW(NULL);
 	static auto patternToByte = [](const char* pattern)

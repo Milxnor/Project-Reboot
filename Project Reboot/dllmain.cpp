@@ -40,8 +40,13 @@ DWORD WINAPI Input(LPVOID)
 
             auto BuildingItemCollectorActorActors = Helper::GetAllActorsOfClass(BuildingItemCollectorClass);
 
-            for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
+            std::cout << "Skid: " << BuildingItemCollectorActorActors.size() << '\n';
+
+            // for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
+            for (int i = 0; i < BuildingItemCollectorActorActors.size(); i++)
             {
+                auto BuildingItemCollectorActor = BuildingItemCollectorActorActors.At(i);
+
                 std::cout << "A!\n";
 
                 static auto CollectorUnitInfoClass = FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") ? FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") :
@@ -82,10 +87,14 @@ DWORD WINAPI Initialize(LPVOID)
     if (MH_Initialize() != MH_OK)
     {
         MessageBoxA(0, "MinHook failed to initialize", "Project Reboot V2", MB_ICONERROR);
-        return 0;
+        return 1;
     }
 
-    InitializePatterns();
+    if (!InitializePatterns())
+    {
+        MessageBoxA(0, "Failed to setup patterns", "Project Reboot V2", MB_ICONERROR);
+        return 1;
+    }
     
     std::cout << "Initialized\n";
     std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
@@ -93,6 +102,7 @@ DWORD WINAPI Initialize(LPVOID)
     FFortItemEntry::ItemEntryStruct = FindObjectSlow("ScriptStruct /Script/FortniteGame.FortItemEntry", false);
     FastTArray::FastArraySerializerStruct = FindObjectSlow("ScriptStruct /Script/Engine.FastArraySerializer", false);
     Abilities::GameplayAbilitySpecClass = FindObjectSlow("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", false);
+    Editing::EditToolDefinition = FindObject("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool");
 
     auto PC = Helper::GetLocalPlayerController();
 

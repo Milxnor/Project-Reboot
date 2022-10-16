@@ -5,6 +5,7 @@
 #include "abilities.h"
 #include "patterns.h"
 #include "server.h"
+#include "calendar.h"
 
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters)
 {
@@ -25,6 +26,18 @@ bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Par
 
 bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Parameters)
 {
+	if (!Parameters)
+		return false;
+
+	static bool bSpawnedFloorLoot = false;
+
+	if (!bSpawnedFloorLoot)
+	{
+		bSpawnedFloorLoot = true;
+
+		Defines::bShouldSpawnFloorLoot = true;
+	}
+
 	UObject* PlayerController = *(UObject**)Parameters;
 
 	if (PlayerController)
@@ -164,6 +177,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto MaxPlayersOffset = GameSession->GetOffset("MaxPlayers");
 		*Get<int>(GameSession, MaxPlayersOffset) = 100; // We would get from playlist but playground max is 4 people..
 
+		Calendar::FixLocations();
+
 		std::cout << "Ready to start match!\n";
 	}
 
@@ -264,7 +279,20 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "AthenaHitPointBar_C.Update") &&
 			!strstr(FunctionName.c_str(), "ExecuteUbergraph_Farm_WeatherVane_01") &&
 			!strstr(FunctionName.c_str(), "HandleOnHUDElementVisibilityChanged") &&
-			!strstr(FunctionName.c_str(), "ExecuteUbergraph_Fog_Machine"))
+			!strstr(FunctionName.c_str(), "ExecuteUbergraph_Fog_Machine") &&
+			!strstr(FunctionName.c_str(), "ReceiveBeginPlay") &&
+			!strstr(FunctionName.c_str(), "OnMatchStarted") &&
+			!strstr(FunctionName.c_str(), "CustomStateChanged") &&
+			!strstr(FunctionName.c_str(), "OnBuildingActorInitialized") &&
+			!strstr(FunctionName.c_str(), "OnWorldReady") &&
+			!strstr(FunctionName.c_str(), "OnAttachToBuilding") &&
+			!strstr(FunctionName.c_str(), "Clown Spinner") &&
+			!strstr(FunctionName.c_str(), "K2_GetActorLocation") &&
+			!strstr(FunctionName.c_str(), "GetViewTarget") &&
+			!strstr(FunctionName.c_str(), "GetAllActorsOfClass") &&
+			!strstr(FunctionName.c_str(), "OnUpdateMusic") &&
+			!strstr(FunctionName.c_str(), "Check Closest Point") &&
+			!strstr(FunctionName.c_str(), "OnSubtitleChanged__DelegateSignature"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}
@@ -278,6 +306,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			{
 				return;
 			}
+
+			break; // There shouldn't be repeat.
 		}
 	}
 

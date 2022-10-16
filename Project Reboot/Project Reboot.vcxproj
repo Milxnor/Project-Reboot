@@ -164,6 +164,7 @@
     <ClCompile Include="build.cpp" />
     <ClCompile Include="calendar.cpp" />
     <ClCompile Include="calendar.h" />
+    <ClCompile Include="datatables.cpp" />
     <ClCompile Include="edit.cpp" />
     <ClCompile Include="events.cpp" />
     <ClCompile Include="harvesting.cpp" />
@@ -179,10 +180,12 @@
     <ClCompile Include="processevent.cpp" />
     <ClCompile Include="server.cpp" />
     <ClCompile Include="structs.cpp" />
+    <ClCompile Include="teams.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="abilities.h" />
     <ClInclude Include="build.h" />
+    <ClInclude Include="datatables.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="edit.h" />
     <ClInclude Include="enums.h" />
@@ -198,6 +201,7 @@
     <ClInclude Include="processevent.h" />
     <ClInclude Include="server.h" />
     <ClInclude Include="structs.h" />
+    <ClInclude Include="team.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

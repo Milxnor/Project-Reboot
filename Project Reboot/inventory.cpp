@@ -166,6 +166,14 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* ItemDefinition, co
 	return params.Wep;
 }
 
+UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance)
+{
+	auto Def = UFortItem::GetDefinition(Instance);
+	auto Guid = UFortItem::GetGuid(Instance);
+
+	return Def && Guid ? EquipWeapon(Controller, *Def, *Guid) : nullptr;
+}
+
 UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
 {
 	auto ItemInstances = GetItemInstances(Controller);

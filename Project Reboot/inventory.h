@@ -51,6 +51,12 @@ namespace UFortItem
 		auto ItemEntry = GetItemEntry(ItemInstance);
 		return ItemEntry ? FFortItemEntry::GetItemDefinition(ItemEntry) : nullptr;
 	}
+
+	static int* GetCount(UObject* ItemInstance)
+	{
+		auto ItemEntry = GetItemEntry(ItemInstance);
+		return ItemEntry ? FFortItemEntry::GetCount(ItemEntry) : nullptr;
+	}
 }
 
 namespace Inventory
@@ -65,6 +71,7 @@ namespace Inventory
 	void Update(UObject* Controller, bool bAddOrRemove = false, FFastArraySerializerItem* ModifiedItem = nullptr);
 	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true);
 	UObject* EquipWeapon(UObject* Controller, UObject* ItemDefinition, const FGuid& Guid);
+	UObject* EquipWeapon(UObject* Controller, UObject* Instance);
 
 	// FINDERS
 

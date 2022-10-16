@@ -17,6 +17,7 @@ inline int Offset_InternalOffset = 0x0;
 inline int SuperStructOffset = 0x0;
 inline int ChildPropertiesOffset = 0x0;
 inline int PropertiesSizeOffset = 0x0;
+inline int ServerReplicateActorsOffset = 0x0;
 
 namespace FMemory
 {
@@ -31,17 +32,12 @@ struct TArray
 	int32_t ArrayNum = 0;
 	int32_t ArrayMax = 0;
 
-	inline ElementType At(int i, int Size = sizeof(ElementType)) const
-	{
-		return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i));
-	}
-
-	inline ElementType* AtPtr(int i, int Size = sizeof(ElementType)) const
-	{
-		return (ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i));
-	}
+	inline ElementType At(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
+	inline ElementType at(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
+	inline ElementType* AtPtr(int i, int Size = sizeof(ElementType)) const { return (ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
 
 	inline int Num() const { return ArrayNum; }
+	inline int size() const { return ArrayNum; }
 
 	void Reserve(int Number, int Size = sizeof(ElementType))
 	{
@@ -160,6 +156,8 @@ struct UObject
 
 	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false);
 	int GetOffsetSlow(const std::string& MemberName);
+
+	bool IsA(UObject* otherClass);
 };
 
 struct UField : UObject { UField* Next; };
@@ -308,6 +306,188 @@ int FindOffsetStruct(const std::string& StructName, const std::string& MemberNam
 
 
 // OTHER
+
+template<typename ElementType>
+union TSparseArrayElementOrFreeListLink
+{
+	/** If the element is allocated, its value is stored here. */
+	ElementType ElementData;
+
+	struct
+	{
+		/** If the element isn't allocated, this is a link to the previous element in the array's free list. */
+		int32_t PrevFreeIndex;
+
+		/** If the element isn't allocated, this is a link to the next element in the array's free list. */
+		int32_t NextFreeIndex;
+	};
+};
+
+template <typename ElementType>
+union TSparseArrayElementOrListLink
+{
+	TSparseArrayElementOrListLink(ElementType& InElement)
+		: ElementData(InElement)
+	{
+	}
+	TSparseArrayElementOrListLink(ElementType&& InElement)
+		: ElementData(InElement)
+	{
+	}
+
+	TSparseArrayElementOrListLink(int32_t InPrevFree, int32_t InNextFree)
+		: PrevFreeIndex(InPrevFree)
+		, NextFreeIndex(InNextFree)
+	{
+	}
+
+	TSparseArrayElementOrListLink<ElementType> operator=(const TSparseArrayElementOrListLink<ElementType>& Other)
+	{
+		return TSparseArrayElementOrListLink(Other.NextFreeIndex, Other.PrevFreeIndex);
+	}
+
+	/** If the element is allocated, its value is stored here. */
+	ElementType ElementData;
+
+	struct
+	{
+		/** If the element isn't allocated, this is a link to the previous element in the array's free list. */
+		int32_t PrevFreeIndex;
+
+		/** If the element isn't allocated, this is a link to the next element in the array's free list. */
+		int32_t NextFreeIndex;
+	};
+};
+
+template <int32_t NumElements>
+struct TInlineAllocator
+{
+	template <int32_t Size, int32_t Alignment>
+	struct alignas(Alignment) TAlligendBytes
+	{
+		uint8_t Pad[Size];
+	};
+
+	template <typename ElementType>
+	struct TTypeCompatibleBytes : public TAlligendBytes<sizeof(ElementType), alignof(ElementType)>
+	{
+	};
+
+	template <typename ElementType>
+	class ForElementType
+	{
+		friend class TBitArray;
+
+	private:
+		TTypeCompatibleBytes<ElementType> InlineData[NumElements];
+
+		ElementType* SecondaryData;
+	};
+};;
+
+class TBitArray
+{
+private:
+	TInlineAllocator<4>::ForElementType<uint32_t> Data;
+	int32_t NumBits;
+	int32_t MaxBits;
+};
+
+template<typename InElementType>//, typename Allocator /*= FDefaultSparseArrayAllocator */>
+class TSparseArray
+{
+public:
+	typedef TSparseArrayElementOrListLink<InElementType> FSparseArrayElement;
+
+	TArray<FSparseArrayElement> Data;
+	TBitArray AllocationFlags;
+	int32_t FirstFreeIndex;
+	int32_t NumFreeIndices;
+};
+
+class FSetElementId { int32_t Index; };
+
+template<typename InElementType>//, bool bTypeLayout>
+class TSetElementBase
+{
+public:
+	typedef InElementType ElementType;
+
+	/** The element's value. */
+	ElementType Value;
+
+	/** The id of the next element in the same hash bucket. */
+	mutable FSetElementId HashNextId;
+
+	/** The hash bucket that the element is currently linked to. */
+	mutable int32_t HashIndex;
+};
+
+template <typename InElementType>
+class TSetElement : public TSetElementBase<InElementType>//, THasTypeLayout<InElementType>::Value>
+{
+
+};
+
+template<
+	typename InElementType//, typename KeyFuncs /*= DefaultKeyFuncs<ElementType>*/ //, typename Allocator /*= FDefaultSetAllocator*/
+>
+class TSet
+{
+public:
+	typedef TSetElement<InElementType> SetElementType;
+
+	typedef TSparseArray<SetElementType/*, typename Allocator::SparseArrayAllocator*/>     ElementArrayType;
+	// typedef typename Allocator::HashAllocator::template ForElementType<FSetElementId> HashType;
+	typedef int32_t HashType;
+
+	ElementArrayType Elements;
+
+	mutable HashType Hash;
+	mutable int32_t	 HashSize;
+};
+
+template <typename KeyType, typename ValueType>
+class TPair // this is a very simplified version fo tpair when in reality its a ttuple and a ttuple has a base and stuff but this works
+{
+public:
+	KeyType First;
+	ValueType Second;
+
+	TPair(KeyType Key, ValueType Value)
+		: First(Key)
+		, Second(Value)
+	{
+	}
+
+	inline KeyType& Key()
+	{
+		return First;
+	}
+	inline const KeyType& Key() const
+	{
+		return First;
+	}
+	inline ValueType& Value()
+	{
+		return Second;
+	}
+	inline const ValueType& Value() const
+	{
+		return Second;
+	}
+};
+
+template<typename KeyType, typename ValueType> // , typename SetAllocator, typename KeyFuncs>
+struct TMap
+{
+	typedef TPair<KeyType, ValueType> ElementType;
+
+	typedef TSet<ElementType/*, KeyFuncs, SetAllocator */> ElementSetType;
+
+	/** A set of the key-value pairs in the map. */
+	ElementSetType Pairs;
+};
 
 struct FURL
 {

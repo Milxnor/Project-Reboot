@@ -1,9 +1,12 @@
 #pragma once
+
 #include <string>
 #include <format>
 #include <iostream>
+#include <random>
 
 // TODO Better file name
+// This is more like a utility/random stuff file
 
 struct FVector
 {
@@ -211,3 +214,26 @@ enum class EFortResourceType : uint8_t
 	None = 4,
 	EFortResourceType_MAX = 5
 };
+
+struct PlaceholderBitfield
+{
+	uint8_t First : 1;
+	uint8_t Second : 1;
+	uint8_t Third : 1;
+	uint8_t Fourth : 1;
+	uint8_t Fifth : 1;
+	uint8_t Sixth : 1;
+	uint8_t Seventh : 1;
+	uint8_t Eighth : 1;
+};
+
+// i dont think it can ever actually be max
+static float GetRandomFloat(float Min, float Max)
+{
+	std::random_device rd; 
+	std::mt19937 gen(rd());
+
+	std::uniform_real_distribution<> distr(Min, Max);
+
+	return distr(gen);
+}

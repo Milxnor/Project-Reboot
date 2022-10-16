@@ -125,9 +125,16 @@ int UObject::GetOffsetSlow(const std::string& MemberName)
 
 		if (Property)
 		{
+			if (Property->GetName() == MemberName) // IDK WHY I NEED THIS
+			{
+				return *(int*)(__int64(Property) + Offset_InternalOffset);
+			}
+
 			while (Property)
 			{
 				auto PropName = Property->GetName();
+
+				// std::cout << "PropName: " << PropName << '\n';
 
 				if (PropName == MemberName)
 				{
@@ -139,5 +146,22 @@ int UObject::GetOffsetSlow(const std::string& MemberName)
 		}
 	}
 
+	std::cout << "Failed to find " << MemberName << '\n';
+
 	return 0;
+}
+
+bool UObject::IsA(UObject* otherClass)
+{
+	UObject* super = ClassPrivate;
+
+	while (super)
+	{
+		if (otherClass == super)
+			return true;
+
+		super = *(UObject**)(__int64(super) + SuperStructOffset);
+	}
+
+	return false;
 }
