@@ -4,5 +4,5 @@
 
 namespace Teams
 {
-
+	void AssignTeam(UObject* Controller);
 }

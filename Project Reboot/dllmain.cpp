@@ -10,6 +10,7 @@
 #include "abilities.h"
 #include "build.h"
 #include "edit.h"
+#include "loot.h"
 
 DWORD WINAPI Input(LPVOID)
 {
@@ -38,6 +39,8 @@ DWORD WINAPI Input(LPVOID)
         {
             static auto BuildingItemCollectorClass = FindObject("Class /Script/FortniteGame.BuildingItemCollectorActor");
 
+            std::cout << "BuildingItemCollectorClass: " << BuildingItemCollectorClass << '\n';
+
             auto BuildingItemCollectorActorActors = Helper::GetAllActorsOfClass(BuildingItemCollectorClass);
 
             std::cout << "Skid: " << BuildingItemCollectorActorActors.size() << '\n';
@@ -49,8 +52,10 @@ DWORD WINAPI Input(LPVOID)
 
                 std::cout << "A!\n";
 
-                static auto CollectorUnitInfoClass = FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") ? FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") :
-                    FindObject("ScriptStruct /Script/FortniteGame.ColletorUnitInfo");
+                static auto CollectorUnitInfoClassName = FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") ? "ScriptStruct /Script/FortniteGame.CollectorUnitInfo" :
+                    "ScriptStruct /Script/FortniteGame.ColletorUnitInfo";
+
+                static auto CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName);
 
                 static auto CollectorUnitInfoClassSize = Helper::GetSizeOfClass(CollectorUnitInfoClass);
 
@@ -58,7 +63,7 @@ DWORD WINAPI Input(LPVOID)
 
                 TArray<__int64>* ItemCollections = Get<TArray<__int64>>(BuildingItemCollectorActor, ItemCollectionsOffset); // CollectorUnitInfo
 
-                static auto OutputItemOffset = CollectorUnitInfoClass->GetOffset("OutputItemOffset", true);
+                static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem");
 
                 static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
 
@@ -66,6 +71,45 @@ DWORD WINAPI Input(LPVOID)
                 *Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
                 *Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
             }
+
+            BuildingItemCollectorActorActors.Free();
+        }
+
+        /* else if (GetAsyncKeyState(VK_F4) & 1)
+        {
+            auto LootDrops = Looting::PickLootDrops("Loot_AthenaFloorLoot");
+
+            std::cout << "LootDrops: " << LootDrops.size() << '\n';
+
+            for (auto& LootDrop : LootDrops)
+            {
+                auto LootDropDef = LootDrop.first;
+            }
+        } */
+
+        else if (GetAsyncKeyState(VK_F5) & 1)
+        {
+            std::cout << MH_StatusToString(MH_CreateHook((PVOID)KickPlayerAddress, Server::Hooks::KickPlayer, (PVOID*)&Defines::KickPlayer)) << '\n';
+            std::cout << MH_StatusToString(MH_EnableHook((PVOID)KickPlayerAddress)) << '\n';
+
+            std::cout << MH_StatusToString(MH_CreateHook((PVOID)ValidationFailureAddress, Server::Hooks::ValidationFailure, (PVOID*)&Defines::ValidationFailure)) << '\n';
+            std::cout << MH_StatusToString(MH_EnableHook((PVOID)ValidationFailureAddress)) << '\n';
+
+            std::cout << MH_StatusToString(MH_CreateHook((PVOID)NoReserveAddress, Server::Hooks::NoReservation, (PVOID*)&Defines::NoReservation)) << '\n';
+            std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
+        }
+
+        else if (GetAsyncKeyState(VK_F6) & 1)
+        {
+            auto before = Defines::bShouldSpawnFloorLoot;
+            Defines::bShouldSpawnFloorLoot = !Defines::bShouldSpawnFloorLoot;
+            std::cout << "Set Defines::bShouldSpawnFloorLoot to " << !before << '\n';
+        }
+
+        else if (GetAsyncKeyState(VK_F7) & 1)
+        {
+            MH_CreateHook((PVOID)ProcessEventAddress, ProcessEventDetour, (PVOID*)&ProcessEventO);
+            MH_EnableHook((PVOID)ProcessEventAddress);
         }
 
         Sleep(1000 / 30);
@@ -108,21 +152,30 @@ DWORD WINAPI Initialize(LPVOID)
 
     static auto SwitchLevel = FindObject<UFunction>("Function /Script/Engine.PlayerController.SwitchLevel");
 
-    FString Level = L"Athena_Terrain"; // to free
+    FString Level = L"Athena_Terrain";
 
     PC->ProcessEvent(SwitchLevel, &Level);
 
     CreateThread(0, 0, Input, 0, 0, 0);
 
     AddHook("Function /Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
-    AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatch);
-    AddHook(("Function /Script/Engine.PlayerController.ServerAcknowledgePossession"), ServerAcknowledgePossession);
-    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
-    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), Build::ServerCreateBuildingActor);
+    AddHook("Function /Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
+    AddHook("Function /Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
 
-    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), Editing::ServerBeginEditingBuildingActorHook);
-    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), Editing::ServerEditBuildingActorHook);
-    AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), Editing::ServerEndEditingBuildingActorHook);
+    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
+    AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup", Inventory::ServerHandlePickup);
+
+    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
+
+    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
+    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
+    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
+
+    AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
+    AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
+    AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
+
+    Level.Free();
 
     return 0;
 }
@@ -134,8 +187,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved)
     case DLL_PROCESS_ATTACH:
         CreateThread(0, 0, Initialize, 0, 0, 0);
         break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
         MH_DisableHook(MH_ALL_HOOKS);
         // Log::Shutdown();

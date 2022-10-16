@@ -30,6 +30,14 @@ namespace FFortItemEntry
 
 		return Count;
 	}
+
+	static int* GetLoadedAmmo(__int64* Entry)
+	{
+		static auto LoadedAmmoOffset = ItemEntryStruct->GetOffset("LoadedAmmo", true);
+		auto LoadedAmmo = (int*)(__int64(&*Entry) + LoadedAmmoOffset);
+
+		return LoadedAmmo;
+	}
 }
 
 namespace UFortItem
@@ -72,6 +80,7 @@ namespace Inventory
 	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true);
 	UObject* EquipWeapon(UObject* Controller, UObject* ItemDefinition, const FGuid& Guid);
 	UObject* EquipWeapon(UObject* Controller, UObject* Instance);
+	EFortQuickBars WhatQuickBars(UObject* Definition); // returns the quickbar the item should go in
 
 	// FINDERS
 
@@ -81,4 +90,6 @@ namespace Inventory
 	// HOOKS
 
 	bool ServerExecuteInventoryItem(UObject* Controller, UFunction* Function, void* Parameters);
+	bool ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void* Parameters);
+	bool ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters);
 }

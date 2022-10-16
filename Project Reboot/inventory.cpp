@@ -174,6 +174,17 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance)
 	return Def && Guid ? EquipWeapon(Controller, *Def, *Guid) : nullptr;
 }
 
+EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
+{
+	static auto FortWeaponItemDefinitionClass = FindObject(("Class /Script/FortniteGame.FortWeaponItemDefinition"));
+	static auto FortDecoItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortDecoItemDefinition");
+
+	if (Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortDecoItemDefinitionClass))
+		return EFortQuickBars::Primary;
+	else
+		return EFortQuickBars::Secondary;
+}
+
 UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
 {
 	auto ItemInstances = GetItemInstances(Controller);
@@ -238,6 +249,25 @@ bool Inventory::ServerExecuteInventoryItem(UObject* Controller, UFunction* Funct
 	}
 	else
 		std::cout << "No ItemInstance!\n";
+
+	return false;
+}
+
+bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
+{
+	UObject* Pickup = Parameters ? *(UObject**)Parameters : nullptr;
+
+	if (!Pickup)
+		return false;
+
+	auto PickupEntry = Helper::GetEntryFromPickup(Pickup);
+
+	auto Definition = FFortItemEntry::GetItemDefinition(PickupEntry);
+	auto Count = FFortItemEntry::GetCount(PickupEntry);
+
+	auto Controller = Helper::GetControllerFromPawn(Pawn);
+
+	GiveItem(Controller, *Definition, WhatQuickBars(*Definition), *Count);
 
 	return false;
 }

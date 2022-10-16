@@ -4,6 +4,7 @@
 #include <format>
 #include <iostream>
 #include <random>
+#include <unordered_set>
 
 // TODO Better file name
 // This is more like a utility/random stuff file
@@ -197,11 +198,23 @@ struct FGameplayAbilitySpecHandle
 {
 	int Handle;
 
-	void GenerateNewHandle()
+	void GenerateNewHandle() // weird
 	{
 		// Must be in C++ to avoid duplicate statics across execution units
-		static int32_t GHandle = 1;
-		Handle = GHandle++;
+		/* static int32_t GHandle = 1;
+		Handle = GHandle++; */
+
+		static std::unordered_set<int> Handles;
+
+		auto newHandle = rand();
+
+		while (Handles.find(newHandle) != Handles.end())
+		{
+			newHandle = rand();
+		}
+
+		Handle = newHandle;
+		Handles.emplace(Handle);
 	}
 };
 
@@ -237,3 +250,62 @@ static float GetRandomFloat(float Min, float Max)
 
 	return distr(gen);
 }
+
+static bool IsBadReadPtr(void* p)
+{
+	MEMORY_BASIC_INFORMATION mbi = { 0 };
+	if (::VirtualQuery(p, &mbi, sizeof(mbi)))
+	{
+		DWORD mask = (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
+		bool b = !(mbi.Protect & mask);
+		// check the page is not a guard page
+		if (mbi.Protect & (PAGE_GUARD | PAGE_NOACCESS)) b = true;
+
+		return b;
+	}
+	return true;
+}
+
+enum class EFortPickupSourceTypeFlag : uint8_t
+{
+	Other = 0,
+	Player = 1,
+	Destruction = 2,
+	Container = 3,
+	AI = 4,
+	Tossed = 5,
+	FloorLoot = 6,
+	EFortPickupSourceTypeFlag_MAX = 7
+};
+
+enum class EFortPickupSpawnSource : uint8_t
+{
+	Unset = 0,
+	PlayerElimination = 1,
+	Chest = 2,
+	SupplyDrop = 3,
+	AmmoBox = 4,
+	EFortPickupSpawnSource_MAX = 5
+};
+
+struct FQuat
+{
+	float W;
+	float X;
+	float Y;
+	float Z;
+};
+
+struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8e09b606f10a09776b4d1f38/Engine/Source/Runtime/Core/Public/Math/TransformNonVectorized.h#L28
+{
+	FQuat Rotation;
+	FVector Translation;
+	char pad_1C[0x4]; // Padding never changes
+	FVector Scale3D = FVector{ 1, 1, 1 };
+	char pad_2C[0x4];
+
+	/* bool ContainsNaN() const
+	{
+		return (Translation.ContainsNaN() || Rotation.ContainsNaN() || Scale3D.ContainsNaN());
+	} */
+};

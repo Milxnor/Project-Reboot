@@ -9,6 +9,8 @@ namespace Defines
 	inline bool bReadyForStartMatch = true;
 	inline bool bIsPlayground = false;
 	inline bool bShouldSpawnFloorLoot = false;
+	inline bool bRandomSkin = true;
+	inline bool bRandomPickaxe = true;
 
 	inline int AmountOfRestarts = 0;
 

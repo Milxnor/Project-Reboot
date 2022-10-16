@@ -137,6 +137,8 @@ struct FName
 {
 	uint32_t ComparisonIndex;
 	uint32_t Number;
+
+	std::string ToString();
 };
 
 struct UObject
@@ -181,6 +183,16 @@ inline UObject* (*StaticFindObjectO)(UObject* Class, UObject* InOuter, const TCH
 inline UObject* (*StaticLoadObjectO)(UObject* Class, UObject* InOuter, const TCHAR* Name, const TCHAR* Filename, uint32_t LoadFlags, UObject* Sandbox, bool bAllowObjectReconciliation, void* InSerializeContext);
 inline void (*ProcessEventO)(UObject* object, UObject* func, void* Parameters);
 inline UObject* (*SpawnActorO)(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters);
+
+template <typename T = UObject>
+static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name, int LoadFlags = 0)
+{
+	if (!StaticLoadObjectO)
+		return nullptr;
+
+	auto Name = std::wstring(name.begin(), name.end()).c_str();
+	return (T*)StaticLoadObjectO(Class, Outer, Name, nullptr, LoadFlags, nullptr, false, nullptr);
+}
 
 struct FUObjectItem // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectArray.h#L26
 {
@@ -301,7 +313,7 @@ template <typename ObjectType = UObject>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, UObject* InOuter = nullptr); // Calls StaticFindObject
 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
-
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName);
 
 
 
@@ -487,6 +499,43 @@ struct TMap
 
 	/** A set of the key-value pairs in the map. */
 	ElementSetType Pairs;
+};
+
+struct FWeakObjectPtr
+{
+public:
+	inline bool SerialNumbersMatch(FUObjectItem* ObjectItem) const
+	{
+		return ObjectItem->SerialNumber == ObjectSerialNumber;
+	}
+
+	int32_t ObjectIndex;
+	int32_t ObjectSerialNumber;
+};
+
+template<typename TObjectID>
+class TPersistentObjectPtr
+{
+public:
+	FWeakObjectPtr WeakPtr;
+	int32_t TagAtLastTest;
+	TObjectID ObjectID;
+};
+
+struct FSoftObjectPath
+{
+	FName AssetPathName;
+	FString SubPathString;
+};
+
+class FSoftObjectPtr : public TPersistentObjectPtr<FSoftObjectPath>
+{
+
+};
+
+class TSoftObjectPtr : public FSoftObjectPtr
+{
+
 };
 
 struct FURL

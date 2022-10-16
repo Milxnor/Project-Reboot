@@ -58,7 +58,20 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static auto bHasStartedPlayingOffset = PlayerState->GetOffset("bHasStartedPlaying");
 		*Get<bool>(PlayerState, bHasStartedPlayingOffset) = true;
 
-		auto Pawn = Helper::SpawnPawn(PlayerController, FVector{ 1250, 1818, 3284 }, true);
+		auto PlayerStart = Helper::GetPlayerStart();
+		
+		if (!PlayerStart)
+		{
+			std::cout << "Player joined too early or unable to find playerstart!\n";
+			// Helper::KickController(PlayerController, "You joined too early!");
+			// return false;
+		}
+
+		bool bSpawnIsland = false;
+
+		auto SpawnLocation = !PlayerStart || !bSpawnIsland ? FVector{ 1250, 1818, 3284 } : Helper::GetActorLocation(PlayerStart);
+
+		auto Pawn = Helper::SpawnPawn(PlayerController, SpawnLocation, true);
 
 		bool bUpdate = false;
 
@@ -75,7 +88,19 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 		Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
 
-		static auto PickaxeDef = FindObject("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+		static auto PIDClass = FindObject("Class /Script/FortniteGame.AthenaPickaxeItemDefinition");
+
+		static auto AllObjects = Helper::GetAllObjectsOfClass(PIDClass);
+
+		auto random = rand() % (AllObjects.size());
+		random = random <= 0 ? 1 : random;
+
+		auto pick = AllObjects.at(random);
+		static auto WeaponDefinitionOffset = pick->GetOffset("WeaponDefinition");
+
+		auto PickaxeDef = *(UObject**)(__int64(pick) + WeaponDefinitionOffset);
+
+		// static auto PickaxeDef = FindObject("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 		auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
 		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
@@ -83,7 +108,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
 
-		if (false)
+		// if (false)
 		{
 			if (Fortnite_Version < 8.30)
 			{
@@ -185,7 +210,10 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 	return false;
 }
 
-
+bool ClientOnPawnDied(UObject* DeadPlayerController, UFunction*, void* Parameters)
+{
+	return false;
+}
 
 
 

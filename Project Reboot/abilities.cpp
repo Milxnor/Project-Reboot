@@ -28,10 +28,10 @@ void* Abilities::GenerateNewSpec(UObject* DefaultObject)
 	((FFastArraySerializerItem*)GameplayAbilitySpec)->ReplicationID = -1;
 	((FFastArraySerializerItem*)GameplayAbilitySpec)->ReplicationKey = -1;
 
-    static auto HandleOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Handle");
-    static auto AbilityOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Ability");
-    static auto LevelOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Level");
-    static auto InputIDOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("InputID");
+    static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
+    static auto AbilityOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
+    static auto LevelOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
+    static auto InputIDOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
 
     std::cout << "AbilityOffset: " << AbilityOffset << '\n';
 
@@ -52,14 +52,14 @@ __int64* GetActivatableAbilities(UObject* ASC)
 
 UObject** GetAbilityFromSpec(void* Spec)
 {
-    static auto AbilityOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Ability");
+    static auto AbilityOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
 
     return (UObject**)(__int64(Spec) + AbilityOffset);
 }
 
 int16_t* GetCurrent(void* Key)
 {
-    static auto CurrentOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Current");
+    static auto CurrentOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.PredictionKey", "Current");
     return (int16_t*)(__int64(Key) + CurrentOffset);
 }
 
@@ -67,7 +67,7 @@ void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func)
 {
     auto ActivatableAbilities = GetActivatableAbilities(ASC);
 
-    static auto ItemsOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Items");
+    static auto ItemsOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer", "Items");
     auto Items = (TArray<__int64>*)(__int64(ActivatableAbilities) + ItemsOffset);
 
     static auto SpecStruct = Abilities::GameplayAbilitySpecClass;
@@ -88,7 +88,7 @@ __int64* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySpecHandle Hand
     __int64* SpecToReturn = nullptr;
 
     auto compareHandles = [&Handle, &SpecToReturn](__int64* Spec) {
-        static auto HandleOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Handle");
+        static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
 
         auto CurrentHandle = (FGameplayAbilitySpecHandle*)(__int64(Spec) + HandleOffset);
 
@@ -128,7 +128,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     UObject* InstancedAbility = nullptr;
 
-    auto InputPressedOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("InputPressed");
+    static auto InputPressedOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputPressed");
 
     auto inad = (char*)(__int64(Spec) + InputPressedOffset);
 
@@ -227,7 +227,7 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
         return nullptr;
     }
 
-    static auto HandleOffset = Abilities::GameplayAbilitySpecClass->GetOffsetSlow("Handle");
+    static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
 
     void* NewSpec = GenerateNewSpec(DefaultObject);
 
@@ -257,4 +257,67 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
         Defines::GiveAbilityNewer(AbilitySystemComponent, Handle, *(FGameplayAbilitySpecNewer*)NewSpec); */
 
     return NewSpec;
+}
+
+bool Abilities::ServerTryActivateAbility(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
+{
+    if (!Parameters)
+        return false;
+
+    struct UAbilitySystemComponent_ServerTryActivateAbility_Params { FGameplayAbilitySpecHandle AbilityToActivate; bool InputPressed; __int64 PredictionKey; };
+
+    auto Params = (UAbilitySystemComponent_ServerTryActivateAbility_Params*)Parameters;
+
+    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, &Params->PredictionKey, nullptr);
+
+    return false;
+}
+
+bool Abilities::ServerTryActivateAbilityWithEventData(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
+{
+    if (!Parameters)
+        return false;
+
+    struct UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params {
+        FGameplayAbilitySpecHandle                  AbilityToActivate;                                        // (Parm)
+        bool                                               InputPressed;                                             // (Parm, ZeroConstructor, IsPlainOldData)
+        __int64                              PredictionKey;                                            // (Parm)
+        __int64                          TriggerEventData;                                         // (Parm)
+    };
+
+    auto Params = (UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params*)Parameters;
+
+    static auto PredictionKeyOffset = FindOffsetStruct2("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", "PredictionKey");
+    static auto TriggerEventDataOffset = FindOffsetStruct2("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", "TriggerEventData");
+
+    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, (__int64*)(__int64(Parameters) + PredictionKeyOffset),
+        (__int64*)(__int64(Parameters) + TriggerEventDataOffset));
+
+    return false;
+}
+
+bool Abilities::ServerAbilityRPCBatch(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
+{
+    if (!Parameters)
+        return false;
+
+    static auto AbilitySpecHandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch", "AbilitySpecHandle"); // Function->GetParam<FGameplayAbilitySpecHandle>("AbilitySpecHandle", Parameters);
+    static auto InputPressedOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch", "InputPressed");
+    static auto PredictionKeyOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch", "PredictionKey");
+
+    auto BatchInfo = (__int64*)(Parameters);
+
+    if (!BatchInfo)
+        return false;
+
+    auto AbilitySpecHandle = (FGameplayAbilitySpecHandle*)(__int64(BatchInfo) + AbilitySpecHandleOffset);
+    auto InputPressed = (bool*)(__int64(BatchInfo) + InputPressedOffset);
+    auto PredictionKey = (__int64*)(__int64(BatchInfo) + PredictionKeyOffset);
+
+    auto AbilitySpec = FindAbilitySpecFromHandle(AbilitySystemComponent, *AbilitySpecHandle);
+
+    if (!AbilitySpec)
+        return false;
+
+    InternalServerTryActivateAbility(AbilitySystemComponent, *AbilitySpecHandle, *InputPressed, PredictionKey, nullptr);
 }

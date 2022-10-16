@@ -76,7 +76,7 @@ bool Editing::ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* 
 
 	// TODO: Check BuildingActorToStopEditing->EditingPlayer and make sure its our player.
 
-	if (Pawn)
+	/* if (Pawn)
 	{
 		auto CurrentWep = Helper::GetCurrentWeapon(Pawn);
 
@@ -91,7 +91,7 @@ bool Editing::ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* 
 				*GetEditActor(EditTool) = nullptr;
 			}
 		}
-	}
+	} */
 
 	if (BuildingActorToStopEditing)
 	{

@@ -2,6 +2,23 @@
 #include <iostream> // TODO REMOVE
 #include <format>
 
+std::string FName::ToString()
+{
+	static auto KismetStringLibrary = FindObject("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary");
+
+	static auto Conv_NameToString = FindObject<UFunction>("Function /Script/Engine.KismetStringLibrary.Conv_NameToString");
+
+	struct { FName InName; FString OutStr; } Conv_NameToString_Params{*this};
+
+	KismetStringLibrary->ProcessEvent(Conv_NameToString, &Conv_NameToString_Params);
+
+	auto Str = Conv_NameToString_Params.OutStr.ToString();
+
+	Conv_NameToString_Params.OutStr.Free();
+
+	return Str;
+}
+
 std::string UObject::GetName()
 {
 	static auto GetObjectNameFunction = FindObject<UFunction>("Function /Script/Engine.KismetSystemLibrary.GetObjectName");
@@ -63,11 +80,49 @@ int FindOffsetStruct(const std::string& StructName, const std::string& MemberNam
 
 	if (!Prop)
 	{
-		std::cout << "Failed to find " << MemberName << '\n';
+		std::cout << "Failed to find1 " << MemberName << '\n';
 		return 0;
 	}
 
 	return *(uint32_t*)(__int64(Prop) + Offset_InternalOffset);
+}
+
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName)
+{
+	auto CurrentClass = FindObjectSlow(StructName, false);
+
+	if (CurrentClass)
+	{
+		auto Property = *(UField**)(__int64(CurrentClass) + ChildPropertiesOffset);
+
+		if (Property)
+		{
+			auto PropName = Property->GetName();
+
+			while (Property)
+			{
+				// std::cout << "PropName 2: " << PropName << '\n';
+
+				if (PropName == MemberName)
+				{
+					return *(int*)(__int64(Property) + Offset_InternalOffset);
+				}
+				else
+				{
+					Property = Property->Next;
+
+					if (Property)
+					{
+						PropName = Property->GetName();
+					}
+				}
+			}
+		}
+	}
+
+	std::cout << "Unable to find2 " << MemberName << '\n';
+
+	return 0;
 }
 
 UObject* GetDefaultObject(UObject* Class)

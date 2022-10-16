@@ -21,6 +21,7 @@ namespace Helper
 	UObject* GetGameState();
 	UObject* GetLocalPlayerController();
 	UObject* GetPlayerStateFromController(UObject* Controller);
+	UObject* GetControllerFromPawn(UObject* Pawn);
 	UObject* GetPawnFromController(UObject* Controller);
 	UObject* SpawnPawn(UObject* Controller, FVector Location, bool bAssignCharacterParts = false);
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);
@@ -32,6 +33,13 @@ namespace Helper
 	bool IsInAircraft(UObject* Controller);
 	UObject* GetCurrentWeapon(UObject* Pawn);
 	UObject* GetWeaponData(UObject* Weapon);
+	int* GetTeamIndex(UObject* PlayerState);
+	FVector GetActorLocation(UObject* Actor);
+	__int64* GetEntryFromPickup(UObject* Pickup);
+
+	std::vector<UObject*> GetAllObjectsOfClass(UObject* Class);
+	UObject* GetPlayerStart();
+	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bMaxAmmo = false, int Ammo = 0);
 
 	namespace Conversion
 	{

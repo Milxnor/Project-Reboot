@@ -191,7 +191,42 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 		{
 			Defines::bShouldSpawnFloorLoot = false;
 
+			std::cout << "Spawning floor loot!\n";
 
+			std::cout << "SpawnIsland_FloorLoot: " << SpawnIsland_FloorLoot << '\n';
+			std::cout << "BRIsland_FloorLoot: " << BRIsland_FloorLoot << '\n';
+
+			auto SpawnFloorLoot = [](UObject* Class) -> int
+			{
+				auto ClassActors = Helper::GetAllActorsOfClass(Class);
+
+				std::cout << "Size; " << ClassActors.Num() << '\n';
+
+				for (int i = 0; i < ClassActors.Num(); i++)
+				{
+					auto ClassActor = ClassActors.At(i);
+
+					if (ClassActor)
+					{
+						constexpr bool bTossPickup = true;
+						auto CorrectLocation = Helper::GetActorLocation(ClassActor);
+						CorrectLocation.Z += 50;
+
+						static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
+
+						Helper::SummonPickup(nullptr, Def, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, true);
+					}
+				}
+
+				int Num = ClassActors.Num();
+
+				ClassActors.Free();
+
+				return Num;
+			};
+
+			SpawnFloorLoot(SpawnIsland_FloorLoot);
+			SpawnFloorLoot(BRIsland_FloorLoot);
 		}
 	}
 
