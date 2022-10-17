@@ -22,7 +22,8 @@ void Server::SetWorld(UObject* World)
 	{
 		if (!Defines::SetWorld)
 		{
-			int SetWorldIndex = Fortnite_Version < 19.00 ? 0x72 : (Fortnite_Version >= 20.00 ? (Fortnite_Version >= 21 ? 0x7C : 0x7B) : 0x7A); // s13-s18 = 0x72 s19 = 0x7A s20 = 7B s21 = 7c 
+			int SetWorldIndex = Fortnite_Version < 19.00 ? (Fortnite_Season < 15 ? 0x71 : 0x72) //idk if this is right
+				: (Fortnite_Version >= 20.00 ? (Fortnite_Version >= 21 ? 0x7C : 0x7B) : 0x7A); // s13-14 = 0x71 s15-s18 = 0x72 s19 = 0x7A s20 = 7B s21 = 7c 
 
 			std::cout << "SetWorldIndex: " << SetWorldIndex << '\n';
 
@@ -106,13 +107,19 @@ bool Server::Listen(int Port)
 	{
 		static auto LevelCollectionSize = Helper::GetSizeOfClass(LevelCollectionStruct);
 
+		std::cout << "LevelCollectionSize: " << LevelCollectionSize << '\n';
+
 		auto FirstLevelCollection = LevelCollections->AtPtr(0, LevelCollectionSize);
 
-		static auto LC_NetDriverOffset = LevelCollectionStruct->GetOffset("NetDriver", true);
+		static auto LC_NetDriverOffset = 0x10; // LevelCollectionStruct->GetOffset("NetDriver", true);
+
+		std::cout << "LC_NetDriverOffset: " << LC_NetDriverOffset << 'n';
 
 		*Get<UObject*>(FirstLevelCollection, LC_NetDriverOffset) = NetDriver;
 		*Get<UObject*>(LevelCollections->AtPtr(1, LevelCollectionSize), LC_NetDriverOffset) = NetDriver;
 	}
+	else
+		std::cout << "Unable to find LevelCollections!\n";
 
 	PauseBeaconRequests(false);
 
@@ -136,8 +143,11 @@ bool Server::Listen(int Port)
 
 void Server::Hooks::Initialize()
 {
-	std::cout << MH_StatusToString(MH_CreateHook((PVOID)TickFlushAddress, Server::Hooks::TickFlush, (PVOID*)&Defines::TickFlush)) << '\n';
-	std::cout << MH_StatusToString(MH_EnableHook((PVOID)TickFlushAddress)) << '\n';
+	// if (false)
+	{
+		std::cout << MH_StatusToString(MH_CreateHook((PVOID)TickFlushAddress, Server::Hooks::TickFlush, (PVOID*)&Defines::TickFlush)) << '\n';
+		std::cout << MH_StatusToString(MH_EnableHook((PVOID)TickFlushAddress)) << '\n';
+	}
 
 	std::cout << MH_StatusToString(MH_CreateHook((PVOID)KickPlayerAddress, Server::Hooks::KickPlayer, (PVOID*)&Defines::KickPlayer)) << '\n';
 	std::cout << MH_StatusToString(MH_EnableHook((PVOID)KickPlayerAddress)) << '\n';
@@ -147,6 +157,17 @@ void Server::Hooks::Initialize()
 
 	std::cout << MH_StatusToString(MH_CreateHook((PVOID)NoReserveAddress, Server::Hooks::NoReservation, (PVOID*)&Defines::NoReservation)) << '\n';
 	std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
+
+	if (Fortnite_Version < 17.00)
+	{
+		auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
+
+		if (!sig)
+			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
+
+		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::NetViewerConstructorDetour, nullptr)) << '\n';
+		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
+	}
 }
 
 void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
@@ -249,4 +270,43 @@ __int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a
 {
 	std::cout << "No Reserve!\n";
 	return 0;
+}
+
+__int64 __fastcall Server::Hooks::NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection)
+{
+	static auto Connection_ViewTargetOffset = Connection->GetOffset("ViewTarget");
+	static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
+	static auto Connection_OwningActorOffset = Connection->GetOffset("OwningActor");
+
+	auto Connection_ViewTarget = *(UObject**)(__int64(Connection) + Connection_ViewTargetOffset);
+	auto Connection_PlayerController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+
+	static auto Viewer_ConnectionOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "Connection");
+	*(UObject**)(__int64(NetViewer) + Viewer_ConnectionOffset) = Connection;
+
+	static auto Viewer_InViewerOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "InViewer");
+	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = Connection_PlayerController ? Connection_PlayerController : *(UObject**)(__int64(Connection) + Connection_OwningActorOffset);
+
+	static auto Viewer_ViewTargetOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewTarget");
+	auto Viewer_ViewTarget = (UObject**)(__int64(NetViewer) + Viewer_ViewTargetOffset);
+	*Viewer_ViewTarget = Connection_ViewTarget;
+
+	static auto Viewer_ViewLocationOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewLocation");
+	auto Viewer_ViewLocation = (FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset);
+
+	if (*Viewer_ViewTarget)
+		*(FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset) = Helper::GetActorLocation(*Viewer_ViewTarget);
+
+	float CP, SP, CY, SY;
+
+	FRotator ViewRotation = (*Viewer_ViewTarget) ? Helper::GetActorRotation(*Viewer_ViewTarget) : FRotator();
+
+	SinCos(&SP, &CP, DegreesToRadians(ViewRotation.Pitch));
+	SinCos(&SY, &CY, DegreesToRadians(ViewRotation.Yaw));
+
+	static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
+
+	*(FVector*)(__int64(NetViewer) + Viewer_ViewDirOffset) = FVector(CP * CY, CP * SY, SP);
+
+	return NetViewer;
 }

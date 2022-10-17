@@ -349,12 +349,32 @@ FVector Helper::GetActorLocation(UObject* Actor)
 	return loc;
 }
 
+FRotator Helper::GetActorRotation(UObject* Actor)
+{
+	static auto K2_GetActorRotation = FindObject<UFunction>("Function /Script/Engine.Actor.K2_GetActorRotation");
+
+	FRotator loc;
+	Actor->ProcessEvent(K2_GetActorRotation, &loc);
+
+	return loc;
+}
+
 __int64* Helper::GetEntryFromPickup(UObject* Pickup)
 {
 	static auto PrimaryPickupItemEntryOffset = Pickup->GetOffset("PrimaryPickupItemEntry");
 	auto PrimaryPickupItemEntry = Get<__int64>(Pickup, PrimaryPickupItemEntryOffset);
 
 	return PrimaryPickupItemEntry;
+}
+
+UObject* Helper::GetOwnerOfComponent(UObject* Component)
+{
+	static auto fn = FindObject<UFunction>("Function /Script/Engine.ActorComponent.GetOwner");
+
+	UObject* Owner = nullptr;
+	Component->ProcessEvent(fn, &Owner);
+
+	return Owner;
 }
 
 std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncludeDefault

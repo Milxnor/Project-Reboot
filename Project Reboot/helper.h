@@ -35,7 +35,9 @@ namespace Helper
 	UObject* GetWeaponData(UObject* Weapon);
 	int* GetTeamIndex(UObject* PlayerState);
 	FVector GetActorLocation(UObject* Actor);
+	FRotator GetActorRotation(UObject* Actor);
 	__int64* GetEntryFromPickup(UObject* Pickup);
+	UObject* GetOwnerOfComponent(UObject* Component);
 
 	std::vector<UObject*> GetAllObjectsOfClass(UObject* Class);
 	UObject* GetPlayerStart();

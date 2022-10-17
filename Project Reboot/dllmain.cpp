@@ -112,6 +112,32 @@ DWORD WINAPI Input(LPVOID)
             MH_EnableHook((PVOID)ProcessEventAddress);
         }
 
+        else if (GetAsyncKeyState(VK_F8) & 1)
+        {
+           /* FString command = L"startaircraft";
+
+            struct {
+                UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
+                FString                                     Command;                                                  // (Parm, ZeroConstructor)
+                UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
+            } params{ Helper::GetWorld(), command, nullptr };
+
+            static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+            if (KSLClass)
+            {
+                // static auto ExecuteConsoleCommandFn = KSLClass->Function(("ExecuteConsoleCommand"));
+                static auto ExecuteConsoleCommandFn = FindObject<UFunction>(("Function /Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
+
+                if (ExecuteConsoleCommandFn)
+                    KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
+                else
+                    std::cout << ("No ExecuteConsoleCommand!\n");
+            }
+            else
+                std::cout << ("No KismetSyustemLibrary!\n"); */
+        }
+
         Sleep(1000 / 30);
     }
 }
@@ -141,6 +167,9 @@ DWORD WINAPI Initialize(LPVOID)
     }
     
     std::cout << "Initialized\n";
+    std::cout << "Fortnite_Season: " << Fortnite_Season << '\n';
+    std::cout << "GiveAbilityS14ANDS15: " << Defines::GiveAbilityS14ANDS15 << '\n';
+    std::cout << "GiveAbilityAddress: " << GiveAbilityAddress << '\n';
     std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
 
     FFortItemEntry::ItemEntryStruct = FindObjectSlow("ScriptStruct /Script/FortniteGame.FortItemEntry", false);
@@ -150,12 +179,14 @@ DWORD WINAPI Initialize(LPVOID)
 
     auto PC = Helper::GetLocalPlayerController();
 
+    std::cout << "PC: " << PC << '\n';
+
     static auto SwitchLevel = FindObject<UFunction>("Function /Script/Engine.PlayerController.SwitchLevel");
 
-    FString Level = L"Athena_Terrain";
+    FString Level = Engine_Version < 424 ? L"Athena_Terrain" : (Engine_Version < 500 ? L"Apollo_Terrain" : L"Artemis_Terrain");
 
     PC->ProcessEvent(SwitchLevel, &Level);
-
+    
     CreateThread(0, 0, Input, 0, 0, 0);
 
     AddHook("Function /Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
@@ -171,9 +202,19 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
 
-    AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
-    AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
-    AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
+    if (InternalTryActivateAbilityAddress)
+    {
+        AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
+        AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
+        // AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
+    }
+
+    if (Fortnite_Version < 9) // idk if right
+        AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
+    else if (Engine_Version < 424)
+        AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
+    else
+        AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     Level.Free();
 

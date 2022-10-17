@@ -40,6 +40,8 @@ namespace Server
 		// Returns or else it will kick (TODO Not hook this)
 		__int64 NoReservation(__int64* a1, __int64 a2, char a3, __int64 a4);
 
+		__int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection);
+
 		// void Disable();
 	}
 }

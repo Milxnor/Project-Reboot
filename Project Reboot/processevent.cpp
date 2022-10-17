@@ -67,7 +67,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			// return false;
 		}
 
-		bool bSpawnIsland = false;
+		bool bSpawnIsland = Engine_Version >= 424; // or else u die
 
 		auto SpawnLocation = !PlayerStart || !bSpawnIsland ? FVector{ 1250, 1818, 3284 } : Helper::GetActorLocation(PlayerStart);
 
@@ -108,7 +108,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
 
-		// if (false)
+		if (Engine_Version == 421 || Fortnite_Season == 14)
 		{
 			if (Fortnite_Version < 8.30)
 			{
@@ -181,19 +181,24 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		static auto Playlist = FindObject("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
 
-		*Helper::GetPlaylist() = Playlist;
+		auto GameStatePlaylist = Helper::GetPlaylist();
 
-		if (Fortnite_Version >= 6.10)
+		if (GameStatePlaylist)
 		{
-			static auto CurrentPlaylistInfoOffset = GameState->GetOffset("CurrentPlaylistInfo");
+			*GameStatePlaylist = Playlist;
 
-			static auto PlaylistReplicationKeyOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("PlaylistReplicationKey"));
+			if (Fortnite_Version >= 6.10)
+			{
+				static auto CurrentPlaylistInfoOffset = GameState->GetOffset("CurrentPlaylistInfo");
 
-			auto PlaylistInfo = (void*)(__int64(GameState) + CurrentPlaylistInfoOffset);
-			auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
+				static auto PlaylistReplicationKeyOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("PlaylistReplicationKey"));
 
-			(*(int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset))++;
-			FastTArray::MarkArrayDirty(PlaylistInfo);
+				auto PlaylistInfo = (void*)(__int64(GameState) + CurrentPlaylistInfoOffset);
+				auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
+
+				(*(int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset))++;
+				FastTArray::MarkArrayDirty(PlaylistInfo);
+			}
 		}
 
 		static auto GameSessionOffset = GameMode->GetOffset("GameSession");
@@ -215,7 +220,32 @@ bool ClientOnPawnDied(UObject* DeadPlayerController, UFunction*, void* Parameter
 	return false;
 }
 
+bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters)
+{
+	if (Engine_Version >= 424)
+		Controller = Helper::GetOwnerOfComponent(Controller); // CurrentAircraft
 
+	auto Rotation = Parameters ? *(FRotator*)Parameters : FRotator();
+
+	auto GameState = Helper::GetGameState();
+
+	static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
+	auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+
+	if (!Aircrafts)
+		return false;
+
+	auto Aircraft = Aircrafts->At(0);
+
+	if (!Aircraft)
+		return false;
+
+	auto ExitLocation = Helper::GetActorLocation(Aircraft);
+
+	auto Pawn = Helper::SpawnPawn(Controller, ExitLocation, false);
+
+	return false;
+}
 
 
 

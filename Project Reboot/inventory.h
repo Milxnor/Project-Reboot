@@ -9,7 +9,7 @@ namespace FFortItemEntry
 
 	static UObject** GetItemDefinition(__int64* Entry)
 	{
-		static auto ItemDefinitionOffset = ItemEntryStruct->GetOffset("ItemDefinition", true);
+		static auto ItemDefinitionOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "ItemDefinition");
 		auto Definition = (UObject**)(__int64(&*Entry) + ItemDefinitionOffset);
 
 		return Definition;
@@ -17,7 +17,7 @@ namespace FFortItemEntry
 
 	static FGuid* GetGuid(__int64* Entry)
 	{
-		static auto GuidOffset = ItemEntryStruct->GetOffset("ItemGuid", true);
+		static auto GuidOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "ItemGuid");
 		auto Guid = (FGuid*)(__int64(&*Entry) + GuidOffset);
 
 		return Guid;
@@ -25,7 +25,7 @@ namespace FFortItemEntry
 
 	static int* GetCount(__int64* Entry)
 	{
-		static auto CountOffset = 0xC; // FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"), true); // i tried everything
+		static auto CountOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "Count");
 		auto Count = (int*)(__int64(&*Entry) + CountOffset);
 
 		return Count;
@@ -33,7 +33,7 @@ namespace FFortItemEntry
 
 	static int* GetLoadedAmmo(__int64* Entry)
 	{
-		static auto LoadedAmmoOffset = ItemEntryStruct->GetOffset("LoadedAmmo", true);
+		static auto LoadedAmmoOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "LoadedAmmo");
 		auto LoadedAmmo = (int*)(__int64(&*Entry) + LoadedAmmoOffset);
 
 		return LoadedAmmo;

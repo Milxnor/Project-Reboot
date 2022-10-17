@@ -26,7 +26,7 @@ __int64* Inventory::GetInventory(UObject* Controller)
 
 TArray<UObject*>* Inventory::GetItemInstances(UObject* Controller)
 {
-	static auto ItemInstancesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances"));
+	static auto ItemInstancesOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemList", "ItemInstances");
 	auto Inventory = GetInventory(Controller);
 	
 	return Inventory ? (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset) : nullptr;
@@ -34,7 +34,7 @@ TArray<UObject*>* Inventory::GetItemInstances(UObject* Controller)
 
 TArray<__int64>* Inventory::GetReplicatedEntries(UObject* Controller)
 {
-	static auto ReplicatedEntriesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries"));
+	static auto ReplicatedEntriesOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemList", "ReplicatedEntries");
 	auto Inventory = GetInventory(Controller);
 
 	return (TArray<__int64>*)(__int64(Inventory) + ReplicatedEntriesOffset);
@@ -88,19 +88,11 @@ void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySeriali
 	}
 	else
 	{
-		/* static auto ClientForceUpdateQuickbar = Controller->Function(("ClientForceUpdateQuickbar"));
+		static auto ClientForceUpdateQuickbar = FindObject<UFunction>("Function /Script/FortniteGame.FortPlayerController.ClientForceUpdateQuickbar");
 		auto PrimaryQuickbar = EFortQuickBars::Primary;
 		Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
 		auto SecondaryQuickbar = EFortQuickBars::Secondary;
 		Controller->ProcessEvent(ClientForceUpdateQuickbar, &SecondaryQuickbar);
-
-		if (Fortnite_Version < 8)
-		{
-			static auto UpdateQuickBars = Controller->Function(("UpdateQuickBars"));
-
-			if (UpdateQuickBars)
-				Controller->ProcessEvent(UpdateQuickBars);
-		} */
 	}
 }
 

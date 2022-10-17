@@ -243,7 +243,9 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
     std::cout << "giving ability: " << DefaultObject->GetFullName() << '\n';
 
-    if (Engine_Version < 426 && Engine_Version >= 420)
+    if (Fortnite_Season == 14 || Fortnite_Season == 15)
+        Defines::GiveAbilityS14ANDS15(AbilitySystemComponent, Handle, *(PadHexE0*)NewSpec);
+    else if (Engine_Version < 426 && Engine_Version >= 420)
         Defines::GiveAbility(AbilitySystemComponent, Handle, *(PadHexC8*)NewSpec);
     /* else if (Engine_Version < 420)
         Defines::GiveAbilityOLDDD(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0>*)NewSpec);
@@ -320,4 +322,6 @@ bool Abilities::ServerAbilityRPCBatch(UObject* AbilitySystemComponent, UFunction
         return false;
 
     InternalServerTryActivateAbility(AbilitySystemComponent, *AbilitySpecHandle, *InputPressed, PredictionKey, nullptr);
+
+    return false;
 }

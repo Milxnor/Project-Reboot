@@ -597,14 +597,73 @@ namespace FastTArray
 		}
 	};
 
+	struct FFastArraySerializerSE // 264
+	{
+		// TMap<int32_t, int32_t> ItemMap;
+		char ItemMap[0x50];
+
+		int32_t IDCounter;
+		int32_t ArrayReplicationKey;
+
+		char GuidReferencesMap[0x50];
+		char GuidReferencesMap_StructDelta[0x50];
+
+		int32_t CachedNumItems;
+		int32_t CachedNumItemsToConsiderForWriting;
+		uint8_t DeltaFlags; // 256
+		// structural padding here i guess 4
+		int idkwhatthisis;
+
+		void MarkItemDirty(FFastArraySerializerItem* Item)
+		{
+			if (Item->ReplicationID == -1)
+			{
+				Item->ReplicationID = ++IDCounter;
+				if (IDCounter == -1)
+					IDCounter++;
+			}
+
+			Item->ReplicationKey++;
+			MarkArrayDirty();
+		}
+
+		void MarkAllItemsDirty() // This is my function, not ue.
+		{
+
+		}
+
+		void MarkArrayDirty()
+		{
+			IncrementArrayReplicationKey();
+
+			// Invalidate the cached item counts so that they're recomputed during the next write
+			CachedNumItems = -1;
+			CachedNumItemsToConsiderForWriting = -1;
+		}
+
+		void IncrementArrayReplicationKey()
+		{
+			ArrayReplicationKey++;
+
+			if (ArrayReplicationKey == -1)
+				ArrayReplicationKey++;
+		}
+	};
+
 	static void MarkArrayDirty(void* Array)
 	{
-		((FFastArraySerializerOL*)Array)->MarkArrayDirty();
+		if (Fortnite_Version < 8.30)
+			((FFastArraySerializerOL*)Array)->MarkArrayDirty();
+		else
+			((FFastArraySerializerSE*)Array)->MarkArrayDirty();
 	}
 
 	static void MarkItemDirty(void* Array, FFastArraySerializerItem* Item)
 	{
-		((FFastArraySerializerOL*)Array)->MarkItemDirty(Item);
+		if (Fortnite_Version < 8.30)
+			((FFastArraySerializerOL*)Array)->MarkItemDirty(Item);
+		else
+			((FFastArraySerializerSE*)Array)->MarkItemDirty(Item);
 	}
 
 	/* inline void IncrementArrayReplicationKey(void* Array)

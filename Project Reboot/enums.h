@@ -6,6 +6,9 @@
 #include <random>
 #include <unordered_set>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 // TODO Better file name
 // This is more like a utility/random stuff file
 
@@ -193,6 +196,7 @@ struct FGuid
 struct PadHex18 { char Pad[0x18]; };
 struct PadHex10 { char Pad[0x10]; };
 struct PadHexC8 { char Pad[0xC8]; };
+struct PadHexE0 { char Pad[0xE0]; };
 
 struct FGameplayAbilitySpecHandle
 {
@@ -241,7 +245,7 @@ struct PlaceholderBitfield
 };
 
 // i dont think it can ever actually be max
-static float GetRandomFloat(float Min, float Max)
+static double GetRandomDouble(float Min, float Max)
 {
 	std::random_device rd; 
 	std::mt19937 gen(rd());
@@ -249,6 +253,11 @@ static float GetRandomFloat(float Min, float Max)
 	std::uniform_real_distribution<> distr(Min, Max);
 
 	return distr(gen);
+}
+
+static float GetRandomFloat(float Min, float Max) // bruh
+{
+	return GetRandomDouble(Min, Max);
 }
 
 static bool IsBadReadPtr(void* p)
@@ -309,3 +318,50 @@ struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12
 		return (Translation.ContainsNaN() || Rotation.ContainsNaN() || Scale3D.ContainsNaN());
 	} */
 };
+
+static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
+{
+	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.
+	float quotient = (0.31830988618f * 0.5f) * Value;
+	if (Value >= 0.0f)
+	{
+		quotient = (float)((int)(quotient + 0.5f));
+	}
+	else
+	{
+		quotient = (float)((int)(quotient - 0.5f));
+	}
+	float y = Value - (2.0f * M_PI) * quotient;
+
+	// Map y to [-pi/2,pi/2] with sin(y) = sin(Value).
+	float sign;
+	if (y > 1.57079632679f)
+	{
+		y = M_PI - y;
+		sign = -1.0f;
+	}
+	else if (y < -1.57079632679f)
+	{
+		y = -M_PI - y;
+		sign = -1.0f;
+	}
+	else
+	{
+		sign = +1.0f;
+	}
+
+	float y2 = y * y;
+
+	// 11-degree minimax approximation
+	*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
+
+	// 10-degree minimax approximation
+	float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
+	*ScalarCos = sign * p;
+}
+
+template <class  T>
+static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f))
+{
+	return DegVal * (M_PI / 180.f);
+}

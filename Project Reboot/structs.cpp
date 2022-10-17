@@ -74,9 +74,19 @@ ObjectType* FindObject(const std::string& ObjectName, UObject* Class, UObject* I
 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct)
 {
+	return FindOffsetStruct2(StructName, MemberName);
+
+	auto Struct = bExactStruct ? FindObjectSlow(StructName, false) : FindObject(StructName);
+
+	if (!Struct)
+		return 0;
+
+	if (Engine_Version >= 425)
+		return Struct->GetOffset(MemberName);
+
 	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
 
-	auto Prop = FindObject(MemberName, PropertyClass, bExactStruct ? FindObjectSlow(StructName, false) : FindObject(StructName));
+	auto Prop = FindObject(MemberName, PropertyClass, Struct);
 
 	if (!Prop)
 	{
@@ -87,17 +97,37 @@ int FindOffsetStruct(const std::string& StructName, const std::string& MemberNam
 	return *(uint32_t*)(__int64(Prop) + Offset_InternalOffset);
 }
 
+std::string GetNameOfChild(void* Child)
+{
+	FName* NamePrivate = nullptr;
+
+	if (Engine_Version >= 425)
+		NamePrivate = (FName*)(__int64(Child) + 0x28);
+	else
+		NamePrivate = &((UField*)Child)->NamePrivate;
+
+	return NamePrivate ? NamePrivate->ToString() : "";
+}
+
+void* GetNextOfChild(void* Child)
+{
+	if (Engine_Version >= 425)
+		return *(void**)(__int64(Child) + 0x20);
+	else
+		return ((UField*)Child)->Next;
+}
+
 int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName)
 {
 	auto CurrentClass = FindObjectSlow(StructName, false);
 
 	if (CurrentClass)
 	{
-		auto Property = *(UField**)(__int64(CurrentClass) + ChildPropertiesOffset);
+		auto Property = *(void**)(__int64(CurrentClass) + ChildPropertiesOffset);
 
 		if (Property)
 		{
-			auto PropName = Property->GetName();
+			auto PropName = GetNameOfChild(Property);
 
 			while (Property)
 			{
@@ -109,11 +139,11 @@ int FindOffsetStruct2(const std::string& StructName, const std::string& MemberNa
 				}
 				else
 				{
-					Property = Property->Next;
+					Property = GetNextOfChild(Property);
 
 					if (Property)
 					{
-						PropName = Property->GetName();
+						PropName = GetNameOfChild(Property);
 					}
 				}
 			}
@@ -142,6 +172,9 @@ UObject* GetDefaultObject(UObject* Class)
 
 int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct)
 {
+	if (Engine_Version >= 425) // fprop i dont think it works with this
+		return GetOffsetSlow(MemberName);
+
 	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
 
 	UObject* Property = nullptr;
@@ -176,19 +209,21 @@ int UObject::GetOffsetSlow(const std::string& MemberName)
 {
 	for (auto CurrentClass = ClassPrivate; CurrentClass; CurrentClass = *(UObject**)(__int64(CurrentClass) + SuperStructOffset))
 	{
-		auto Property = *(UField**)(__int64(CurrentClass) + ChildPropertiesOffset);
+		auto Property = *(void**)(__int64(CurrentClass) + ChildPropertiesOffset);
 
 		if (Property)
 		{
-			if (Property->GetName() == MemberName) // IDK WHY I NEED THIS
+			auto PropName = GetNameOfChild(Property);
+
+			// std::cout << "PropName: " << PropName << '\n';
+
+			if (PropName == MemberName) // somehow it didnt work without this?!?!?!?!?!?!?!?!!?!!?!?!?!?
 			{
 				return *(int*)(__int64(Property) + Offset_InternalOffset);
 			}
 
 			while (Property)
 			{
-				auto PropName = Property->GetName();
-
 				// std::cout << "PropName: " << PropName << '\n';
 
 				if (PropName == MemberName)
@@ -196,7 +231,8 @@ int UObject::GetOffsetSlow(const std::string& MemberName)
 					return *(int*)(__int64(Property) + Offset_InternalOffset);
 				}
 
-				Property = Property->Next;
+				Property = GetNextOfChild(Property);
+				PropName = Property ? GetNameOfChild(Property) : "";
 			}
 		}
 	}
