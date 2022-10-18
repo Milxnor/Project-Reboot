@@ -36,6 +36,9 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		bSpawnedFloorLoot = true;
 
 		Defines::bShouldSpawnFloorLoot = true;
+
+		static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
+		Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
 	}
 
 	UObject* PlayerController = *(UObject**)Parameters;
@@ -215,8 +218,150 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 	return false;
 }
 
-bool ClientOnPawnDied(UObject* DeadPlayerController, UFunction*, void* Parameters)
+uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, bool* OutWasDBNO = nullptr)
 {
+	// UFortDeathCauseFromTagMapping
+	// FortDeathCauseFromTagMapping
+
+	uint8_t DeathCause = 0;
+
+	std::cout << "Tags: " << Tags.ToStringSimple(true) << '\n';
+
+	if (Fortnite_Version >= 6.21) // might have been 6.2
+	{
+		static auto FortPlayerStateAthenaDefault = FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena");
+
+		struct
+		{
+			FGameplayTagContainer                       InTags;                                                   // (ConstParm, Parm, OutParm, ReferenceParm, NativeAccessSpecifierPublic)
+			bool                                               bWasDBNO;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} AFortPlayerStateAthena_ToDeathCause_Params{ Tags, false };
+
+		static auto ToDeathCause = FindObject<UFunction>("Function /Script/FortniteGame.FortPlayerStateAthena.ToDeathCause");
+		FortPlayerStateAthenaDefault->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
+
+		DeathCause = AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue;
+	}
+	else
+	{
+		static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
+
+		for (int i = 0; i < Tags.GameplayTags.Num(); i++) // SKUNK
+		{
+			auto Tag = Tags.GameplayTags.At(i);
+
+			if (Tag.TagName.ComparisonIndex)
+			{
+				auto TagNameStr = Tag.TagName.ToString(); // tbh we should compre fnames instead
+
+				if (TagNameStr.contains("Gameplay.Damage.Environment.Falling"))
+					return GetEnumValue(DeathCauseEnum, "FallDamage");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Shotgun"))
+					return GetEnumValue(DeathCauseEnum, "Shotgun");
+
+				else if (TagNameStr.contains("weapon.ranged.heavy.rocket_launcher"))
+					return GetEnumValue(DeathCauseEnum, "RocketLauncher");
+
+				else if (TagNameStr.contains("weapon.ranged.assault."))
+					return GetEnumValue(DeathCauseEnum, "Rifle");
+
+				else if (TagNameStr.contains("DeathCause.LoggedOut"))
+					return GetEnumValue(DeathCauseEnum, "LoggedOut");
+
+				else if (TagNameStr.contains("Weapon.Ranged.SMG"))
+					return GetEnumValue(DeathCauseEnum, "SMG");
+
+				else if (TagNameStr.contains("weapon.ranged.sniper."))
+					return GetEnumValue(DeathCauseEnum, "Sniper");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Pistol."))
+					return GetEnumValue(DeathCauseEnum, "Pistol");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Grenade.Gas"))
+					return GetEnumValue(DeathCauseEnum, "GasGrenade");
+
+				else if (TagNameStr.contains("weapon.ranged.heavy.grenade_launcher"))
+					return GetEnumValue(DeathCauseEnum, "GrenadeLauncher");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Minigun"))
+					return GetEnumValue(DeathCauseEnum, "Minigun");
+
+				else if (TagNameStr.contains("trap."))
+					return GetEnumValue(DeathCauseEnum, "Trap");
+
+				else if (TagNameStr.contains("Gameplay.Damage.TeamSwitchSuicide"))
+					return GetEnumValue(DeathCauseEnum, "TeamSwitchSuicide");
+			}
+		}
+	}
+
+	if (OutWasDBNO)
+	{
+
+	}
+
+	return DeathCause;
+}
+
+
+bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
+{
+	if (!Parameters)
+		return false;
+
+	std::cout << "Mf!\n";
+
+	auto DeathReport = (__int64*)Parameters;
+
+	auto DeadPlayerState = Helper::GetPlayerStateFromController(DeadController);
+	auto DeadPawn = Helper::GetPawnFromController(DeadController);
+
+	static auto KillerPawnOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPawn");
+	static auto KillerPlayerStateOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
+
+	auto KillerPawn = *(UObject**)(__int64(DeathReport) + KillerPawnOffset);
+	auto KillerPlayerState = *(UObject**)(__int64(DeathReport) + KillerPlayerStateOffset);
+
+	static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("Tags"));
+	FGameplayTagContainer* Tags = (FGameplayTagContainer*)(__int64(DeathReport) + TagsOffset);
+	bool bWasDBNO = false;
+	auto DeathCause = Tags ? GetDeathCause(DeadPlayerState, *Tags, &bWasDBNO) : 0;
+
+	// normal death stuff
+
+	auto DeathInfoOffset = DeadPlayerState->GetOffset("DeathInfo");
+
+	if (DeathInfoOffset == 0) // iirc if u rejoin and die this is invalid idfk why
+		return false;
+
+	auto DeathInfo = Get<__int64>(DeadPlayerState, DeathInfoOffset);
+
+	static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
+	static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
+	static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
+	static auto DistanceOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Distance"));
+	static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
+
+	*(uint8_t*)(__int64(DeathInfo) + DeathCauseOffset) = DeathCause;
+	*(UObject**)(__int64(DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
+	*(bool*)(__int64(DeathInfo) + bDBNOOffset) = bWasDBNO;
+
+	static auto FallDamageEnumValue = GetEnumValue(DeathCauseEnum, "FallDamage");
+
+	if (DeathCause != FallDamageEnumValue)
+	{
+		*(float*)(__int64(DeathInfo) + DistanceOffset) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
+	}
+	else
+	{
+		static auto LastFallDistanceOffset = DeadPawn->GetOffset("LastFallDistance");
+
+		if (LastFallDistanceOffset != -1)
+			*(float*)(__int64(DeathInfo) + DistanceOffset) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
+	}
+
 	return false;
 }
 

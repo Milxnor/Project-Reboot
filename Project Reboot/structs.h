@@ -315,8 +315,7 @@ ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
 int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName);
 
-
-
+int GetEnumValue(UObject* Enum, const std::string& EnumMemberName);
 // OTHER
 
 template<typename ElementType>
@@ -708,3 +707,43 @@ namespace FastTArray
 		MarkArrayDirty(Array);
 	} */
 }
+
+struct FGameplayTag
+{
+	FName                                       TagName;                                                  // 0x0000(0x0008) (Edit, ZeroConstructor, EditConst, IsPlainOldData)
+};
+
+struct FGameplayTagContainer
+{
+	TArray<FGameplayTag>                        GameplayTags;                                             // 0x0000(0x0010) (BlueprintVisible, ZeroConstructor)
+	TArray<FGameplayTag>                        ParentTags;                                               // 0x0010(0x0010) (ZeroConstructor, Transient)
+
+	std::string ToStringSimple(bool bQuoted) const
+	{
+		std::string RetString;
+		for (int i = 0; i < GameplayTags.Num(); ++i)
+		{
+			if (bQuoted)
+			{
+				RetString += ("\"");
+			}
+			RetString += GameplayTags.At(i).TagName.ToString();
+			if (bQuoted)
+			{
+				RetString += ("\"");
+			}
+
+			if (i < GameplayTags.Num() - 1)
+			{
+				RetString += (", ");
+			}
+		}
+		return RetString;
+	}
+
+	void Reset()
+	{
+		GameplayTags.Free();
+		ParentTags.Free();
+	}
+};

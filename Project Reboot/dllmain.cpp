@@ -114,6 +114,15 @@ DWORD WINAPI Input(LPVOID)
 
         else if (GetAsyncKeyState(VK_F8) & 1)
         {
+            auto GameState = Helper::GetGameState();
+            static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+            auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+            *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
+
+            auto OnRepGamePhase = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+
+            GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+
            /* FString command = L"startaircraft";
 
             struct {
@@ -136,6 +145,13 @@ DWORD WINAPI Input(LPVOID)
             }
             else
                 std::cout << ("No KismetSyustemLibrary!\n"); */
+        }
+
+        else if (GetAsyncKeyState(VK_F9) & 1)
+        {
+            auto riftobject = StaticLoadObjectO(Helper::GetBGAClass(), nullptr, L"/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C", nullptr, 0, nullptr, false, nullptr);
+            // auto riftobject = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+            std::cout << "riftobject: " << riftobject << '\n';
         }
 
         Sleep(1000 / 30);
@@ -201,6 +217,8 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
+    
+    AddHook("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
 
     if (InternalTryActivateAbilityAddress)
     {

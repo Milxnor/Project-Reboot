@@ -142,6 +142,9 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 
 UObject* Inventory::EquipWeapon(UObject* Controller, UObject* ItemDefinition, const FGuid& Guid)
 {
+	// if (Helper::IsInAircraft(Controller))
+		// return nullptr;
+
 	struct {
 		UObject* Def;
 		FGuid Guid;
@@ -151,9 +154,9 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* ItemDefinition, co
 	static auto EquipWeaponDefinition = FindObject<UFunction>("Function /Script/FortniteGame.FortPawn.EquipWeaponDefinition");
 
 	auto Pawn = Helper::GetPawnFromController(Controller);
-	Pawn->ProcessEvent(EquipWeaponDefinition, &params);
 
-	// Helper::SetOwner(params.Wep, Pawn);
+	if (Pawn)
+		Pawn->ProcessEvent(EquipWeaponDefinition, &params);
 	
 	return params.Wep;
 }

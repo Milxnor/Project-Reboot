@@ -14,6 +14,7 @@ namespace Helper
 	}
 
 	static int GetSizeOfClass(UObject* Class) { return Class ? *(int*)(__int64(Class) + PropertiesSizeOffset) : 0; }
+	static UObject* GetBGAClass() { static auto BGAClass = FindObject("Class /Script/Engine.BlueprintGeneratedClass"); return BGAClass; }
 	UObject* GetWorld();
 	UObject* GetTransientPackage();
 	UObject* GetEngine();
@@ -23,6 +24,7 @@ namespace Helper
 	UObject* GetPlayerStateFromController(UObject* Controller);
 	UObject* GetControllerFromPawn(UObject* Pawn);
 	UObject* GetPawnFromController(UObject* Controller);
+	float GetDistanceTo(UObject* Actor, UObject* OtherActor);
 	UObject* SpawnPawn(UObject* Controller, FVector Location, bool bAssignCharacterParts = false);
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);
 	void SetOwner(UObject* Actor, UObject* Owner);

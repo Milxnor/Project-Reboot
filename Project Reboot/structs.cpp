@@ -155,6 +155,29 @@ int FindOffsetStruct2(const std::string& StructName, const std::string& MemberNa
 	return 0;
 }
 
+int GetEnumValue(UObject* Enum, const std::string& EnumMemberName)
+{
+	if (!Enum)
+		return -1;
+
+	auto Names = (TArray<TPair<FName, __int64>>*)(__int64(Enum) + sizeof(UField) + sizeof(FString));
+
+	if (Names)
+	{
+		for (int i = 0; i < Names->Num(); i++)
+		{
+			auto Pair = Names->At(i);
+			auto& Name = Pair.Key();
+			auto Value = Pair.Value();
+
+			if (Name.ComparisonIndex && Name.ToString().contains(EnumMemberName))
+				return Value;
+		}
+	}
+
+	return -1;
+}
+
 UObject* GetDefaultObject(UObject* Class)
 {
 	auto name = Class->GetFullName();

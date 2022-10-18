@@ -122,6 +122,16 @@ UObject* Helper::GetPawnFromController(UObject* Controller)
 	return *Get<UObject*>(Controller, PawnOffset);
 }
 
+float Helper::GetDistanceTo(UObject* Actor, UObject* OtherActor)
+{
+	struct { UObject* otherActor; float distance; } GetDistanceTo_Params{ OtherActor };
+
+	static auto GetDistanceTo = FindObject<UFunction>("Function /Script/Engine.Actor.GetDistanceTo");
+	Actor->ProcessEvent(GetDistanceTo, &GetDistanceTo_Params);
+
+	return GetDistanceTo_Params.distance;
+}
+
 void ApplyCID(UObject* Pawn, UObject* CID)
 {
 	// CID->ItemVariants
