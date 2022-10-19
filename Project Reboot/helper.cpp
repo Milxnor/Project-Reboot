@@ -28,6 +28,13 @@ UObject* Helper::Easy::SpawnObject(UObject* Class, UObject* Outer)
 	return params.ReturnValue;
 }
 
+bool Helper::IsPlayerController(UObject* Object)
+{
+	static auto PlayerControllerClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
+
+	return Object->IsA(PlayerControllerClass);
+}
+
 UObject* Helper::GetWorld()
 {
 	auto Engine = GetEngine();
@@ -237,6 +244,12 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 			static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
 			static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
 
+			if (!headPart)
+				headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
+
+			if (!bodyPart)
+				bodyPart = FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
+
 			ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
 		}
@@ -341,7 +354,9 @@ UObject* Helper::GetCurrentWeapon(UObject* Pawn)
 
 UObject* Helper::GetWeaponData(UObject* Weapon)
 {
-	return nullptr;
+	static auto WeaponDataOffset = Weapon->GetOffset("WeaponData");
+
+	return *Get<UObject*>(Weapon, WeaponDataOffset);
 }
 
 int* Helper::GetTeamIndex(UObject* PlayerState)

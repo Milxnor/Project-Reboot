@@ -113,7 +113,7 @@ bool Server::Listen(int Port)
 
 		static auto LC_NetDriverOffset = 0x10; // LevelCollectionStruct->GetOffset("NetDriver", true);
 
-		std::cout << "LC_NetDriverOffset: " << LC_NetDriverOffset << 'n';
+		std::cout << "LC_NetDriverOffset: " << LC_NetDriverOffset << '\n';
 
 		*Get<UObject*>(FirstLevelCollection, LC_NetDriverOffset) = NetDriver;
 		*Get<UObject*>(LevelCollections->AtPtr(1, LevelCollectionSize), LC_NetDriverOffset) = NetDriver;

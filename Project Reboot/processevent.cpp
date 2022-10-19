@@ -5,6 +5,7 @@
 #include "abilities.h"
 #include "patterns.h"
 #include "server.h"
+#include "harvesting.h"
 #include "calendar.h"
 
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters)
@@ -39,6 +40,18 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
 		Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+
+		if (Engine_Version > 424)
+			AddHook("Function /Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", Harvesting::BlueprintCanAttemptGenerateResources);
+		else
+		{
+			AddHook(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), Harvesting::OnDamageServer);
+
+			if (Fortnite_Version >= 8.00)
+				AddHook("Function /Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C.OnDamageServer", Harvesting::OnDamageServer);
+			else
+				AddHook("Function /Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C.OnDamageServer", Harvesting::OnDamageServer);
+		}
 	}
 
 	UObject* PlayerController = *(UObject**)Parameters;

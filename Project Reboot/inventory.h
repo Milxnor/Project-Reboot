@@ -1,7 +1,8 @@
 #pragma once
 
-#include "structs.h"
 #include <iostream>
+
+#include "structs.h"
 
 namespace FFortItemEntry
 {
@@ -38,6 +39,8 @@ namespace FFortItemEntry
 
 		return LoadedAmmo;
 	}
+	
+	int GetStructSize();
 }
 
 namespace UFortItem

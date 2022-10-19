@@ -154,6 +154,18 @@ DWORD WINAPI Input(LPVOID)
             std::cout << "riftobject: " << riftobject << '\n';
         }
 
+        else if (GetAsyncKeyState(VK_F10) & 1)
+        {
+            auto GameState = Helper::GetGameState();
+            static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+            auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+            *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::None;
+
+            auto OnRepGamePhase = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+
+            GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+        }
+
         Sleep(1000 / 30);
     }
 }
@@ -214,9 +226,12 @@ DWORD WINAPI Initialize(LPVOID)
 
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
 
-    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
-    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
-    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
+    if (false)
+    {
+        AddHook("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
+        AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
+        AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
+    }
     
     AddHook("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
 

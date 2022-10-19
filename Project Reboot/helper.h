@@ -15,6 +15,7 @@ namespace Helper
 
 	static int GetSizeOfClass(UObject* Class) { return Class ? *(int*)(__int64(Class) + PropertiesSizeOffset) : 0; }
 	static UObject* GetBGAClass() { static auto BGAClass = FindObject("Class /Script/Engine.BlueprintGeneratedClass"); return BGAClass; }
+	bool IsPlayerController(UObject* Object);
 	UObject* GetWorld();
 	UObject* GetTransientPackage();
 	UObject* GetEngine();

@@ -747,3 +747,19 @@ struct FGameplayTagContainer
 		ParentTags.Free();
 	}
 };
+
+struct FCurveTableRowHandle
+{
+	UObject* CurveTable;
+	FName RowName;
+};
+
+
+struct FScalableFloat
+{
+public:
+	float                                        Value;                                             // 0x0(0x4)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	int idk;                    // Fixing Size After Last Property  [ Dumper-7 ]
+	char Curve[0x10]; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	void* idk2;                              // Fixing Size Of Struct [ Dumper-7 ]
+};

@@ -4,6 +4,6 @@
 
 namespace Harvesting
 {
-	bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters);
-	bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFunction* Function, void* Parameters);
+	bool OnDamageServer(UObject* BuildingActor, UFunction* Function, void* Parameters);
+	bool BlueprintCanAttemptGenerateResources(UObject* BuildingActor, UFunction* Function, void* Parameters);
 }
