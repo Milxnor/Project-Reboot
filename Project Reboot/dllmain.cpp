@@ -115,36 +115,22 @@ DWORD WINAPI Input(LPVOID)
         else if (GetAsyncKeyState(VK_F8) & 1)
         {
             auto GameState = Helper::GetGameState();
+            static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
             static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
             auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
+
             *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
 
-            auto OnRepGamePhase = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
+
+            static auto OnRepGamePhase = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
             GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
 
-           /* FString command = L"startaircraft";
-
-            struct {
-                UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
-                FString                                     Command;                                                  // (Parm, ZeroConstructor)
-                UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
-            } params{ Helper::GetWorld(), command, nullptr };
-
-            static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
-
-            if (KSLClass)
-            {
-                // static auto ExecuteConsoleCommandFn = KSLClass->Function(("ExecuteConsoleCommand"));
-                static auto ExecuteConsoleCommandFn = FindObject<UFunction>(("Function /Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
-
-                if (ExecuteConsoleCommandFn)
-                    KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
-                else
-                    std::cout << ("No ExecuteConsoleCommand!\n");
-            }
-            else
-                std::cout << ("No KismetSyustemLibrary!\n"); */
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
+            std::cout << "TimeSeconds: " << Helper::GetTimeSeconds() << '\n';
         }
 
         else if (GetAsyncKeyState(VK_F9) & 1)
@@ -166,8 +152,25 @@ DWORD WINAPI Input(LPVOID)
             GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
         }
 
+        else if (GetAsyncKeyState(VK_F11) & 1)
+        {
+            auto GameMode = Helper::GetGameMode();
+
+            static auto WarmupRequiredPlayerCountOffset = GameMode->GetOffset("WarmupRequiredPlayerCount");
+            std::cout << "WarmupRequiredPlayerCountOffset: " << *(int*)(__int64(GameMode) + WarmupRequiredPlayerCountOffset) << '\n';
+
+            auto GameState = Helper::GetGameState();
+            static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);    
+        }
+
         Sleep(1000 / 30);
     }
+}
+
+__int64 rettrue()
+{
+    return 1;
 }
 
 DWORD WINAPI Initialize(LPVOID)
@@ -192,6 +195,21 @@ DWORD WINAPI Initialize(LPVOID)
     {
         MessageBoxA(0, "Failed to setup patterns", "Project Reboot V2", MB_ICONERROR);
         return 1;
+    }
+
+    if (WorldGetNetModeAddress && NoMCPAddress)
+    {
+        MH_CreateHook((PVOID)WorldGetNetModeAddress, rettrue, nullptr);
+        MH_EnableHook((PVOID)WorldGetNetModeAddress);
+
+        MH_CreateHook((PVOID)NoMCPAddress, rettrue, nullptr);
+        MH_EnableHook((PVOID)NoMCPAddress);
+    }
+    else
+    {
+        std::cout << "Unable to enable GetNetMode fix!\n";
+        std::cout << "NoMCPAddress: " << NoMCPAddress << '\n';
+        std::cout << "WorldGetNetModeAddress: " << WorldGetNetModeAddress << '\n';
     }
     
     std::cout << "Initialized\n";
@@ -222,7 +240,10 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("Function /Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
 
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
-    AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup", Inventory::ServerHandlePickup);
+    AddHook(Engine_Version >= 420 ? "Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"
+        : "Function /Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop", Inventory::ServerAttemptInventoryDrop);
+    AddHook(Fortnite_Season < 13 ? "Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"
+        : "Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", Inventory::ServerHandlePickup);
 
     AddHook("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
 
@@ -242,12 +263,9 @@ DWORD WINAPI Initialize(LPVOID)
         // AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
     }
 
-    if (Fortnite_Version < 9) // idk if right
-        AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
-    else if (Engine_Version < 424)
-        AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
-    else
-        AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
+    AddHook(Fortnite_Version < 9 ? "Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"
+        : (Engine_Version < 424 ? "Function /Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump" 
+            : "Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     Level.Free();
 

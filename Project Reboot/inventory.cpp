@@ -285,7 +285,7 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 	return ItemInstance;
 }
 
-UObject* Inventory::EquipWeapon(UObject* Controller, UObject* ItemDefinition, const FGuid& Guid)
+UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition)
 {
 	// if (Helper::IsInAircraft(Controller))
 		// return nullptr;
@@ -311,7 +311,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance)
 	auto Def = UFortItem::GetDefinition(Instance);
 	auto Guid = UFortItem::GetGuid(Instance);
 
-	return Def && Guid ? EquipWeapon(Controller, *Def, *Guid) : nullptr;
+	return Def && Guid ? EquipWeapon(Controller, *Guid, *Def) : nullptr;
 }
 
 EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
@@ -371,8 +371,6 @@ UObject* Inventory::FindItemInInventory(UObject* Controller, UObject* Definition
 	return nullptr;
 }
 
-
-
 bool Inventory::ServerExecuteInventoryItem(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	if (!Parameters)
@@ -385,10 +383,22 @@ bool Inventory::ServerExecuteInventoryItem(UObject* Controller, UFunction* Funct
 	if (Instance)
 	{
 		auto Definition = UFortItem::GetDefinition(Instance);
-		auto NewWeapon = EquipWeapon(Controller, Definition ? *Definition : nullptr, Guid);
+		auto NewWeapon = EquipWeapon(Controller, Guid, Definition ? *Definition : nullptr);
 	}
 	else
-		std::cout << "No ItemInstance!\n";
+		std::cout << "Unable to find Guid in Inventory for ServerExecuteInventoryItem!\n";
+
+	return false;
+}
+
+bool Inventory::ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void* Parameters)
+{
+	if (!Parameters)
+		return false;
+
+	struct AFortPlayerController_ServerAttemptInventoryDrop_Params { FGuid ItemGuid; int Count; };
+
+	auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
 
 	return false;
 }
@@ -408,6 +418,8 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	auto Controller = Helper::GetControllerFromPawn(Pawn);
 
 	GiveItem(Controller, *Definition, WhatQuickBars(*Definition), *Count);
+
+	Helper::DestroyActor(Pickup);
 
 	return false;
 }

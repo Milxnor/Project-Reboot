@@ -83,7 +83,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			// return false;
 		}
 
-		bool bSpawnIsland = Engine_Version >= 424; // or else u die
+		bool bSpawnIsland = true; // Engine_Version >= 424; // or else u die
 
 		auto SpawnLocation = !PlayerStart || !bSpawnIsland ? FVector{ 1250, 1818, 3284 } : Helper::GetActorLocation(PlayerStart);
 
@@ -508,7 +508,9 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "GetAllActorsOfClass") &&
 			!strstr(FunctionName.c_str(), "OnUpdateMusic") &&
 			!strstr(FunctionName.c_str(), "Check Closest Point") &&
-			!strstr(FunctionName.c_str(), "OnSubtitleChanged__DelegateSignature"))
+			!strstr(FunctionName.c_str(), "OnSubtitleChanged__DelegateSignature") &&
+			!strstr(FunctionName.c_str(), "OnServerBounceCallback") &&
+			!strstr(FunctionName.c_str(), "BlueprintGetInteractionTime"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

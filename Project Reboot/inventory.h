@@ -11,7 +11,7 @@ namespace FFortItemEntry
 	static UObject** GetItemDefinition(__int64* Entry)
 	{
 		static auto ItemDefinitionOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "ItemDefinition");
-		auto Definition = (UObject**)(__int64(&*Entry) + ItemDefinitionOffset);
+		auto Definition = (UObject**)(__int64(Entry) + ItemDefinitionOffset);
 
 		return Definition;
 	}
@@ -19,7 +19,7 @@ namespace FFortItemEntry
 	static FGuid* GetGuid(__int64* Entry)
 	{
 		static auto GuidOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "ItemGuid");
-		auto Guid = (FGuid*)(__int64(&*Entry) + GuidOffset);
+		auto Guid = (FGuid*)(__int64(Entry) + GuidOffset);
 
 		return Guid;
 	}
@@ -27,7 +27,7 @@ namespace FFortItemEntry
 	static int* GetCount(__int64* Entry)
 	{
 		static auto CountOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "Count");
-		auto Count = (int*)(__int64(&*Entry) + CountOffset);
+		auto Count = (int*)(__int64(Entry) + CountOffset);
 
 		return Count;
 	}
@@ -35,7 +35,7 @@ namespace FFortItemEntry
 	static int* GetLoadedAmmo(__int64* Entry)
 	{
 		static auto LoadedAmmoOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "LoadedAmmo");
-		auto LoadedAmmo = (int*)(__int64(&*Entry) + LoadedAmmoOffset);
+		auto LoadedAmmo = (int*)(__int64(Entry) + LoadedAmmoOffset);
 
 		return LoadedAmmo;
 	}
@@ -81,7 +81,7 @@ namespace Inventory
 
 	void Update(UObject* Controller, bool bAddOrRemove = false, FFastArraySerializerItem* ModifiedItem = nullptr);
 	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true);
-	UObject* EquipWeapon(UObject* Controller, UObject* ItemDefinition, const FGuid& Guid);
+	UObject* EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition);
 	UObject* EquipWeapon(UObject* Controller, UObject* Instance);
 	EFortQuickBars WhatQuickBars(UObject* Definition); // returns the quickbar the item should go in
 

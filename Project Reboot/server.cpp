@@ -233,7 +233,8 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 						auto CorrectLocation = Helper::GetActorLocation(ClassActor);
 						CorrectLocation.Z += 50;
 
-						static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
+						// static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
+						static auto Def = FindObject("FortWeaponRangedItemDefinition /HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
 
 						Helper::SummonPickup(nullptr, Def, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, true);
 					}

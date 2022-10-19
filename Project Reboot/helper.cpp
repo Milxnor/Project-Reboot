@@ -28,6 +28,19 @@ UObject* Helper::Easy::SpawnObject(UObject* Class, UObject* Outer)
 	return params.ReturnValue;
 }
 
+float Helper::GetTimeSeconds()
+{
+	static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+
+	struct { UObject* world; float timeseconds; } parms{ GetWorld() };
+
+	static auto GetTimeSeconds = FindObject<UFunction>("Function /Script/Engine.GameplayStatics.GetTimeSeconds");
+
+	GSCClass->ProcessEvent(GetTimeSeconds, &parms);
+
+	return parms.timeseconds;
+}
+
 bool Helper::IsPlayerController(UObject* Object)
 {
 	static auto PlayerControllerClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
@@ -225,21 +238,12 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 	if (!Pawn)
 		return Pawn;
 
-	// static auto SetReplicateMovementFn = FindObject<UFunction>("Function /Script/Engine.Actor.SetReplicateMovement");
-	// bool bReplicateMovement = true;
-	// Pawn->ProcessEvent(SetReplicateMovementFn, &bReplicateMovement);
-
 	static auto Possess = FindObject<UFunction>("Function /Script/Engine.Controller.Possess");
 
 	Controller->ProcessEvent(Possess, &Pawn);
 
 	if (bAssignCharacterParts)
 	{
-		if (Defines::bRandomSkin)
-		{
-			ApplyCID(Pawn, GetRandomCID());
-		}
-		else
 		{
 			static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
 			static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));

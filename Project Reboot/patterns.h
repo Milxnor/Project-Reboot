@@ -24,6 +24,8 @@ inline uint64_t InternalTryActivateAbilityAddress = 0;
 inline uint64_t GiveAbilityAddress = 0;
 inline uint64_t CantBuildAddress = 0;
 inline uint64_t ReplaceBuildingActorAddress = 0;
+inline uint64_t WorldGetNetModeAddress = 0;
+inline uint64_t NoMCPAddress = 0;
 
 static bool InitializePatterns()
 {
@@ -54,6 +56,10 @@ static bool InitializePatterns()
 	std::string GiveAbilityPattern = "";
 	std::string CantBuildPattern = "";
 	std::string ReplaceBuildingActorPattern = "";
+	std::string WorldGetNetModePattern = "";
+	std::string NoMCPPattern = "";
+
+	bool bIsNoMCPRelative = false;
 
 	// TODO REWRITE HERE
 
@@ -185,6 +191,9 @@ static bool InitializePatterns()
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
+		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
+		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
+		bIsNoMCPRelative = true; */
 
 		if (Fortnite_Season == 5)
 			ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1";
@@ -295,6 +304,10 @@ static bool InitializePatterns()
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 8B 81 ? ? ? ? 49"; // 14.60
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ? 49 89 5B";
+		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
+
+		if (Fortnite_Version == 14.60)
+			NoMCPPattern = "48 83 EC 28 65 48 8B 04 25 ? ? ? ? 8B 0D ? ? ? ? BA ? ? ? ? 48 8B 0C C8 8B 04 0A 39 05 ? ? ? ? 7F 0C 0F B6 05 ? ? ? ? 48 83 C4 28 C3 48 8D 0D ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? ? 75 DF E8 ? ? ? ? 48 8B C8 48 8D 15 ? ? ? ? E8 ? ? ? ? 48 8D 0D ? ? ? ? 88 05 ? ? ? ? E8 ? ? ? ? EB B7";
 	}
 
 	if (Engine_Version == 427) // 4.26.1
@@ -365,6 +378,8 @@ static bool InitializePatterns()
 	GiveAbilityAddress = Memory::FindPattern(GiveAbilityPattern);
 	CantBuildAddress = Memory::FindPattern(CantBuildPattern);
 	ReplaceBuildingActorAddress = Memory::FindPattern(ReplaceBuildingActorPattern);
+	WorldGetNetModeAddress = Memory::FindPattern(WorldGetNetModePattern);
+	NoMCPAddress = bIsNoMCPRelative ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
 
@@ -385,6 +400,8 @@ static bool InitializePatterns()
 	std::cout << std::format("GiveAbilityAddress: 0x{:x}\n", (uintptr_t)GiveAbilityAddress - Base);
 	std::cout << std::format("CantBuildAddress: 0x{:x}\n", (uintptr_t)CantBuildAddress - Base);
 	std::cout << std::format("ReplaceBuildingActorAddress: 0x{:x}\n", (uintptr_t)ReplaceBuildingActorAddress - Base);
+	std::cout << std::format("WorldGetNetModeAddress: 0x{:x}\n", (uintptr_t)WorldGetNetModeAddress - Base);
+	std::cout << std::format("NoMCPAddress: 0x{:x}\n", (uintptr_t)NoMCPAddress - Base);
 
 	if (!InitHostAddress || !StaticFindObjectAddress || !ProcessEventAddress || !ObjectsAddress)
 		return false;
