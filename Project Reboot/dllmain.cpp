@@ -1,6 +1,7 @@
 #include <MinHook.h>
 #include <Windows.h>
 #include <iostream>
+#include <fstream>
 
 #include "patterns.h"
 #include "server.h"
@@ -11,6 +12,7 @@
 #include "build.h"
 #include "edit.h"
 #include "loot.h"
+#include "interaction.h"
 
 DWORD WINAPI Input(LPVOID)
 {
@@ -37,7 +39,7 @@ DWORD WINAPI Input(LPVOID)
 
         else if (GetAsyncKeyState(VK_F3) & 1)
         {
-            static auto BuildingItemCollectorClass = FindObject("Class /Script/FortniteGame.BuildingItemCollectorActor");
+            static auto BuildingItemCollectorClass = FindObject("/Script/FortniteGame.BuildingItemCollectorActor");
 
             std::cout << "BuildingItemCollectorClass: " << BuildingItemCollectorClass << '\n';
 
@@ -52,8 +54,8 @@ DWORD WINAPI Input(LPVOID)
 
                 std::cout << "A!\n";
 
-                static auto CollectorUnitInfoClassName = FindObject("ScriptStruct /Script/FortniteGame.CollectorUnitInfo") ? "ScriptStruct /Script/FortniteGame.CollectorUnitInfo" :
-                    "ScriptStruct /Script/FortniteGame.ColletorUnitInfo";
+                static auto CollectorUnitInfoClassName = FindObject("/Script/FortniteGame.CollectorUnitInfo") ? "/Script/FortniteGame.CollectorUnitInfo" :
+                    "/Script/FortniteGame.ColletorUnitInfo";
 
                 static auto CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName);
 
@@ -65,7 +67,7 @@ DWORD WINAPI Input(LPVOID)
 
                 static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem");
 
-                static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
+                static auto Def = FindObject("/Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
 
                 *Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
                 *Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def;
@@ -125,7 +127,7 @@ DWORD WINAPI Input(LPVOID)
 
             std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
 
-            static auto OnRepGamePhase = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+            static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
             GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
 
@@ -147,7 +149,7 @@ DWORD WINAPI Input(LPVOID)
             auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
             *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::None;
 
-            auto OnRepGamePhase = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+            static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
             GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
         }
@@ -162,6 +164,25 @@ DWORD WINAPI Input(LPVOID)
             auto GameState = Helper::GetGameState();
             static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
             std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);    
+        }
+
+        else if (GetAsyncKeyState(VK_F12) & 1)
+        {
+            // dumps objects
+
+            auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
+
+            std::ofstream obj("ObjectsDump.txt");
+            
+            for (int i = 0; i < ObjectNum; i++)
+            {
+                auto CurrentObject = GetObjectByIndex(i);
+                
+                if (!CurrentObject)
+                    continue;
+
+                obj << CurrentObject->GetFullName() << '\n';
+            }
         }
 
         Sleep(1000 / 30);
@@ -197,6 +218,12 @@ DWORD WINAPI Initialize(LPVOID)
         return 1;
     }
 
+    MH_CreateHook((PVOID)CanActivateAbilityAddress, rettrue, nullptr); // TODO: Find a better fix
+    MH_EnableHook((PVOID)CanActivateAbilityAddress);
+
+    MH_CreateHook((PVOID)HandleReloadCostAddress, Inventory::HandleReloadCost, (PVOID*)&Defines::HandleReloadCost);
+    MH_EnableHook((PVOID)HandleReloadCostAddress);
+
     if (WorldGetNetModeAddress && NoMCPAddress)
     {
         MH_CreateHook((PVOID)WorldGetNetModeAddress, rettrue, nullptr);
@@ -221,13 +248,13 @@ DWORD WINAPI Initialize(LPVOID)
     FFortItemEntry::ItemEntryStruct = FindObjectSlow("ScriptStruct /Script/FortniteGame.FortItemEntry", false);
     FastTArray::FastArraySerializerStruct = FindObjectSlow("ScriptStruct /Script/Engine.FastArraySerializer", false);
     Abilities::GameplayAbilitySpecClass = FindObjectSlow("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", false);
-    Editing::EditToolDefinition = FindObject("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool");
+    Editing::EditToolDefinition = FindObject("/Game/Items/Weapons/BuildingTools/EditTool.EditTool");
 
     auto PC = Helper::GetLocalPlayerController();
 
     std::cout << "PC: " << PC << '\n';
 
-    static auto SwitchLevel = FindObject<UFunction>("Function /Script/Engine.PlayerController.SwitchLevel");
+    static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
 
     FString Level = Engine_Version < 424 ? L"Athena_Terrain" : (Engine_Version < 500 ? L"Apollo_Terrain" : L"Artemis_Terrain");
 
@@ -235,39 +262,42 @@ DWORD WINAPI Initialize(LPVOID)
     
     CreateThread(0, 0, Input, 0, 0, 0);
 
-    AddHook("Function /Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
-    AddHook("Function /Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
-    AddHook("Function /Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
+    AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
+    AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
+    AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
 
-    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
-    AddHook(Engine_Version >= 420 ? "Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"
-        : "Function /Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop", Inventory::ServerAttemptInventoryDrop);
-    AddHook(Fortnite_Season < 13 ? "Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"
-        : "Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", Inventory::ServerHandlePickup);
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
+    AddHook(Engine_Version >= 420 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"
+        : "/Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop", Inventory::ServerAttemptInventoryDrop);
+    AddHook(Fortnite_Season < 13 ? "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"
+        : "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", Inventory::ServerHandlePickup);
 
-    AddHook("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
 
-    if (false)
+    AddHook(Engine_Version < 423 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInteract" :
+        "/Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract", Interaction::ServerAttemptInteract);
+
+    // if (false)
     {
-        AddHook("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
-        AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
-        AddHook("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
+        AddHook("/Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
+        AddHook("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
+        AddHook("/Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
     }
     
-    AddHook("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
+    AddHook("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
 
     if (InternalTryActivateAbilityAddress)
     {
-        AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
-        AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
-        // AddHook("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
+        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
+        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
+        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
     }
 
-    AddHook(Fortnite_Version < 9 ? "Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"
-        : (Engine_Version < 424 ? "Function /Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump" 
-            : "Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
+    AddHook(Fortnite_Version < 9 ? "/Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"
+        : (Engine_Version < 424 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump" 
+            : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
-    Level.Free();
+    // Level.Free();
 
     return 0;
 }

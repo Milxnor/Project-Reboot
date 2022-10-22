@@ -2,10 +2,12 @@
 
 #include "patterns.h"
 #include "server.h"
+#include "loot.h"
 
 void Server::PauseBeaconRequests(bool bPause)
 {
 	Defines::PauseBeaconRequests(BeaconHost, bPause);
+	std::cout << "cc!\n";
 	SetWorld(Helper::GetWorld());
 }
 
@@ -22,8 +24,20 @@ void Server::SetWorld(UObject* World)
 	{
 		if (!Defines::SetWorld)
 		{
-			int SetWorldIndex = Fortnite_Version < 19.00 ? (Fortnite_Season < 15 ? 0x71 : 0x72) //idk if this is right
-				: (Fortnite_Version >= 20.00 ? (Fortnite_Version >= 21 ? 0x7C : 0x7B) : 0x7A); // s13-14 = 0x71 s15-s18 = 0x72 s19 = 0x7A s20 = 7B s21 = 7c 
+			/* int SetWorldIndex = Fortnite_Version < 19.00 ? Fortnite_Season < 15 ? 0x71
+				: Fortnite_Season == 14 ? 0x72 : Fortnite_Season == 13 ? 0x70
+				: Fortnite_Version >= 20.00 ? (Fortnite_Version >= 21 ? 0x7C : 0x7B) : 0x7A : ; // s13-14 = 0x71 s15-s18 = 0x72 s19 = 0x7A s20 = 7B s21 = 7c 
+
+			*/
+
+			int SetWorldIndex = 0;
+
+			if (Fortnite_Season == 13)
+				SetWorldIndex = 0x70;
+			else if (Fortnite_Season == 14)
+				SetWorldIndex = 0x71;
+			else if (Fortnite_Season >= 15)
+				SetWorldIndex = 0x72;
 
 			std::cout << "SetWorldIndex: " << SetWorldIndex << '\n';
 
@@ -41,7 +55,7 @@ bool Server::Listen(int Port)
 {
 	if (bUseBeacons)
 	{
-		static UObject* BeaconClass = FindObject("Class /Script/FortniteGame.FortOnlineBeaconHost"); // We use the Fort one because then FindObject will not mistake for the BeaconHostObject.
+		static UObject* BeaconClass = FindObject("/Script/FortniteGame.FortOnlineBeaconHost"); // We use the Fort one because then FindObject will not mistake for the BeaconHostObject.
 
 		BeaconHost = Helper::Easy::SpawnActor(BeaconClass, FVector());
 
@@ -99,7 +113,7 @@ bool Server::Listen(int Port)
 
 	// end setup
 
-	static auto LevelCollectionStruct = FindObject("ScriptStruct /Script/Engine.LevelCollection");
+	static auto LevelCollectionStruct = FindObject("/Script/Engine.LevelCollection");
 	static auto LevelCollectionsOffset = World->GetOffset("LevelCollections");
 	auto LevelCollections = Get<TArray<UObject>>(World, LevelCollectionsOffset);
 
@@ -121,7 +135,11 @@ bool Server::Listen(int Port)
 	else
 		std::cout << "Unable to find LevelCollections!\n";
 
+	std::cout << "aa!\n";
+
 	PauseBeaconRequests(false);
+
+	std::cout << "bb!\n";
 
 	if (Fortnite_Version >= 3.3)
 	{
@@ -130,6 +148,8 @@ bool Server::Listen(int Port)
 
 		Defines::ServerReplicateActors = decltype(Defines::ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
 	}
+
+	std::cout << "dd!\n";
 
 	static auto World_NetDriverOffset = World->GetOffsetSlow("NetDriver");
 
@@ -198,15 +218,15 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 		}
 	}
 
-	if (Defines::bShouldSpawnFloorLoot) // TODO move this
+	if (Defines::bShouldSpawnFloorLoot && Engine_Version >= 421) // TODO move this
 	{
-		static auto SpawnIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
-		static auto BRIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C");
+		static auto SpawnIsland_FloorLoot = FindObject("/Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
+		static auto BRIsland_FloorLoot = FindObject("/Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C");
 
 		if (!SpawnIsland_FloorLoot || !BRIsland_FloorLoot) // Map has not loaded to the point where there are floor loot actors
 		{
-			SpawnIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
-			BRIsland_FloorLoot = FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C");
+			SpawnIsland_FloorLoot = FindObject("/Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
+			BRIsland_FloorLoot = FindObject("/Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C");
 		}
 		else
 		{
@@ -229,14 +249,57 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 					if (ClassActor)
 					{
-						constexpr bool bTossPickup = true;
 						auto CorrectLocation = Helper::GetActorLocation(ClassActor);
 						CorrectLocation.Z += 50;
 
-						// static auto Def = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
-						static auto Def = FindObject("FortWeaponRangedItemDefinition /HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
+						bool ShouldSpawn = RandomBoolWithWeight(0.3f);
 
-						Helper::SummonPickup(nullptr, Def, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, true);
+						if (ShouldSpawn)
+						{
+							auto CorrectLocation = Helper::GetActorLocation(ClassActor);
+							CorrectLocation.Z += 50;
+
+							UObject* MainPickup = nullptr;
+
+							if (RandomBoolWithWeight(6, 1, 100))
+							{
+								auto Ammo = Looting::GetRandomItem(ItemType::Ammo);
+
+								MainPickup = Helper::SummonPickup(nullptr, Ammo.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+									EFortPickupSpawnSource::Unset, Ammo.DropCount);
+							}
+
+							else if (RandomBoolWithWeight(5, 1, 100))
+							{
+								auto Trap = Looting::GetRandomItem(ItemType::Trap);
+
+								MainPickup = Helper::SummonPickup(nullptr, Trap.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+									EFortPickupSpawnSource::Unset, Trap.DropCount);
+							}
+
+							else if (RandomBoolWithWeight(26, 1, 100))
+							{
+								auto Consumable = Looting::GetRandomItem(ItemType::Consumable);
+
+								MainPickup = Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+									EFortPickupSpawnSource::Unset, Consumable.DropCount);
+							}
+
+							else
+							{
+								auto Weapon = Looting::GetRandomItem(ItemType::Weapon);
+
+								MainPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, true);
+
+								if (MainPickup)
+								{
+									auto AmmoDef = Helper::GetAmmoForDefinition(Weapon.Definition);
+
+									Helper::SummonPickup(nullptr, AmmoDef.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+										EFortPickupSpawnSource::Unset, AmmoDef.second);
+								}
+							}
+						}
 					}
 				}
 

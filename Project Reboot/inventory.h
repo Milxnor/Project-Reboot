@@ -39,6 +39,8 @@ namespace FFortItemEntry
 
 		return LoadedAmmo;
 	}
+
+	void SetLoadedAmmo(__int64* Entry, UObject* Controller, int NewLoadedAmmo);
 	
 	int GetStructSize();
 }
@@ -77,6 +79,15 @@ namespace Inventory
 	TArray<UObject*>* GetItemInstances(UObject* Controller);
 	TArray<__int64>* GetReplicatedEntries(UObject* Controller);
 
+	static FGuid GetWeaponGuid(UObject* Weapon)
+	{
+		static auto ItemEntryGuidOffset = Weapon->GetOffset("ItemEntryGuid");
+
+		return *(FGuid*)(__int64(Weapon) + ItemEntryGuidOffset);
+	}
+
+	__int64* GetEntryFromWeapon(UObject* Controller, UObject* Weapon);
+
 	// FUNCTIONS
 
 	void Update(UObject* Controller, bool bAddOrRemove = false, FFastArraySerializerItem* ModifiedItem = nullptr);
@@ -84,6 +95,7 @@ namespace Inventory
 	UObject* EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition);
 	UObject* EquipWeapon(UObject* Controller, UObject* Instance);
 	EFortQuickBars WhatQuickBars(UObject* Definition); // returns the quickbar the item should go in
+	void TakeItem(UObject* Controller, const FGuid& Guid, int Count, bool bForceRemove = false);
 
 	// FINDERS
 
@@ -95,4 +107,5 @@ namespace Inventory
 	bool ServerExecuteInventoryItem(UObject* Controller, UFunction* Function, void* Parameters);
 	bool ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void* Parameters);
 	bool ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters);
+	void HandleReloadCost(UObject* Weapon, int AmountToRemove);
 }

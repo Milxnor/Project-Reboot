@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>Reboot</TargetName>
+    <TargetName>Project Reboot</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -181,6 +181,7 @@
     <ClCompile Include="server.cpp" />
     <ClCompile Include="structs.cpp" />
     <ClCompile Include="teams.cpp" />
+    <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="abilities.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="server.h" />
     <ClInclude Include="structs.h" />
     <ClInclude Include="team.h" />
+    <ClInclude Include="zone.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

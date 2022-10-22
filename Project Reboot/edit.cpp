@@ -61,7 +61,7 @@ bool Editing::ServerEditBuildingActorHook(UObject* Controller, UFunction* Functi
 	std::cout << "BuildingActorToEditOffset: " << BuildingActorToEditOffset << '\n';
 	std::cout << "NewBuildingClassOffset: " << NewBuildingClassOffset << '\n';
 
-	if (BuildingActorToEdit && NewBuildingClass)
+	if (Defines::ReplaceBuildingActor && BuildingActorToEdit && NewBuildingClass)
 	{
 		Defines::ReplaceBuildingActor(BuildingActorToEdit, 1, NewBuildingClass, 0, RotationIterations, bMirrored, Controller);
 	}

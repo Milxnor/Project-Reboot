@@ -14,11 +14,13 @@ namespace Helper
 	}
 
 	static int GetSizeOfClass(UObject* Class) { return Class ? *(int*)(__int64(Class) + PropertiesSizeOffset) : 0; }
-	static UObject* GetBGAClass() { static auto BGAClass = FindObject("Class /Script/Engine.BlueprintGeneratedClass"); return BGAClass; }
-	static void DestroyActor(UObject* Actor) { static auto fn = FindObject<UFunction>("Function /Script/Engine.Actor.K2_DestroyActor"); Actor->ProcessEvent(fn); }
+	static UObject* GetBGAClass() { static auto BGAClass = FindObject("/Script/Engine.BlueprintGeneratedClass"); return BGAClass; }
+	static void DestroyActor(UObject* Actor) { static auto fn = FindObject<UFunction>("/Script/Engine.Actor.K2_DestroyActor"); Actor->ProcessEvent(fn); }
 
 	float GetTimeSeconds();
 	bool IsPlayerController(UObject* Object);
+	void ExecuteConsoleCommand(FString& Command);
+	std::pair<UObject*, int> GetAmmoForDefinition(UObject* Definition);
 	UObject* GetWorld();
 	UObject* GetTransientPackage();
 	UObject* GetEngine();
@@ -44,6 +46,8 @@ namespace Helper
 	FRotator GetActorRotation(UObject* Actor);
 	__int64* GetEntryFromPickup(UObject* Pickup);
 	UObject* GetOwnerOfComponent(UObject* Component);
+	UObject* GetOwner(UObject* Actor);
+	int GetMaxBullets(UObject* Definition);
 
 	std::vector<UObject*> GetAllObjectsOfClass(UObject* Class);
 	UObject* GetPlayerStart();

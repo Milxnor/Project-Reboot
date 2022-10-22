@@ -9,9 +9,9 @@ namespace Build
 		if (!Parameters)
 			return false;
 
-		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-		static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-		static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+		static auto WoodItemData = FindObject(("/Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+		static auto StoneItemData = FindObject(("/Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+		static auto MetalItemData = FindObject(("/Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
 		UObject* MatDefinition = nullptr;
 		UObject* MatInstance = nullptr;
@@ -92,7 +92,7 @@ namespace Build
 				{
 					if (!Defines::bIsPlayground)
 					{
-
+						Inventory::TakeItem(Controller, *UFortItem::GetGuid(MatInstance), 10);
 					}
 				}
 			}

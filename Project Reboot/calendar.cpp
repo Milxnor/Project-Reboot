@@ -15,7 +15,7 @@ void ShowFoundation(UObject* Foundation, bool bShow = true)
 
 	((PlaceholderBitfield*)(__int64(Foundation) + bServerStreamedInLevelOffset))->Second = bShow;
 
-	static auto OnRep_ServerStreamedInLevel = FindObject<UFunction>("Function /Script/FortniteGame.BuildingFoundation.OnRep_ServerStreamedInLevel");
+	static auto OnRep_ServerStreamedInLevel = FindObject<UFunction>("/Script/FortniteGame.BuildingFoundation.OnRep_ServerStreamedInLevel");
 
 	if (OnRep_ServerStreamedInLevel)
 		Foundation->ProcessEvent(OnRep_ServerStreamedInLevel);
@@ -30,7 +30,7 @@ void ShowFoundation(UObject* Foundation, bool bShow = true)
 		static auto FoundationEnabledStateOffset = Foundation->GetOffset("FoundationEnabledState");
 		*(uint8_t*)(__int64(Foundation) + FoundationEnabledStateOffset) = 1;
 
-		static auto OnRep_DynamicFoundationRepData = FindObject<UFunction>("Function /Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData");
+		static auto OnRep_DynamicFoundationRepData = FindObject<UFunction>("/Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData");
 
 		if (OnRep_DynamicFoundationRepData)
 			Foundation->ProcessEvent(OnRep_DynamicFoundationRepData);
@@ -43,20 +43,20 @@ void Calendar::FixLocations()
 	{
 		if (Fortnite_Version != 6.10)
 		{
-			auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
-			auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
+			auto Lake = FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+			auto Lake2 = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
 
 			Fortnite_Version <= 6.21 ? ShowFoundation(Lake) : ShowFoundation(Lake2);
 			// ^ This shows the lake after or before the event i dont know if this is needed.
 		}
 		else
 		{
-			auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest12"));
+			auto Lake = FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest12"));
 			ShowFoundation(Lake);
 		}
 
-		auto FloatingIsland = Fortnite_Version == 6.10f ? FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13")) :
-			FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+		auto FloatingIsland = Fortnite_Version == 6.10f ? FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13")) :
+			FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
 
 		ShowFoundation(FloatingIsland);
 	}
@@ -70,16 +70,16 @@ void Calendar::FixLocations()
 
 			}
 
-			auto PolarPeak = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"));
+			auto PolarPeak = FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"));
 			ShowFoundation(PolarPeak);
 
-			auto tiltedtower = FindObject("BuildingFoundation5x5 /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
+			auto tiltedtower = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
 			ShowFoundation(tiltedtower);
 		}
 
 		else if (Fortnite_Season == 8)
 		{
-			auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
+			auto Volcano = FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
 			ShowFoundation(Volcano);
 		}
 
@@ -87,12 +87,12 @@ void Calendar::FixLocations()
 		{
 			if (Fortnite_Version >= 10.20)
 			{
-				auto Island = FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest16");
+				auto Island = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest16");
 				ShowFoundation(Island);
 			}
 		}
 
-		auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
+		auto TheBlock = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
 		ShowFoundation(TheBlock);
 	}
 }
@@ -103,7 +103,7 @@ void Calendar::SetWaterLevel(int WaterLevel)
 
 	// There was 7 water levels
 
-	UObject* WL = FindObject("Apollo_WaterSetup_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2"); // Is this 13.40 specific?
+	UObject* WL = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2"); // Is this 13.40 specific?
 	// UObject* Func = WL->Function("SetWaterLevel");
 	// UObject* Func2 = WL->Function("OnRep_CurrentWaterLevel");
 	int NewWaterLevel = WaterLevel;

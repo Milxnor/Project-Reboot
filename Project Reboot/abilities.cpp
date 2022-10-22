@@ -5,7 +5,7 @@
 void Abilities::ClientActivateAbilityFailed(UObject* ASC, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey)
 {
     struct { FGameplayAbilitySpecHandle AbilityToActivate; int16_t PredictionKey; } UAbilitySystemComponent_ClientActivateAbilityFailed_Params{ AbilityToActivate, PredictionKey };
-    static auto fn = FindObject<UFunction>("Function /Script/GameplayAbilities.AbilitySystemComponent.ClientActivateAbilityFailed");
+    static auto fn = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.ClientActivateAbilityFailed");
 
     ASC->ProcessEvent(fn, &UAbilitySystemComponent_ClientActivateAbilityFailed_Params);
 }
@@ -154,7 +154,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
             *inad = (*inad & ~1) | (false ? 1 : 0);
         }
 
-        FastTArray::MarkItemDirty(GetActivatableAbilities(ASC), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper function again
+        FastTArray::MarkItemDirty(GetActivatableAbilities(ASC), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper again
     }
 }
 
@@ -212,9 +212,9 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
             path = path.substr(path.find_first_of(" ") + 1);
 
-            auto DefaultAbilityName = std::format("{1} {0}Default__{1}", path, ending);
+            auto DefaultAbilityName = std::format("{0}Default__{1}", path, ending);
 
-            // std::cout << "DefaultAbilityName: " << DefaultAbilityName << '\n';
+            std::cout << "DefaultAbilityName: " << DefaultAbilityName << '\n';
 
             DefaultObject = FindObject(DefaultAbilityName);
             defaultAbilities.emplace(name, DefaultObject);
@@ -289,8 +289,12 @@ bool Abilities::ServerTryActivateAbilityWithEventData(UObject* AbilitySystemComp
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params*)Parameters;
 
-    static auto PredictionKeyOffset = FindOffsetStruct2("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", "PredictionKey");
-    static auto TriggerEventDataOffset = FindOffsetStruct2("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", "TriggerEventData");
+    static auto PredictionKeyOffset = Function->GetOffset("PredictionKey", true, true);
+    static auto TriggerEventDataOffset = Function->GetOffset("TriggerEventData", true, true);
+
+    std::cout << "PredictionKeyOffset: " << PredictionKeyOffset << '\n';
+
+    return false;
 
     InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, (__int64*)(__int64(Parameters) + PredictionKeyOffset),
         (__int64*)(__int64(Parameters) + TriggerEventDataOffset));

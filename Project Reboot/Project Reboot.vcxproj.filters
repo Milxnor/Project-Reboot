@@ -98,6 +98,9 @@
     <ClCompile Include="datatables.cpp">
       <Filter>Source\Unreal</Filter>
     </ClCompile>
+    <ClCompile Include="zone.cpp">
+      <Filter>Source\Gameplay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -156,6 +159,9 @@
     </ClInclude>
     <ClInclude Include="datatables.h">
       <Filter>Headers\Unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="zone.h">
+      <Filter>Headers\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

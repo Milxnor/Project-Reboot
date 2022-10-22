@@ -5,8 +5,10 @@
 #include "abilities.h"
 #include "patterns.h"
 #include "server.h"
+#include "zone.h"
 #include "harvesting.h"
 #include "calendar.h"
+#include "loot.h"
 
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters)
 {
@@ -38,19 +40,29 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		Defines::bShouldSpawnFloorLoot = true;
 
-		static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
-		Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+		if (Engine_Version >= 423)
+		{
+			static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
+			Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+		}
+
+		static auto func1 = FindObject("/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
+
+		AddHook(func1 ? "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange" :
+			"/Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", Zone::OnSafeZoneStateChange);
+
+		AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
 		if (Engine_Version > 424)
-			AddHook("Function /Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", Harvesting::BlueprintCanAttemptGenerateResources);
+			AddHook("/Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", Harvesting::BlueprintCanAttemptGenerateResources);
 		else
 		{
-			AddHook(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), Harvesting::OnDamageServer);
+			AddHook(("/Script/FortniteGame.BuildingActor.OnDamageServer"), Harvesting::OnDamageServer);
 
 			if (Fortnite_Version >= 8.00)
-				AddHook("Function /Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C.OnDamageServer", Harvesting::OnDamageServer);
+				AddHook("/Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C.OnDamageServer", Harvesting::OnDamageServer);
 			else
-				AddHook("Function /Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C.OnDamageServer", Harvesting::OnDamageServer);
+				AddHook("/Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C.OnDamageServer", Harvesting::OnDamageServer);
 		}
 	}
 
@@ -60,7 +72,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 	{
 		if (Fortnite_Version < 7.4)
 		{
-			static const auto QuickBarsClass = FindObject("Class /Script/FortniteGame.FortQuickBars");
+			static const auto QuickBarsClass = FindObject("/Script/FortniteGame.FortQuickBars");
 			static auto QuickBarsOffset = PlayerController->GetOffset("QuickBars");
 
 			*(UObject**)(__int64(PlayerController) + QuickBarsOffset) = Helper::Easy::SpawnActor(QuickBarsClass, FVector(), FRotator(), PlayerController);
@@ -91,35 +103,39 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		bool bUpdate = false;
 
-		static auto EditTool = FindObject(("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
+		static auto EditTool = FindObject(("/Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
 		auto EditToolInstance = Inventory::GiveItem(PlayerController, EditTool, EFortQuickBars::Primary, 0, 1, bUpdate);
 
-		static auto BuildingItemData_Wall = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
-		static auto BuildingItemData_Floor = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
-		static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
-		static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
+		static auto BuildingItemData_Wall = FindObject(("/Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
+		static auto BuildingItemData_Floor = FindObject(("/Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
+		static auto BuildingItemData_Stair_W = FindObject(("/Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
+		static auto BuildingItemData_RoofS = FindObject(("/Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
 
 		Inventory::GiveItem(PlayerController, BuildingItemData_Wall, EFortQuickBars::Secondary, 0, bUpdate);
 		Inventory::GiveItem(PlayerController, BuildingItemData_Floor, EFortQuickBars::Secondary, 1, bUpdate);
 		Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 		Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
 
-		static auto PIDClass = FindObject("Class /Script/FortniteGame.AthenaPickaxeItemDefinition");
+		UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 
-		static auto AllObjects = Helper::GetAllObjectsOfClass(PIDClass);
+		if (Engine_Version >= 421)
+		{
+			static auto PIDClass = FindObject("/Script/FortniteGame.AthenaPickaxeItemDefinition");
 
-		auto random = rand() % (AllObjects.size());
-		random = random <= 0 ? 1 : random;
+			static auto AllObjects = Helper::GetAllObjectsOfClass(PIDClass);
 
-		auto pick = AllObjects.at(random);
-		static auto WeaponDefinitionOffset = pick->GetOffset("WeaponDefinition");
+			auto random = rand() % (AllObjects.size());
+			random = random <= 0 ? 1 : random;
 
-		auto PickaxeDef = *(UObject**)(__int64(pick) + WeaponDefinitionOffset);
+			auto pick = AllObjects.at(random);
+			static auto WeaponDefinitionOffset = pick->GetOffset("WeaponDefinition");
 
-		// static auto PickaxeDef = FindObject("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+			PickaxeDef = *(UObject**)(__int64(pick) + WeaponDefinitionOffset);
+		}
+
 		auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
-		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+		static auto WoodItemData = FindObject(("/Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 		Inventory::GiveItem(PlayerController, WoodItemData, EFortQuickBars::Secondary, 0, 999);
 
 		auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
@@ -128,7 +144,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		{
 			if (Fortnite_Version < 8.30)
 			{
-				static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
+				static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
 
 				if (AbilitySet)
 				{
@@ -151,7 +167,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			}
 			else
 			{
-				static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
+				static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
 
 				if (AbilitySet)
 				{
@@ -195,7 +211,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			Server::Hooks::Initialize();
 		}
 
-		static auto Playlist = FindObject("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		static auto Playlist = FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
 
@@ -207,7 +223,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			{
 				static auto CurrentPlaylistInfoOffset = GameState->GetOffset("CurrentPlaylistInfo");
 
-				static auto PlaylistReplicationKeyOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("PlaylistReplicationKey"));
+				static auto PlaylistReplicationKeyOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray", ("PlaylistReplicationKey"));
 
 				auto PlaylistInfo = (void*)(__int64(GameState) + CurrentPlaylistInfoOffset);
 				auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
@@ -224,6 +240,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		*Get<int>(GameSession, MaxPlayersOffset) = 100; // We would get from playlist but playground max is 4 people..
 
 		Calendar::FixLocations();
+
+		Looting::Initialize();
 
 		std::cout << "Ready to start match!\n";
 	}
@@ -242,7 +260,7 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, bool* Ou
 
 	if (Fortnite_Version >= 6.21) // might have been 6.2
 	{
-		static auto FortPlayerStateAthenaDefault = FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena");
+		static auto FortPlayerStateAthenaDefault = FindObject("/Script/FortniteGame.Default__FortPlayerStateAthena");
 
 		struct
 		{
@@ -251,14 +269,14 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, bool* Ou
 			uint8_t                                        ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 		} AFortPlayerStateAthena_ToDeathCause_Params{ Tags, false };
 
-		static auto ToDeathCause = FindObject<UFunction>("Function /Script/FortniteGame.FortPlayerStateAthena.ToDeathCause");
+		static auto ToDeathCause = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.ToDeathCause");
 		FortPlayerStateAthenaDefault->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
 
 		DeathCause = AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue;
 	}
 	else
 	{
-		static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
+		static auto DeathCauseEnum = FindObject("/Script/FortniteGame.EDeathCause");
 
 		for (int i = 0; i < Tags.GameplayTags.Num(); i++) // SKUNK
 		{
@@ -337,7 +355,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 	auto KillerPawn = *(UObject**)(__int64(DeathReport) + KillerPawnOffset);
 	auto KillerPlayerState = *(UObject**)(__int64(DeathReport) + KillerPlayerStateOffset);
 
-	static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("Tags"));
+	static auto TagsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", ("Tags"));
 	FGameplayTagContainer* Tags = (FGameplayTagContainer*)(__int64(DeathReport) + TagsOffset);
 	bool bWasDBNO = false;
 	auto DeathCause = Tags ? GetDeathCause(DeadPlayerState, *Tags, &bWasDBNO) : 0;
@@ -351,11 +369,11 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 	auto DeathInfo = Get<__int64>(DeadPlayerState, DeathInfoOffset);
 
-	static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
-	static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
-	static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
-	static auto DistanceOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Distance"));
-	static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
+	static auto DeathCauseOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("DeathCause"));
+	static auto FinisherOrDownerOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("FinisherOrDowner"));
+	static auto bDBNOOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("bDBNO"));
+	static auto DistanceOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("Distance"));
+	static auto DeathCauseEnum = FindObject("/Script/FortniteGame.EDeathCause");
 
 	*(uint8_t*)(__int64(DeathInfo) + DeathCauseOffset) = DeathCause;
 	*(UObject**)(__int64(DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
@@ -405,6 +423,38 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 	return false;
 }
 
+bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
+{
+	// std::cout << "execute\n";
+
+	if (Ability)
+	{
+		UObject* Pawn; // Helper::GetOwner(ability);
+		static auto Func = FindObject<UFunction>("/Script/FortniteGame.FortGameplayAbility:GetActivatingPawn");
+		Ability->ProcessEvent(Func, &Pawn);
+
+		if (Pawn)
+		{
+			// std::cout << "pawn: " << Pawn->GetFullName() << '\n';
+			auto currentWeapon = Helper::GetCurrentWeapon(Pawn);
+
+			if (currentWeapon)
+			{
+				auto Controller = Helper::GetControllerFromPawn(Pawn);
+				auto entry = Inventory::GetEntryFromWeapon(Controller, currentWeapon);
+
+				auto loadedammo = FFortItemEntry::GetLoadedAmmo(entry);
+
+				static auto AmmoCountOffset = currentWeapon->GetOffset("AmmoCount");
+				FFortItemEntry::SetLoadedAmmo(entry, Controller, *Get<int>(currentWeapon, AmmoCountOffset));
+			}
+			else
+				std::cout << "No CurrentWeapon!\n";
+		}
+	}
+
+	return false;
+}
 
 
 
@@ -423,10 +473,10 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 	if (!Object || !Function)
 		return;
 
-	auto FunctionName = Function->GetFullName();
-
 	if (Defines::bLogProcessEvent)
 	{
+		auto FunctionName = Function->GetFullName();
+
 		if (!strstr(FunctionName.c_str(), ("EvaluateGraphExposedInputs")) &&
 			!strstr(FunctionName.c_str(), ("Tick")) &&
 			!strstr(FunctionName.c_str(), ("OnSubmixEnvelope")) &&
@@ -510,7 +560,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "Check Closest Point") &&
 			!strstr(FunctionName.c_str(), "OnSubtitleChanged__DelegateSignature") &&
 			!strstr(FunctionName.c_str(), "OnServerBounceCallback") &&
-			!strstr(FunctionName.c_str(), "BlueprintGetInteractionTime"))
+			!strstr(FunctionName.c_str(), "BlueprintGetInteractionTime") &&
+			!strstr(FunctionName.c_str(), "OnServerStopCallback"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}
@@ -520,7 +571,7 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 	{
 		if (Function == Func.first)
 		{
-			if (Func.second(Object, Function, Parameters)) // If the function returned true, then cancel default execution.
+			if (Func.second(Object, Function, Parameters)) // If the returned true, then cancel default execution.
 			{
 				return;
 			}

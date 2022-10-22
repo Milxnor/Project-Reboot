@@ -365,3 +365,8 @@ static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f)
 {
 	return DegVal * (M_PI / 180.f);
 }
+
+static bool RandomBoolWithWeight(float Weight, float Min = 0.f, float Max = 1.f)
+{
+	return Weight <= 0.0f ? false : Weight >= GetRandomFloat(Min, Max);
+}

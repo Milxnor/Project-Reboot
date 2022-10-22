@@ -68,18 +68,11 @@ struct TArray
 		return vector;
 	}
 
-	inline bool RemoveAt(const int Index) // , int Size = sizeof(ElementType)) // NOT MINE
+	bool RemoveAt(const int Index, int Size = sizeof(ElementType)) // NOT MINE
 	{
-		if (Index < ArrayNum)
+		if (Index < ArrayNum && Index != ArrayNum - 1)
 		{
-			if (Index != ArrayNum - 1)
-			{
-				// memcpy_s((ElementType*)(__int64(Data) + (Index * Size)), Size, (ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
-				Data[Index] = Data[ArrayNum - 1];
-			}
-
-			--ArrayNum;
-
+			memcpy_s((void*)((uint8_t*)(Data)+Index * Size), Size, (void*)((uint8_t*)(Data)+ArrayNum-- * Size), Size);
 			return true;
 		}
 
@@ -88,11 +81,13 @@ struct TArray
 
 	void Free()
 	{
-		// if (Data)
-			VirtualFree(this, 0, MEM_RELEASE);
+		if (Data && FMemory::Free)
+			FMemory::Free(Data);
 
-		// ArrayNum = 0;
-		// ArrayMax = 0;
+		Data = nullptr;
+
+		ArrayNum = 0;
+		ArrayMax = 0;
 	}
 };
 
@@ -156,8 +151,8 @@ struct UObject
 
 	void ProcessEvent(struct UFunction* Function, void* Parameters = nullptr);
 
-	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false);
-	int GetOffsetSlow(const std::string& MemberName);
+	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false);
+	int GetOffsetSlow(const std::string& MemberName, bool bPrint = false);
 
 	bool IsA(UObject* otherClass);
 };

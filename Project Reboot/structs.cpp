@@ -4,9 +4,9 @@
 
 std::string FName::ToString()
 {
-	static auto KismetStringLibrary = FindObject("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary");
+	static auto KismetStringLibrary = FindObject("/Script/Engine.Default__KismetStringLibrary");
 
-	static auto Conv_NameToString = FindObject<UFunction>("Function /Script/Engine.KismetStringLibrary.Conv_NameToString");
+	static auto Conv_NameToString = FindObject<UFunction>("/Script/Engine.KismetStringLibrary.Conv_NameToString");
 
 	struct { FName InName; FString OutStr; } Conv_NameToString_Params{*this};
 
@@ -21,8 +21,8 @@ std::string FName::ToString()
 
 std::string UObject::GetName()
 {
-	static auto GetObjectNameFunction = FindObject<UFunction>("Function /Script/Engine.KismetSystemLibrary.GetObjectName");
-	static auto KismetSystemLibrary = FindObject("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary");
+	static auto GetObjectNameFunction = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetObjectName");
+	static auto KismetSystemLibrary = FindObject("/Script/Engine.Default__KismetSystemLibrary");
 
 	struct { UObject* Object; FString ReturnValue; } GetObjectName_Params{ this };
 
@@ -33,13 +33,13 @@ std::string UObject::GetName()
 
 	Ret.Free();
 
-	return GetObjectName_Params.ReturnValue.ToString();
+	return RetStr;
 }
 
 std::string UObject::GetPathName()
 {
-	static auto GetPathNameFunction = FindObject<UFunction>("Function /Script/Engine.KismetSystemLibrary.GetPathName");
-	static auto KismetSystemLibrary = FindObject("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary");
+	static auto GetPathNameFunction = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetPathName");
+	static auto KismetSystemLibrary = FindObject("/Script/Engine.Default__KismetSystemLibrary");
 
 	struct { UObject* Object; FString ReturnValue; } GetPathName_Params{this};
 
@@ -66,7 +66,7 @@ void UObject::ProcessEvent(struct UFunction* Function, void* Parameters)
 template <typename ObjectType>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class, UObject* InOuter)
 {
-	auto ObjectNameCut = ObjectName.substr(ObjectName.find(" ") + 1);
+	auto ObjectNameCut = ObjectName; // ObjectName.substr(ObjectName.find(" ") + 1);
 	auto ObjectNameWide = std::wstring(ObjectNameCut.begin(), ObjectNameCut.end()).c_str();
 
 	return (ObjectType*)StaticFindObjectO(Class, InOuter, ObjectNameWide, false);
@@ -84,7 +84,7 @@ int FindOffsetStruct(const std::string& StructName, const std::string& MemberNam
 	if (Engine_Version >= 425)
 		return Struct->GetOffset(MemberName);
 
-	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
+	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
 
 	auto Prop = FindObject(MemberName, PropertyClass, Struct);
 
@@ -193,12 +193,12 @@ UObject* GetDefaultObject(UObject* Class)
 	return FindObject(DefaultAbilityName);
 }
 
-int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct)
+int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool bPrint)
 {
 	if (Engine_Version >= 425) // fprop i dont think it works with this
 		return GetOffsetSlow(MemberName);
 
-	static auto PropertyClass = FindObject("Class /Script/CoreUObject.Property");
+	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
 
 	UObject* Property = nullptr;
 
@@ -228,7 +228,7 @@ int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct)
 	return offsetPtr ? *offsetPtr : 0;
 }
 
-int UObject::GetOffsetSlow(const std::string& MemberName)
+int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint)
 {
 	for (auto CurrentClass = ClassPrivate; CurrentClass; CurrentClass = *(UObject**)(__int64(CurrentClass) + SuperStructOffset))
 	{
@@ -238,7 +238,8 @@ int UObject::GetOffsetSlow(const std::string& MemberName)
 		{
 			auto PropName = GetNameOfChild(Property);
 
-			// std::cout << "PropName: " << PropName << '\n';
+			if (bPrint)
+				std::cout << "PropName: " << PropName << '\n';
 
 			if (PropName == MemberName) // somehow it didnt work without this?!?!?!?!?!?!?!?!!?!!?!?!?!?
 			{
@@ -247,7 +248,8 @@ int UObject::GetOffsetSlow(const std::string& MemberName)
 
 			while (Property)
 			{
-				// std::cout << "PropName: " << PropName << '\n';
+				if (bPrint)
+					std::cout << "PropName: " << PropName << '\n';
 
 				if (PropName == MemberName)
 				{
