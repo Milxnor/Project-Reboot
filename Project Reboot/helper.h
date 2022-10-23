@@ -48,6 +48,11 @@ namespace Helper
 	UObject* GetOwnerOfComponent(UObject* Component);
 	UObject* GetOwner(UObject* Actor);
 	int GetMaxBullets(UObject* Definition);
+	UObject* GetPickaxeDef(UObject* Controller);
+
+	FVector GetActorForwardVector(UObject* Actor);
+	FVector GetActorRightVector(UObject* Actor);
+	FVector GetCorrectLocation(UObject* Actor);
 
 	std::vector<UObject*> GetAllObjectsOfClass(UObject* Class);
 	UObject* GetPlayerStart();

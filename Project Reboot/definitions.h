@@ -7,13 +7,18 @@ namespace Defines
 {
 	inline bool bLogProcessEvent = false;
 	inline bool bReadyForStartMatch = true;
-	inline bool bIsPlayground = false;
-	inline bool bShouldSpawnFloorLoot = false;
+	inline bool bIsPlayground = true;
+	inline bool bIsLateGame = false;
 	inline bool bRandomSkin = true;
 	inline bool bRandomPickaxe = true;
-	inline bool bIsLateGame = true;
+
+	inline bool bShouldSpawnFloorLoot = false;
+	inline bool bShouldSpawnVehicles = false;
+	inline bool bShouldSpawnForagedItems = false;
 
 	inline int AmountOfRestarts = 0;
+
+	inline std::vector<std::pair<UObject*, std::string>> ObjectsToLoad;
 
 	inline bool (*InitHost)(UObject* Beacon);
 	inline void (*PauseBeaconRequests)(UObject* Beacon, bool bPause);

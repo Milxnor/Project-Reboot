@@ -4,6 +4,11 @@
 
 void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 {
+	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
+
+	if (Helper::GetWeaponData(CurrentWeapon) != Helper::GetPickaxeDef(Controller))
+		return;
+
 	static auto ResourceTypeOffset = BuildingActor->GetOffset("ResourceType");
 	static auto CarClass = FindObject("/Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C");
 
@@ -59,24 +64,19 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 
 	int AmountToGive = ClientReportDamagedResourceBuilding_Params.PotentialResourceCount;
 
-	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
-
-	if (CurrentWeapon)
+	if (MaterialInstance && Pawn)
 	{
-		if (MaterialInstance && Pawn)
+		auto Entry = UFortItem::GetItemEntry(MaterialInstance);
+
+		// BUG: You lose some mats if you have like 998 or idfk
+		if (*FFortItemEntry::GetCount(Entry) >= 999)
 		{
-			auto Entry = UFortItem::GetItemEntry(MaterialInstance);
-
-			// BUG: You lose some mats if you have like 998 or idfk
-			if (*FFortItemEntry::GetCount(Entry) >= 999)
-			{
-				Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive, false);
-				return;
-			}
+			Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive, false);
+			return;
 		}
-
-		Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, -1, AmountToGive);
 	}
+
+	Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, -1, AmountToGive);
 }
 
 bool Harvesting::OnDamageServer(UObject* BuildingActor, UFunction* Function, void* Parameters)

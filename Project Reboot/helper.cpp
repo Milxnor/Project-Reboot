@@ -5,6 +5,7 @@
 UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rotation, UObject* Owner)
 {
 	FActorSpawnParameters SpawnParameters{};
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	SpawnParameters.Owner = Owner;
 	return SpawnActorO(Helper::GetWorld(), Class, &Location, &Rotation, SpawnParameters);
 }
@@ -500,6 +501,39 @@ int Helper::GetMaxBullets(UObject* Definition)
 	}
 
 	return 0;
+}
+
+UObject* Helper::GetPickaxeDef(UObject* Controller)
+{
+	static UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+
+	return PickaxeDef;
+}
+
+FVector Helper::GetActorForwardVector(UObject* Actor)
+{
+	static auto GetActorForwardVectorFN = FindObject<UFunction>("/Script/Engine.Actor.GetActorForwardVector");
+
+	FVector loc;
+	Actor->ProcessEvent(GetActorForwardVectorFN, &loc);
+	return loc;
+}
+
+FVector Helper::GetActorRightVector(UObject* Actor)
+{
+	static auto GetActorRightVectorFN = FindObject<UFunction>("/Script/Engine.Actor.GetActorRightVector");
+
+	FVector loc;
+	Actor->ProcessEvent(GetActorRightVectorFN, &loc);
+	return loc;
+}
+
+FVector Helper::GetCorrectLocation(UObject* Actor)
+{
+	auto Location = Helper::GetActorLocation(Actor);
+	auto RightVector = Helper::GetActorRightVector(Actor);
+
+	return Location + RightVector * 70.0f + FVector{ 0, 0, 50 };
 }
 
 std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncludeDefault

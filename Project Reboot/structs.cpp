@@ -1,6 +1,7 @@
 #include "structs.h"
 #include <iostream> // TODO REMOVE
 #include <format>
+#include "definitions.h"
 
 std::string FName::ToString()
 {
@@ -117,13 +118,44 @@ void* GetNextOfChild(void* Child)
 		return ((UField*)Child)->Next;
 }
 
-int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName)
+UObject* LoadObject(UObject* Class, const std::string& Name)
 {
-	auto CurrentClass = FindObjectSlow(StructName, false);
+	UObject* Object = FindObject(Name);
+
+	if (!Object)
+	{
+		Defines::ObjectsToLoad.push_back(std::make_pair(Class, Name));
+
+		int attempts = 0;
+
+		while (attempts < 5000 && !Object)
+		{
+			Object = FindObject(Name);
+			attempts++;
+		}
+	}
+
+	return Object;
+}
+
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint, bool bContain)
+{
+	UObject* CurrentClass = nullptr;
+
+	if (!bContain)
+		CurrentClass = FindObjectSlow(StructName, false);
+	else
+		CurrentClass = FindObject(StructName);
+
+	if (bPrint)
+		std::cout << "CurrentClass: " << CurrentClass << '\n';
 
 	if (CurrentClass)
 	{
 		auto Property = *(void**)(__int64(CurrentClass) + ChildPropertiesOffset);
+
+		if (bPrint)
+			std::cout << "Property: " << Property << '\n';
 
 		if (Property)
 		{
@@ -131,7 +163,8 @@ int FindOffsetStruct2(const std::string& StructName, const std::string& MemberNa
 
 			while (Property)
 			{
-				// std::cout << "PropName 2: " << PropName << '\n';
+				if (bPrint)
+					std::cout << "PropName: " << PropName << '\n';
 
 				if (PropName == MemberName)
 				{
@@ -195,7 +228,7 @@ UObject* GetDefaultObject(UObject* Class)
 
 int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool bPrint)
 {
-	if (Engine_Version >= 425) // fprop i dont think it works with this
+	if (Engine_Version >= 425) // fprop dont think work with this
 		return GetOffsetSlow(MemberName);
 
 	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");

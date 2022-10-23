@@ -72,7 +72,7 @@ struct TArray
 	{
 		if (Index < ArrayNum && Index != ArrayNum - 1)
 		{
-			memcpy_s((void*)((uint8_t*)(Data)+Index * Size), Size, (void*)((uint8_t*)(Data)+ArrayNum-- * Size), Size);
+			memcpy_s((void*)((uint8_t*)(Data)+ Index * Size), Size, (void*)((uint8_t*)(Data)+ ((ArrayNum--) * Size)), Size);
 			return true;
 		}
 
@@ -291,7 +291,7 @@ ObjectType* FindObjectSlow(const std::string& ObjectName, bool bContains = true)
 		auto CurrentObject = GetObjectByIndex(i);
 
 		if (!CurrentObject)
-			return nullptr;
+			continue;
 
 		auto objectName = CurrentObject->GetFullName();
 
@@ -308,7 +308,9 @@ template <typename ObjectType = UObject>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, UObject* InOuter = nullptr); // Calls StaticFindObject
 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
-int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName);
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false);
+
+UObject* LoadObject(UObject* Class, const std::string& Name);
 
 int GetEnumValue(UObject* Enum, const std::string& EnumMemberName);
 // OTHER

@@ -280,23 +280,20 @@ bool Abilities::ServerTryActivateAbilityWithEventData(UObject* AbilitySystemComp
     if (!Parameters)
         return false;
 
+    static auto PredictionKeyOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", "PredictionKey", true, true);
+    static auto TriggerEventDataOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", "TriggerEventData", true, true);
+
     struct UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params {
         FGameplayAbilitySpecHandle                  AbilityToActivate;                                        // (Parm)
         bool                                               InputPressed;                                             // (Parm, ZeroConstructor, IsPlainOldData)
-        __int64                              PredictionKey;                                            // (Parm)
+        PadHex10                              PredictionKey;                                            // (Parm)
         __int64                          TriggerEventData;                                         // (Parm)
     };
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params*)Parameters;
 
-    static auto PredictionKeyOffset = Function->GetOffset("PredictionKey", true, true);
-    static auto TriggerEventDataOffset = Function->GetOffset("TriggerEventData", true, true);
-
-    std::cout << "PredictionKeyOffset: " << PredictionKeyOffset << '\n';
-
-    return false;
-
-    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, (__int64*)(__int64(Parameters) + PredictionKeyOffset),
+    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed,
+        (__int64*)(__int64(Parameters) + PredictionKeyOffset),
         (__int64*)(__int64(Parameters) + TriggerEventDataOffset));
 
     return false;

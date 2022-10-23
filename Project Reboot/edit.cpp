@@ -45,16 +45,16 @@ bool Editing::ServerEditBuildingActorHook(UObject* Controller, UFunction* Functi
 	if (!Parameters)
 		return false;
 
-	static auto bMirroredOffset = Function->GetOffset("bMirrored", true);
+	static auto bMirroredOffset = FindOffsetStruct2("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "bMirrored", true, true);
 	auto bMirrored = *Get<bool>(Parameters, bMirroredOffset);
 
-	static auto RotationIterationsOffset = Function->GetOffset("RotationIterations", true);
+	static auto RotationIterationsOffset = FindOffsetStruct2("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "RotationIterations", true, true);
 	auto RotationIterations = Fortnite_Version < 8.30 ? *Get<int>(Parameters, RotationIterationsOffset) : *Get<uint8_t>(Parameters, RotationIterationsOffset); // I HATE FORTNITE
 
-	static auto BuildingActorToEditOffset = Function->GetOffset("BuildingActorToEdit", true);
+	static auto BuildingActorToEditOffset = FindOffsetStruct2("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "BuildingActorToEdit", true, true);
 	auto BuildingActorToEdit = *(UObject**)(__int64(Parameters) + BuildingActorToEditOffset);
 
-	static auto NewBuildingClassOffset = Function->GetOffset("NewBuildingClass", true);
+	static auto NewBuildingClassOffset = FindOffsetStruct2("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "NewBuildingClass", true, true);
 	auto NewBuildingClass = *(UObject**)(__int64(Parameters) + NewBuildingClassOffset);
 
 	std::cout << "RotationIterationsOffset: " << RotationIterationsOffset << '\n';

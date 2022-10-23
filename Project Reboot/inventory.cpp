@@ -102,7 +102,7 @@ UObject* GetQuickBars(UObject* Controller)
 	return *(UObject**)(__int64(Controller) + QuickBarsOffset);
 }
 
-void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySerializerItem* ModifiedItem)
+void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySerializerItem* ModifiedItem) // TODO: add eFortquickbars bars and thenm update accoridng to that
 {
 	auto Inventory = GetInventory(Controller);
 
@@ -147,7 +147,7 @@ static float GetMaxStackSize(UObject* ItemDefinition)
 {
 	static auto MaxStackSizeOffset = ItemDefinition->GetOffset("MaxStackSize");
 
-	bool bIsScalableFloat = true; // I swear i saw a version with int
+	bool bIsScalableFloat = Engine_Version >= 424; // prob wrong
 
 	return bIsScalableFloat ? ((FScalableFloat*)(__int64(ItemDefinition) + MaxStackSizeOffset))->Value :
 		*(int*)(__int64(ItemDefinition) + MaxStackSizeOffset);
@@ -316,33 +316,82 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 	return ItemInstance;
 }
 
-UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition)
+UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition, int Ammo)
 {
 	// if (Helper::IsInAircraft(Controller)) // The pawn check does this ig
 		// return nullptr;
 
-	struct {
-		UObject* Def;
-		FGuid Guid;
-		UObject* Wep;
-	} params{ ItemDefinition, Guid };
-
-	static auto EquipWeaponDefinition = FindObject<UFunction>("/Script/FortniteGame.FortPawn.EquipWeaponDefinition");
-
 	auto Pawn = Helper::GetPawnFromController(Controller);
 
-	if (Pawn)
-		Pawn->ProcessEvent(EquipWeaponDefinition, &params);
-	
-	return params.Wep;
+	if (!Pawn)
+		return nullptr;
+
+	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
+	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
+
+	UObject* Wep = nullptr;
+
+	if (ItemDefinition->IsA(AthenaGadgetItemDefinitionClass))
+	{
+		static auto GetWeaponItemDefinition = FindObject<UFunction>("/Script/FortniteGame.FortGadgetItemDefinition.GetWeaponItemDefinition");
+
+		UObject* GadgetDefinition = nullptr;
+
+		if (GetWeaponItemDefinition)
+		{
+			ItemDefinition->ProcessEvent(GetWeaponItemDefinition, &GadgetDefinition);
+		}
+		else
+		{
+			static auto GetDecoItemDefinition = FindObject<UFunction>("/Script/FortniteGame.FortGadgetItemDefinition.GetDecoItemDefinition");
+			ItemDefinition->ProcessEvent(GetDecoItemDefinition, &GadgetDefinition);
+		}
+
+		EquipWeapon(Controller, Guid, GadgetDefinition, Ammo);
+	}
+
+	else if (ItemDefinition->IsA(FortDecoItemDefinitionClass))
+	{
+		UObject* WeaponClass = nullptr;
+		static auto GetWeaponActorClass = FindObject<UFunction>("/Script/FortniteGame.FortWeaponItemDefinition.GetWeaponActorClass");
+		ItemDefinition->ProcessEvent(GetWeaponActorClass, &WeaponClass);
+
+		auto TrapToolClass = WeaponClass; // FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_BuildingTools/TrapTool.TrapTool_C");
+		auto newTrapTool = Helper::Easy::SpawnActor(TrapToolClass, Helper::GetActorLocation(Pawn));
+
+		static auto PickUpActor = FindObject<UFunction>("/Script/FortniteGame.FortPawn.PickUpActor");
+		struct { UObject* PickupActor; UObject* PlacementDecoItemDefinition; } parms{ newTrapTool, ItemDefinition };
+
+		Pawn->ProcessEvent(PickUpActor, &parms);
+	}
+
+	else
+	{
+		struct { UObject* Def; FGuid Guid; UObject* Wep; } params{ ItemDefinition, Guid };
+
+		static auto EquipWeaponDefinition = FindObject<UFunction>("/Script/FortniteGame.FortPawn.EquipWeaponDefinition");
+
+		if (Pawn)
+			Pawn->ProcessEvent(EquipWeaponDefinition, &params);
+
+		Wep = params.Wep;
+
+		if (Wep)
+		{
+			static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
+			*Get<int>(Wep, AmmoCountOffset) = Ammo;
+		}
+	}
+
+	return Wep;
 }
 
-UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance)
+UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance, int Ammo)
 {
 	auto Def = UFortItem::GetDefinition(Instance);
 	auto Guid = UFortItem::GetGuid(Instance);
 
-	return Def && Guid ? EquipWeapon(Controller, *Guid, *Def) : nullptr;
+	return Def && Guid ? EquipWeapon(Controller, *Guid, *Def, Ammo) : nullptr;
 }
 
 EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
@@ -356,12 +405,14 @@ EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
 		return EFortQuickBars::Secondary;
 }
 
-void Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, bool bForceRemove)
+UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, bool bForceRemove)
 {
 	auto Instance = Inventory::FindItemInInventory(Controller, Guid);
 
 	if (!Instance)
-		return;
+		return nullptr;
+
+	auto Def = *UFortItem::GetDefinition(Instance);
 
 	if (!bForceRemove)
 		DecreaseItemCount(Controller, Instance, Count);
@@ -403,6 +454,8 @@ void Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, bool
 	}
 	
 	Inventory::Update(Controller, true);
+	
+	return Def;
 }
 
 UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
@@ -463,7 +516,9 @@ bool Inventory::ServerExecuteInventoryItem(UObject* Controller, UFunction* Funct
 	if (Instance)
 	{
 		auto Definition = UFortItem::GetDefinition(Instance);
-		auto NewWeapon = EquipWeapon(Controller, Guid, Definition ? *Definition : nullptr);
+		auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(UFortItem::GetItemEntry(Instance));
+		std::cout << "LoadedAmmo: " << *LoadedAmmo << '\n';
+		auto NewWeapon = EquipWeapon(Controller, Guid, Definition ? *Definition : nullptr, *LoadedAmmo);
 	}
 	else
 		std::cout << "Unable to find Guid in Inventory for ServerExecuteInventoryItem!\n";
@@ -480,7 +535,7 @@ bool Inventory::ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void
 
 	auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
 
-	TakeItem(Controller, Params->ItemGuid, Params->Count);
+	// TakeItem(Controller, Params->ItemGuid, Params->Count);
 
 	return false;
 }
@@ -499,20 +554,57 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	auto Controller = Helper::GetControllerFromPawn(Pawn);
 
+	int PrimaryQuickBarSlotsFilled = 0;
+
+	auto ItemInstances = GetItemInstances(Controller);
+
+	bool bShouldSwap = false;
+
+	for (int i = 0; i < ItemInstances->Num(); i++)
+	{
+		auto ItemInstance = ItemInstances->At(i);
+
+		if (!ItemInstance)
+			break;
+
+		auto Definition = *UFortItem::GetDefinition(ItemInstance);
+
+		if (Inventory::WhatQuickBars(Definition) == EFortQuickBars::Primary)
+		{
+			PrimaryQuickBarSlotsFilled++;
+			bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5;
+
+			if (bShouldSwap)
+				break;
+		}
+	}
+
+	if (bShouldSwap)
+	{
+		auto Def = Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(Helper::GetCurrentWeapon(Pawn)), -1, true);
+		Helper::SummonPickup(Pawn, Def, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset);
+	}
+
 	int NextSlot = 1;
 
 	auto Instance = GiveItem(Controller, *Definition, WhatQuickBars(*Definition), NextSlot, *Count);
 
 	auto NewEntry = UFortItem::GetItemEntry(Instance);
-	FFortItemEntry::SetLoadedAmmo(NewEntry, Controller, *FFortItemEntry::GetLoadedAmmo(PickupEntry));
+	
+	auto PickupLoadedAmmo = *FFortItemEntry::GetLoadedAmmo(PickupEntry);
+	std::cout << "PickupLoadedAmmo: " << PickupLoadedAmmo << '\n';
+
+	FFortItemEntry::SetLoadedAmmo(NewEntry, Controller, PickupLoadedAmmo);
 
 	Helper::DestroyActor(Pickup);
 
-	return false;
+	return true;
 }
 
 void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 {
+	// std::cout << "pls help!\n";
+
 	Defines::HandleReloadCost(Weapon, AmountToRemove);
 
 	static auto AmmoCountOffset = Weapon->GetOffset("AmmoCount");
@@ -527,15 +619,15 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 	if (Defines::bIsPlayground)
 		return;
 
-	/* Inventory::DecreaseItemCount(PlayerController, instance, AmountToRemove, &AmmoEntry);
+	auto WeaponData = Helper::GetWeaponData(Weapon);
+	auto AmmoDef = Helper::GetAmmoForDefinition(WeaponData).first;
 
-	if (AmmoEntry)
-	{
-		auto ammocounnt = FFortItemEntry::GetCount(AmmoEntry);
+	static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
 
-		if (ammocounnt && *ammocounnt <= 0) // Destroy the item if it has no count
-		{
-			Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(AmmoEntry));
-		}
-	} */
+	std::cout << "WeaponData Name: " << WeaponData->GetFullName() << '\n';
+
+	if (!AmmoDef || WeaponData->IsA(FortTrapItemDefinitionClass))
+		AmmoDef = WeaponData;
+
+	Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(AmmoDef), AmountToRemove);
 }

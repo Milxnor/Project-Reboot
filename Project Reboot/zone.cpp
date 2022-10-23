@@ -10,7 +10,7 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 
 		auto Params = (ASafeZoneIndicator_C_OnSafeZoneStateChange_Params*)Parameters;
 
-		static auto NextCenterOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortSafeZoneIndicator", "NextCenter");
+		static auto NextCenterOffset = FindOffsetStruct2("/Script/FortniteGame.FortSafeZoneIndicator", "NextCenter", false, true);
 		auto NextCenter = (FVector*)(__int64(Indicator) + NextCenterOffset);
 
 		auto AuthGameMode = Helper::GetGameMode();

@@ -192,6 +192,15 @@ void Server::Hooks::Initialize()
 
 void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 {
+	auto load = [](UObject* Class, const std::string& Name) -> UObject* {
+		UObject* Object = FindObject(Name);
+
+		if (!Object)
+			Object = StaticLoadObject(Class, nullptr, Name);
+
+		return Object;
+	};
+
 	auto World = Helper::GetWorld();
 
 	if (World)
@@ -218,6 +227,182 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 		}
 	}
 
+	if (Defines::ObjectsToLoad.size() > 0)
+	{
+		for (int i = 0; i < Defines::ObjectsToLoad.size(); i++)
+		{
+			auto& Object = Defines::ObjectsToLoad.at(i);
+
+			StaticLoadObject(Object.first, nullptr, Object.second);
+			Defines::ObjectsToLoad.erase(Defines::ObjectsToLoad.begin() + i);
+		}
+	}
+
+	if (Defines::bShouldSpawnForagedItems)
+	{
+		Defines::bShouldSpawnForagedItems = false;
+
+		static auto BGAConsumableSpawnerClass = FindObject("/Script/FortniteGame.BGAConsumableSpawner");
+
+		auto AllActors = Helper::GetAllActorsOfClass(BGAConsumableSpawnerClass);
+
+		std::cout << "Spawning: " << AllActors.Num() << " foraged items!\n";
+
+		for (int i = 0; i < AllActors.Num(); i++)
+		{
+			auto AllActor = AllActors.At(i);
+
+			if (AllActor)
+			{
+				static auto SpawnLootTierGroupOffset = AllActor->GetOffset("SpawnLootTierGroup");
+				auto SpawnLootTierGroupFName = Get<FName>(AllActor, SpawnLootTierGroupOffset);
+
+				auto SpawnLootTierGroup = SpawnLootTierGroupFName->ToString();
+
+				std::cout << "SpawnLootTierGroup: " << SpawnLootTierGroup << '\n';
+
+				auto Location = Helper::GetActorLocation(AllActor);
+				auto Rotation = Helper::GetActorRotation(AllActor);
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_AthenaRift")
+				{
+					auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+
+					Helper::Easy::SpawnActor(riftportal, Location, Rotation);
+				}
+
+				continue;
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_SpookyMist") // Cube Consumable
+				{
+					auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/SpookyMist/CBGA_SpookyMist.CBGA_SpookyMist_C");
+
+					Helper::Easy::SpawnActor(riftportal, Location, Rotation);
+				}
+			}
+		}
+	}
+
+	if (Defines::bShouldSpawnVehicles)
+	{
+		Defines::bShouldSpawnVehicles = false;
+
+		static auto FortVehicleSpawnerClass = FindObject("/Game/Athena/DrivableVehicles/Athena_VehicleSpawner.Athena_VehicleSpawner_C");
+
+		auto spawnerClass = FortVehicleSpawnerClass;
+
+		auto Spawners = Helper::GetAllActorsOfClass(spawnerClass);
+
+		std::cout << "Spawning: " << Spawners.Num() << " vehicles\n";
+
+		for (int i = 0; i < Spawners.Num(); i++)
+		{
+			auto Spawner = Spawners.At(i);
+
+			if (!Spawner)
+				continue;
+
+			std::cout << std::format("[{}] {}\n", i, Spawner->GetFullName());
+
+			static auto FortVehicleItemDefVariantsOffset = Spawner->GetOffset("FortVehicleItemDefVariants");
+
+			struct FVehicleWeightedDef
+			{
+				TSoftObjectPtr VehicleItemDef;
+				FScalableFloat                              Weight;                                                   // 0x0028(0x0020) (Edit, BlueprintVisible, BlueprintReadOnly)
+			};
+
+			auto FortVehicleItemDefVariants = Get<TArray<FVehicleWeightedDef>>(Spawner, FortVehicleItemDefVariantsOffset);
+
+			std::cout << "FortVehicleItemDefVariants: " << FortVehicleItemDefVariants->Num() << '\n';
+
+			static auto VIDClass = FindObject("/Script/FortniteGame.FortVehicleItemDefinition");
+
+			if (FortVehicleItemDefVariants->Num() > 0)
+			{
+				auto first = FortVehicleItemDefVariants->At(0);
+
+				auto AssetPathName = first.VehicleItemDef.ObjectID.AssetPathName;
+
+				std::cout << "AssetPathName: " << AssetPathName.ComparisonIndex << '\n';
+
+				if (!AssetPathName.ComparisonIndex)
+					continue;
+
+				auto VehicleItemDef = load(VIDClass, AssetPathName.ToString());
+
+				std::cout << "VehicleItemDef: " << VehicleItemDef << '\n';
+
+				if (VehicleItemDef)
+				{
+					static auto VehicleActorClassOffset = VehicleItemDef->GetOffset("VehicleActorClass");
+
+					auto VehicleActorClassSoft = Get<TSoftObjectPtr>(VehicleItemDef, VehicleActorClassOffset);
+
+					auto assetpathname = VehicleActorClassSoft->ObjectID.AssetPathName;
+
+					std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
+
+					if (!assetpathname.ComparisonIndex)
+						continue;
+
+					auto VehicleActorClass = load(Helper::GetBGAClass(), assetpathname.ToString());
+
+					std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
+
+					if (!VehicleActorClass)
+						continue;
+
+					auto SpawnerLoc = Helper::GetActorLocation(Spawner);
+
+					Helper::Easy::SpawnActor(VehicleActorClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
+				}
+			}
+			else
+			{
+				static auto FortVehicleItemDefOffset = Spawner->GetOffset("FortVehicleItemDef");
+
+				auto FortVehicleItemDefSoft = Get<TSoftObjectPtr>(Spawner, FortVehicleItemDefOffset);
+
+				auto assstpaht = FortVehicleItemDefSoft->ObjectID.AssetPathName;
+
+				std::cout << "assstpaht: " << assstpaht.ComparisonIndex << '\n';
+
+				if (!assstpaht.ComparisonIndex)
+					continue;
+
+				auto FortVehicleItemDef = load(VIDClass, assstpaht.ToString());
+
+				if (!FortVehicleItemDef)
+					continue;
+
+				static auto VehicleActorClassOffset = FortVehicleItemDef->GetOffset("VehicleActorClass");
+
+				auto VehicleActorClassSoft = Get<TSoftObjectPtr>(FortVehicleItemDef, VehicleActorClassOffset);
+
+				auto assetpathname = VehicleActorClassSoft->ObjectID.AssetPathName;
+
+				std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
+
+				if (!assetpathname.ComparisonIndex)
+					continue;
+
+				auto VehicleActorClass = load(Helper::GetBGAClass(), assetpathname.ToString());
+
+				std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
+
+				if (!VehicleActorClass)
+					continue;
+
+				auto SpawnerLoc = Helper::GetActorLocation(Spawner);
+
+				Helper::Easy::SpawnActor(VehicleActorClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
+			}
+		}
+
+		Spawners.Free();
+	}
+
 	if (Defines::bShouldSpawnFloorLoot && Engine_Version >= 421) // TODO move this
 	{
 		static auto SpawnIsland_FloorLoot = FindObject("/Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C");
@@ -230,8 +415,6 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 		}
 		else
 		{
-			Defines::bShouldSpawnFloorLoot = false;
-
 			std::cout << "Spawning floor loot!\n";
 
 			std::cout << "SpawnIsland_FloorLoot: " << SpawnIsland_FloorLoot << '\n';
@@ -310,8 +493,13 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 				return Num;
 			};
 
-			SpawnFloorLoot(SpawnIsland_FloorLoot);
-			SpawnFloorLoot(BRIsland_FloorLoot);
+			if (SpawnFloorLoot(SpawnIsland_FloorLoot) != 0)
+			{
+				if (SpawnFloorLoot(BRIsland_FloorLoot) != 0)
+				{
+					Defines::bShouldSpawnFloorLoot = false;
+				}
+			}
 		}
 	}
 

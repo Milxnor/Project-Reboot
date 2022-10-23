@@ -231,6 +231,7 @@ static bool InitializePatterns()
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
+		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 	}
 
 	if (Engine_Version == 423)
@@ -252,6 +253,7 @@ static bool InitializePatterns()
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
+		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 
 		if (Fortnite_Season == 10)
 			ValidationFailurePattern = "40 53 41 56 48 81 EC ? ? ? ? 48 8B 01 48 8B DA 4C 8B F1 FF 90 ? ? ? ? 48 8B 0D";
@@ -275,6 +277,7 @@ static bool InitializePatterns()
 		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
+		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 	}
 
 	if (Engine_Version == 425)
@@ -296,6 +299,7 @@ static bool InitializePatterns()
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ? 49";
+		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 	}
 
 	if (Engine_Version == 426)
@@ -318,6 +322,8 @@ static bool InitializePatterns()
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ? 49 89 5B";
 		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
 		CanActivateAbilityPattern = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0 8B DA 48";
+		HandleReloadCostPattern = "89 54 24 10 55 53 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 8B DA";
+		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 
 		if (Fortnite_Season == 13)
 			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 63 E0 45 33 E4 4D 89 6B D8 45";
@@ -412,6 +418,7 @@ static bool InitializePatterns()
 	NoMCPAddress = bIsNoMCPRelative ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
 	FreeAddress = Memory::FindPattern(FreePattern);
 	HandleReloadCostAddress = Memory::FindPattern(HandleReloadCostPattern);
+	CanActivateAbilityAddress = Memory::FindPattern(CanActivateAbilityPattern);
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
 
@@ -436,6 +443,7 @@ static bool InitializePatterns()
 	std::cout << std::format("NoMCPAddress: 0x{:x}\n", (uintptr_t)NoMCPAddress - Base);
 	std::cout << std::format("FreeAddress: 0x{:x}\n", (uintptr_t)FreeAddress - Base);
 	std::cout << std::format("HandleReloadCostAddress: 0x{:x}\n", (uintptr_t)HandleReloadCostAddress - Base);
+	std::cout << std::format("CanActivateAbilityAddress: 0x{:x}\n", (uintptr_t)CanActivateAbilityAddress - Base);
 
 	if (!InitHostAddress || !StaticFindObjectAddress || !ProcessEventAddress || !ObjectsAddress)
 		return false;

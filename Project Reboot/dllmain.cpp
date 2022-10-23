@@ -18,20 +18,7 @@ DWORD WINAPI Input(LPVOID)
 {
     while (1)
     {
-        if (GetAsyncKeyState(VK_F1) & 1)
-        {
-            Server::Listen();
-            Server::Hooks::Initialize();
-
-            std::cout << "nice!\n";
-
-            MH_CreateHook((PVOID)ProcessEventAddress, ProcessEventDetour, (PVOID*)&ProcessEventO);
-            MH_EnableHook((PVOID)ProcessEventAddress);
-
-            Defines::bLogProcessEvent = true;
-        }
-
-        else if (GetAsyncKeyState(VK_F2) & 1)
+        if (GetAsyncKeyState(VK_F2) & 1)
         {
             Defines::bLogProcessEvent = !Defines::bLogProcessEvent;
             std::cout << "Set Defines::bLogProcessEvent to " << Defines::bLogProcessEvent << '\n';
@@ -65,7 +52,7 @@ DWORD WINAPI Input(LPVOID)
 
                 TArray<__int64>* ItemCollections = Get<TArray<__int64>>(BuildingItemCollectorActor, ItemCollectionsOffset); // CollectorUnitInfo
 
-                static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem");
+                static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem", false, true);
 
                 static auto Def = FindObject("/Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03");
 
@@ -137,21 +124,23 @@ DWORD WINAPI Input(LPVOID)
 
         else if (GetAsyncKeyState(VK_F9) & 1)
         {
-            auto riftobject = StaticLoadObjectO(Helper::GetBGAClass(), nullptr, L"/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C", nullptr, 0, nullptr, false, nullptr);
-            // auto riftobject = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
-            std::cout << "riftobject: " << riftobject << '\n';
+            Defines::bShouldSpawnVehicles = !Defines::bShouldSpawnVehicles;
+            std::cout << "Defines::bShouldSpawnVehicles: " << Defines::bShouldSpawnVehicles << '\n';
         }
 
         else if (GetAsyncKeyState(VK_F10) & 1)
         {
-            auto GameState = Helper::GetGameState();
+            Defines::bShouldSpawnForagedItems = !Defines::bShouldSpawnForagedItems;
+            std::cout << "Defines::bShouldSpawnForagedItems: " << Defines::bShouldSpawnForagedItems << '\n';
+
+            /* auto GameState = Helper::GetGameState();
             static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
             auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
             *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::None;
 
             static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
-            GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+            GameState->ProcessEvent(OnRepGamePhase, &OldPhase); */
         }
 
         else if (GetAsyncKeyState(VK_F11) & 1)
@@ -223,6 +212,9 @@ DWORD WINAPI Initialize(LPVOID)
 
     MH_CreateHook((PVOID)HandleReloadCostAddress, Inventory::HandleReloadCost, (PVOID*)&Defines::HandleReloadCost);
     MH_EnableHook((PVOID)HandleReloadCostAddress);
+
+    MH_CreateHook((PVOID)ProcessEventAddress, ProcessEventDetour, (PVOID*)&ProcessEventO);
+    MH_EnableHook((PVOID)ProcessEventAddress);
 
     if (WorldGetNetModeAddress && NoMCPAddress)
     {

@@ -29,8 +29,16 @@ bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Par
 
 bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Parameters)
 {
-	if (!Parameters)
+	if (!Parameters) // possible?
 		return false;
+	
+	static bool bFirst = true;
+
+	if (bFirst)
+	{
+		bFirst = false;
+		return false;
+	}
 
 	static bool bSpawnedFloorLoot = false;
 
@@ -116,31 +124,39 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 		Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
 
-		UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
-
-		if (Engine_Version >= 421)
-		{
-			static auto PIDClass = FindObject("/Script/FortniteGame.AthenaPickaxeItemDefinition");
-
-			static auto AllObjects = Helper::GetAllObjectsOfClass(PIDClass);
-
-			auto random = rand() % (AllObjects.size());
-			random = random <= 0 ? 1 : random;
-
-			auto pick = AllObjects.at(random);
-			static auto WeaponDefinitionOffset = pick->GetOffset("WeaponDefinition");
-
-			PickaxeDef = *(UObject**)(__int64(pick) + WeaponDefinitionOffset);
-		}
-
+		static UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 		auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
+
+		//
+
+		/* static UObject* Def1 = FindObject("/HighTower/Items/HoneyDew/Fist/Abilities/WID_HighTower_HoneyDew_Fists.WID_HighTower_HoneyDew_Fists");
+		std::cout << "Def1: " << Def1 << '\n';
+		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
+
+		static UObject* Def2 = FindObject("/HighTower/Items/Wasabi/Claws/CoreBR/WID_HighTower_Wasabi_Claws_CoreBR.WID_HighTower_Wasabi_Claws_CoreBR");
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
+
+		static UObject* Def3 = FindObject("/HighTower/Items/Tomato/RepulsorCannon/CoreBR/WID_HighTower_Tomato_RepulsorCannon_CoreBR.WID_HighTower_Tomato_RepulsorCannon_CoreBR");
+		auto Def3Instance = Inventory::GiveItem(PlayerController, Def3, EFortQuickBars::Primary, 3);
+
+		static UObject* Def4 = FindObject("/HighTower/Items/Tapas/SkyStrike/CoreBR/WID_HighTower_Tapas_SkyStrike_CoreBR.WID_HighTower_Tapas_SkyStrike_CoreBR");
+		auto Def4Instance = Inventory::GiveItem(PlayerController, Def4, EFortQuickBars::Primary, 4);
+
+		static UObject* Def5 = FindObject("/HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
+		auto Def5Instance = Inventory::GiveItem(PlayerController, Def5, EFortQuickBars::Primary, 5); */
+
+		static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
+		std::cout << "Def1: " << Def1 << '\n';
+		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
+
+		//
 
 		static auto WoodItemData = FindObject(("/Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 		Inventory::GiveItem(PlayerController, WoodItemData, EFortQuickBars::Secondary, 0, 999);
 
 		auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
 
-		if (Engine_Version == 421 || Fortnite_Season == 14)
+		if (Engine_Version < 426 || Fortnite_Season == 14 || Fortnite_Season == 15)
 		{
 			if (Fortnite_Version < 8.30)
 			{
@@ -189,6 +205,12 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 				}
 			}
 		}
+
+		/* auto Boss = LoadObject(Helper::GetBGAClass(), "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss_Meowscles_Jr.BP_MangPlayerPawn_Boss_Meowscles_Jr_C");
+
+		std::cout << "Boss: " << Boss << '\n';
+
+		Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
 	}
 
 	return false;
@@ -230,6 +252,9 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 				(*(int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset))++;
 				FastTArray::MarkArrayDirty(PlaylistInfo);
+
+				static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
+				GameState->ProcessEvent(OnRep_CurrentPlaylistInfo);
 			}
 		}
 
@@ -242,6 +267,14 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		Calendar::FixLocations();
 
 		Looting::Initialize();
+
+		if (Fortnite_Version >= 13)
+		{
+			static auto LastSafeZoneIndexOffset = Playlist->GetOffset("LastSafeZoneIndex");
+
+			if (LastSafeZoneIndexOffset != -1)
+				*(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+		}
 
 		std::cout << "Ready to start match!\n";
 	}
@@ -430,7 +463,7 @@ bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
 	if (Ability)
 	{
 		UObject* Pawn; // Helper::GetOwner(ability);
-		static auto Func = FindObject<UFunction>("/Script/FortniteGame.FortGameplayAbility:GetActivatingPawn");
+		static auto Func = FindObject<UFunction>("/Script/FortniteGame.FortGameplayAbility.GetActivatingPawn");
 		Ability->ProcessEvent(Func, &Pawn);
 
 		if (Pawn)
