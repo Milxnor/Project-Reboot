@@ -12,6 +12,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters);
 bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters);
 bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters);
+bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters);
+bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func);

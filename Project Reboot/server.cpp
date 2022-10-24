@@ -36,8 +36,10 @@ void Server::SetWorld(UObject* World)
 				SetWorldIndex = 0x70;
 			else if (Fortnite_Season == 14)
 				SetWorldIndex = 0x71;
-			else if (Fortnite_Season >= 15)
+			else if (Fortnite_Season >= 15 && Fortnite_Season < 18)
 				SetWorldIndex = 0x72;
+			else if (Fortnite_Season == 18)
+				SetWorldIndex = 0x73;
 
 			std::cout << "SetWorldIndex: " << SetWorldIndex << '\n';
 
@@ -146,7 +148,10 @@ bool Server::Listen(int Port)
 		static auto ReplicationDriverOffset = NetDriver->GetOffset("ReplicationDriver");
 		auto ReplicationDriver = *Get<UObject*>(NetDriver, ReplicationDriverOffset);
 
-		Defines::ServerReplicateActors = decltype(Defines::ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
+		if (ReplicationDriver)
+			Defines::ServerReplicateActors = decltype(Defines::ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
+		else
+			std::cout << "ReplicationDriver was not created!\n";
 	}
 
 	std::cout << "dd!\n";
@@ -261,7 +266,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 				std::cout << "SpawnLootTierGroup: " << SpawnLootTierGroup << '\n';
 
-				auto Location = Helper::GetActorLocation(AllActor);
+				auto Location = Helper::GetCorrectLocation(AllActor);
 				auto Rotation = Helper::GetActorRotation(AllActor);
 
 				if (SpawnLootTierGroup == "Loot_ForagedItem_AthenaRift")
@@ -269,6 +274,13 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 					auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
 
 					Helper::Easy::SpawnActor(riftportal, Location, Rotation);
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_Grassland" || SpawnLootTierGroup == "Loot_ForagedItem_Arid")
+				{
+					auto apple = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/HealthSmall/CBGA_HealthSmall.CBGA_HealthSmall_C");
+
+					Helper::Easy::SpawnActor(apple, Location, Rotation);
 				}
 
 				continue;
@@ -302,7 +314,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 			if (!Spawner)
 				continue;
 
-			std::cout << std::format("[{}] {}\n", i, Spawner->GetFullName());
+			// std::cout << std::format("[{}] {}\n", i, Spawner->GetFullName());
 
 			static auto FortVehicleItemDefVariantsOffset = Spawner->GetOffset("FortVehicleItemDefVariants");
 
@@ -314,7 +326,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 			auto FortVehicleItemDefVariants = Get<TArray<FVehicleWeightedDef>>(Spawner, FortVehicleItemDefVariantsOffset);
 
-			std::cout << "FortVehicleItemDefVariants: " << FortVehicleItemDefVariants->Num() << '\n';
+			// std::cout << "FortVehicleItemDefVariants: " << FortVehicleItemDefVariants->Num() << '\n';
 
 			static auto VIDClass = FindObject("/Script/FortniteGame.FortVehicleItemDefinition");
 
@@ -324,14 +336,14 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 				auto AssetPathName = first.VehicleItemDef.ObjectID.AssetPathName;
 
-				std::cout << "AssetPathName: " << AssetPathName.ComparisonIndex << '\n';
+				// std::cout << "AssetPathName: " << AssetPathName.ComparisonIndex << '\n';
 
 				if (!AssetPathName.ComparisonIndex)
 					continue;
 
 				auto VehicleItemDef = load(VIDClass, AssetPathName.ToString());
 
-				std::cout << "VehicleItemDef: " << VehicleItemDef << '\n';
+				// std::cout << "VehicleItemDef: " << VehicleItemDef << '\n';
 
 				if (VehicleItemDef)
 				{
@@ -341,14 +353,14 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 					auto assetpathname = VehicleActorClassSoft->ObjectID.AssetPathName;
 
-					std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
+					// std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
 
 					if (!assetpathname.ComparisonIndex)
 						continue;
 
 					auto VehicleActorClass = load(Helper::GetBGAClass(), assetpathname.ToString());
 
-					std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
+					// std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
 
 					if (!VehicleActorClass)
 						continue;
@@ -366,7 +378,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 				auto assstpaht = FortVehicleItemDefSoft->ObjectID.AssetPathName;
 
-				std::cout << "assstpaht: " << assstpaht.ComparisonIndex << '\n';
+				// std::cout << "assstpaht: " << assstpaht.ComparisonIndex << '\n';
 
 				if (!assstpaht.ComparisonIndex)
 					continue;
@@ -382,14 +394,14 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 				auto assetpathname = VehicleActorClassSoft->ObjectID.AssetPathName;
 
-				std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
+				// std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
 
 				if (!assetpathname.ComparisonIndex)
 					continue;
 
 				auto VehicleActorClass = load(Helper::GetBGAClass(), assetpathname.ToString());
 
-				std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
+				// std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
 
 				if (!VehicleActorClass)
 					continue;

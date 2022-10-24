@@ -278,7 +278,7 @@ DWORD WINAPI Initialize(LPVOID)
     
     AddHook("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
 
-    if (InternalTryActivateAbilityAddress)
+    if (InternalTryActivateAbilityAddress && GiveAbilityAddress)
     {
         AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
         AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);

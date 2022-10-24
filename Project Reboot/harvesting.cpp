@@ -6,7 +6,7 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 {
 	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
 
-	if (Helper::GetWeaponData(CurrentWeapon) != Helper::GetPickaxeDef(Controller))
+	if (!CurrentWeapon || Helper::GetWeaponData(CurrentWeapon) != Helper::GetPickaxeDef(Controller))
 		return;
 
 	static auto ResourceTypeOffset = BuildingActor->GetOffset("ResourceType");

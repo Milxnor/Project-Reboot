@@ -32,6 +32,9 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 				return false;
 
 			bAlreadySearchedBitfield->Fourth = true;
+
+			static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
+			BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
 		}
 
 		if (ReceivingActorName.contains("Chest"))

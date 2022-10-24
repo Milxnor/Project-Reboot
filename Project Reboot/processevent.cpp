@@ -40,11 +40,11 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		return false;
 	}
 
-	static bool bSpawnedFloorLoot = false;
+	static bool bIsFirstClient = false;
 
-	if (!bSpawnedFloorLoot)
+	if (!bIsFirstClient)
 	{
-		bSpawnedFloorLoot = true;
+		bIsFirstClient = true;
 
 		Defines::bShouldSpawnFloorLoot = true;
 
@@ -59,7 +59,11 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		AddHook(func1 ? "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange" :
 			"/Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", Zone::OnSafeZoneStateChange);
 
+		AddHook("/Script/FortniteGame.FortMatchAnalytics.OnGamePhaseChanged", OnGamePhaseChanged);
+
 		AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+
+		AddHook("/Script/FortniteGame.FortPhysicsPawn.ServerMove", ServerUpdatePhysicsParamsHook);
 
 		if (Engine_Version > 424)
 			AddHook("/Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", Harvesting::BlueprintCanAttemptGenerateResources);
@@ -148,6 +152,9 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
 		std::cout << "Def1: " << Def1 << '\n';
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
+		
+		static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
 
 		//
 
@@ -406,7 +413,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 	static auto FinisherOrDownerOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("FinisherOrDowner"));
 	static auto bDBNOOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("bDBNO"));
 	static auto DistanceOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", ("Distance"));
-	static auto DeathCauseEnum = FindObject("/Script/FortniteGame.EDeathCause");
+	static auto DeathCauseEnum = FindObject("ScriptStruct /Script/FortniteGame.EDeathCause");
 
 	*(uint8_t*)(__int64(DeathInfo) + DeathCauseOffset) = DeathCause;
 	*(UObject**)(__int64(DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
@@ -490,6 +497,190 @@ bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
 }
 
 
+bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
+{
+	auto Phase = *(EAthenaGamePhase*)Parameters;
+
+	std::cout << "Phase: " << (int)Phase << '\n';
+
+	if ((int)Phase == 3 && Defines::bIsLateGame)
+	{
+		std::cout << "Nice!\n";
+
+		static auto BuildingFoundationClass = FindObject("/Script/FortniteGame.BuildingFoundation");
+
+		auto AllBuildingFoundations = Helper::GetAllActorsOfClass(BuildingFoundationClass);
+
+		UObject* Foundation = nullptr;
+
+		while (!Foundation)
+		{
+			auto random = rand();
+
+			if (random >= 1)
+				Foundation = AllBuildingFoundations.At(random % (AllBuildingFoundations.Num()));
+		}
+
+		auto GameState = Helper::GetGameState();
+
+		static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
+		auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+
+		auto Aircraft = Aircrafts->At(0);
+
+		if (!Aircraft)
+		{
+			std::cout << "No aircraft!\n";
+			return false;
+		}
+
+		static auto FlightInfoOffset = Aircraft->GetOffset("FlightInfo");
+		auto FlightInfo = Get<__int64>(Aircraft, FlightInfoOffset);
+
+		static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
+		*(FVector*)(__int64(FlightInfo) + FlightStartLocationOffset) = Helper::GetActorLocation(Foundation) + FVector{ 0, 0, 10000 };
+
+		static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
+		*(float*)(__int64(FlightInfo) + FlightSpeedOffset) = 0;
+
+		FString StartSafeZone = L"startsafezone";
+		Helper::ExecuteConsoleCommand(StartSafeZone);
+
+		static auto SafeZonesStartTimeOffset = GameState->GetOffset("SafeZonesStartTime");
+		*Get<float>(GameState, SafeZonesStartTimeOffset) = 0.f;
+	}
+
+	return false;
+}
+
+bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* Parameters) // FortAthenaVehicle
+{
+	if (Vehicle && Parameters)
+	{
+		struct parms { __int64 InState; };
+		auto Params = (parms*)Parameters;
+
+		std::string StateName = FindObject("/Script/FortniteGame.ReplicatedPhysicsPawnState") ? "ScriptStruct /Script/FortniteGame.ReplicatedPhysicsPawnState" :
+			"ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState";
+
+		static auto TranslationOffset = FindOffsetStruct(StateName, ("Translation"));
+		auto Translation = (FVector*)(__int64(&Params->InState) + TranslationOffset);
+
+		static auto RotationOffset = FindOffsetStruct(StateName, ("Rotation"));
+		auto Rotation = (FQuat*)(__int64(&Params->InState) + RotationOffset);
+
+		static auto LinearVelocityOffset = FindOffsetStruct(StateName, ("LinearVelocity"));
+		auto LinearVelocity = (FVector*)(__int64(&Params->InState) + LinearVelocityOffset);
+
+		static auto AngularVelocityOffset = FindOffsetStruct(StateName, ("AngularVelocity"));
+		auto AngularVelocity = (FVector*)(__int64(&Params->InState) + AngularVelocityOffset);
+
+		if (Translation && Rotation)
+		{
+			UObject* RootComp = nullptr;
+			static auto GetRootCompFunc = FindObject<UFunction>("/Script/Engine.Actor.K2_GetRootComponent");
+
+			if (GetRootCompFunc)
+				Vehicle->ProcessEvent(GetRootCompFunc, &RootComp);
+
+			if (RootComp)
+			{
+				static auto SetWorldTransform = FindObject<UFunction>("/Script/Engine.SceneComponent.K2_SetWorldTransform");
+
+				static auto SizeOfSetWorldTransform = Helper::GetSizeOfClass(SetWorldTransform);
+
+				// std::cout << "SizeOfSetWorldTransform: " << SizeOfSetWorldTransform << '\n';
+
+				auto params = malloc(SizeOfSetWorldTransform);
+
+				if (params)
+				{
+					/*
+					
+						FTransform                                  NewTransform;                                             // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
+						bool                                               bSweep;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+						struct FHitResult                                  SweepHitResult;                                           // (Parm, OutParm, IsPlainOldData)
+						bool                                               bTeleport;
+
+					*/
+
+					static auto NewTransformOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "NewTransform", false, true);
+					auto NewTransform = (FTransform*)(__int64(params) + NewTransformOffset);
+					
+					// auto Quaternion = *Rotation; // Helper::GetActorRotation(Vehicle);
+					// auto Rotator = Quaternion.Rotator();
+
+					// auto Rotator = Helper::GetActorRotation(Vehicle);
+					// auto Quaternion = Rotator.Quaternion();
+
+					auto wrongRot = *Rotation;
+					auto Rotator = wrongRot.Rotator();
+					std::cout << "Before: ";
+					Rotator.Describe();
+					Rotator = { Rotator.Pitch, Rotator.Roll, Rotator.Yaw };
+					// std::cout << "After Rot: ";
+					// Rotator.Describe();
+					auto Quaternion = Rotator.Quaternion();
+
+					// std::cout << "Quat: ";
+					// Quaternion.Describe();
+
+					NewTransform->Translation = *Translation;
+					NewTransform->Rotation = Quaternion; // *Rotation;
+					NewTransform->Scale3D = { 1, 1, 1 };
+
+					static auto bTeleportOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "bTeleport", false, true);
+					auto bTeleport = (bool*)(__int64(params) + bTeleportOffset);
+					*bTeleport = false;
+
+					/* static auto bSweepOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "bSweep", false, true);
+					auto bSweep = (bool*)(__int64(params) + bSweepOffset);
+					*bSweep = true; // col;lision stuff */
+
+					struct FVehicleSafeTeleportInfo
+					{
+						FVector                                     Location;                                                 // 0x0000(0x000C) (ZeroConstructor, IsPlainOldData)
+						FRotator                                    Rotation;                                                 // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
+					};
+
+					static auto SafeTeleportInfoOffset = Vehicle->GetOffset("SafeTeleportInfo");
+					auto SafeTeleportInfo = Get<FVehicleSafeTeleportInfo>(Vehicle, SafeTeleportInfoOffset);
+					SafeTeleportInfo->Location = NewTransform->Translation;
+					SafeTeleportInfo->Rotation = Rotator;
+
+					static auto OnRep_SafeTeleportInfo = FindObject<UFunction>("/Script/FortniteGame.FortPhysicsPawn:OnRep_SafeTeleportInfo");
+					Vehicle->ProcessEvent(OnRep_SafeTeleportInfo);
+				}
+
+				static auto SetPhysicsLinearVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsLinearVelocity");
+
+				struct {
+					FVector                                     NewVel;                                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                        bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					FName                                       BoneName;
+				} SetPhysicsLinearVelocity_Params{ *LinearVelocity, false, FName() };
+
+				if (SetPhysicsLinearVelocity)
+					RootComp->ProcessEvent(SetPhysicsLinearVelocity, &SetPhysicsLinearVelocity);
+
+				static auto SetPhysicsAngularVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent:SetPhysicsAngularVelocity");
+
+				struct {
+					FVector                                     NewAngVel;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                               bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					FName                                       BoneName;
+				} SetPhysicsAngularVelocity_Params{ *AngularVelocity, false, FName() };
+
+				if (SetPhysicsLinearVelocity)
+					RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params);
+			}
+
+			// Vehicle->ProcessEvent("OnRep_ServerCorrection");
+		}
+	}
+
+	return false;
+}
 
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
@@ -508,7 +699,7 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 
 	if (Defines::bLogProcessEvent)
 	{
-		auto FunctionName = Function->GetFullName();
+		auto FunctionName = Function->GetPathName();
 
 		if (!strstr(FunctionName.c_str(), ("EvaluateGraphExposedInputs")) &&
 			!strstr(FunctionName.c_str(), ("Tick")) &&
@@ -594,7 +785,9 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "OnSubtitleChanged__DelegateSignature") &&
 			!strstr(FunctionName.c_str(), "OnServerBounceCallback") &&
 			!strstr(FunctionName.c_str(), "BlueprintGetInteractionTime") &&
-			!strstr(FunctionName.c_str(), "OnServerStopCallback"))
+			!strstr(FunctionName.c_str(), "OnServerStopCallback") &&
+			!strstr(FunctionName.c_str(), "Light Flash Timeline__UpdateFunc") &&
+			!strstr(FunctionName.c_str(), "MainFlightPath__UpdateFunc"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

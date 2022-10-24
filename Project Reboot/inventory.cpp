@@ -114,7 +114,7 @@ void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySeriali
 	auto WorldInventory = GetWorldInventory(Controller);
 
 	static auto WorldHandleInvUpdate = FindObject<UFunction>("/Script/FortniteGame.FortInventory.HandleInventoryLocalUpdate");
-	WorldInventory->ProcessEvent(WorldHandleInvUpdate); // Needed for the guids it sets it somehow
+	WorldInventory->ProcessEvent(WorldHandleInvUpdate); // This like sets the OwnerInventory probs idfk
 
 	if (Fortnite_Version < 7.4)
 	{
@@ -135,6 +135,7 @@ void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySeriali
 	else
 	{
 		static auto ClientForceUpdateQuickbar = FindObject<UFunction>("/Script/FortniteGame.FortPlayerController.ClientForceUpdateQuickbar");
+
 		auto PrimaryQuickbar = EFortQuickBars::Primary;
 		Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
 
@@ -367,14 +368,33 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 	else
 	{
+		auto TrackerGuid = FGuid();
+
 		struct { UObject* Def; FGuid Guid; UObject* Wep; } params{ ItemDefinition, Guid };
+		struct { UObject* Def; FGuid Guid; FGuid TrackerGuid; UObject* Wep; } S16_params{ ItemDefinition, Guid, TrackerGuid };
+		struct { UObject* Def; FGuid Guid; FGuid TrackerGuid; bool bDisableEquipAnimation; UObject* Wep; } S17_params{ ItemDefinition, Guid, TrackerGuid, false };
 
 		static auto EquipWeaponDefinition = FindObject<UFunction>("/Script/FortniteGame.FortPawn.EquipWeaponDefinition");
 
-		if (Pawn)
-			Pawn->ProcessEvent(EquipWeaponDefinition, &params);
+		// bro what
 
-		Wep = params.Wep;
+		if (Fortnite_Season < 16)
+		{
+			Pawn->ProcessEvent(EquipWeaponDefinition, &params);
+			Wep = params.Wep;
+		}
+
+		else if (Fortnite_Season == 16)
+		{
+			Pawn->ProcessEvent(EquipWeaponDefinition, &S16_params);
+			Wep = S16_params.Wep;
+		}
+
+		else
+		{
+			Pawn->ProcessEvent(EquipWeaponDefinition, &S16_params);
+			Wep = S17_params.Wep;
+		}
 
 		if (Wep)
 		{
