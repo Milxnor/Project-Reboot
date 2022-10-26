@@ -620,6 +620,7 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	if (bShouldSwap)
 	{
+		std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
 		auto Def = Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(Helper::GetCurrentWeapon(Pawn)), -1, true);
 		Helper::SummonPickup(Pawn, Def, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset);
 	}

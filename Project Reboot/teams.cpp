@@ -16,9 +16,12 @@ bool Teams::AssignTeam(UObject* Controller)
 	using AController = UObject;
 
 	static int NextTeamIndex = 3;
+	static int CurrentNumPlayersOnTeam = 0; // Scuffed
 
 	auto GameState = Helper::GetGameState();
 	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
+
+	int MaxPlayersPerTeam = 2;
 
 	static auto TeamsOffset = FindOffsetStruct("Class /Script/FortniteGame.FortGameState", "Teams", true);
 	auto AllTeams = (TArray<AFortTeamInfo*>*)(__int64(GameState) + TeamsOffset);
@@ -34,14 +37,15 @@ bool Teams::AssignTeam(UObject* Controller)
 	static auto SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "SquadId", true);
 
 	auto TeamIndexPtr = Helper::GetTeamIndex(PlayerState);
+	auto OldTeamIndex = *TeamIndexPtr;
 	auto SquadIdPtr = Get<int>(PlayerState, SquadIdOffset);
 
 	auto NextSquadId = NextTeamIndex - 0;
 
 	*TeamIndexPtr = NextTeamIndex;
 
-	// static auto OnRep_TeamIndex = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamIndex");
-	// PlayerState->ProcessEvent(OnRep_TeamIndex);
+	static auto OnRep_TeamIndex = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamIndex");
+	PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIndex);
 
 	*SquadIdPtr = NextSquadId;
 
@@ -70,7 +74,13 @@ bool Teams::AssignTeam(UObject* Controller)
 		}
 	}
 
-	// NextTeamIndex++;
-	
+	CurrentNumPlayersOnTeam++;
+
+	if (CurrentNumPlayersOnTeam == MaxPlayersPerTeam)
+	{
+		NextTeamIndex++;
+		CurrentNumPlayersOnTeam = 0;
+	}
+
 	return true;
 }

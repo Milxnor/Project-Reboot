@@ -5,15 +5,18 @@
 UObject* Looting::GetLP()
 {
 	auto Playlist = *Helper::GetPlaylist();
-	static auto LootPackagesOffset = Playlist->GetOffset("LootPackages");
+	static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
 	auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
 
-	auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
+	auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424 
+		? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
 	auto ClassToUse = (LootPackagesName.contains("Composite")) ?
 		FindObject("Class /Script/Engine.CompositeDataTable") : FindObject("Class /Script/Engine.DataTable");
 
-	return LoadObject(ClassToUse, LootPackagesName);
+	std::cout << "LootPackagesName: " << LootPackagesName << '\n';
+
+	return StaticLoadObject(ClassToUse, nullptr, LootPackagesName);
 }
 
 void Looting::SpawnForagedItems()

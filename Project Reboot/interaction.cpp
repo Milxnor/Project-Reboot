@@ -43,6 +43,9 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 			{
 				auto WeaponDef = DefInRow.Definition;
 
+				if (!WeaponDef)
+					return false;
+
 				auto Ammo = Helper::GetAmmoForDefinition(WeaponDef);
 
 				auto Location = Helper::GetCorrectLocation(BuildingContainer);
@@ -53,10 +56,7 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 				auto ConsumableInRow = RandomBoolWithWeight(5, 1, 100) ? Looting::GetRandomItem(ItemType::Trap) : Looting::GetRandomItem(ItemType::Consumable);
 
-				if (ConsumableInRow.Definition)
-				{
-					Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
-				}
+				Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
 
 				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
