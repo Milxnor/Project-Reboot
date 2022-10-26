@@ -760,3 +760,10 @@ public:
 	char Curve[0x10]; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	void* idk2;                              // Fixing Size Of Struct [ Dumper-7 ]
 };
+
+struct FUniqueNetIdRepl
+{
+	unsigned char UnknownData00[0x1];
+	unsigned char UnknownData01[0x17];
+	TArray<unsigned char> ReplicationBytes;
+};

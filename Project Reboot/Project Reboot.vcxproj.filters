@@ -101,6 +101,9 @@
     <ClCompile Include="zone.cpp">
       <Filter>Source\Gameplay</Filter>
     </ClCompile>
+    <ClCompile Include="discord.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -162,6 +165,9 @@
     </ClInclude>
     <ClInclude Include="zone.h">
       <Filter>Headers\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="discord.h">
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

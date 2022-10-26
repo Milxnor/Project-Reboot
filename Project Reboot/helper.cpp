@@ -401,7 +401,9 @@ UObject* Helper::GetWeaponData(UObject* Weapon)
 
 int* Helper::GetTeamIndex(UObject* PlayerState)
 {
+	static auto TeamIndexOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "TeamIndex", true);
 
+	return Get<int>(PlayerState, TeamIndexOffset);
 }
 
 FVector Helper::GetActorLocation(UObject* Actor)

@@ -9,6 +9,7 @@
 #include "harvesting.h"
 #include "calendar.h"
 #include "loot.h"
+#include "team.h"
 
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters)
 {
@@ -46,13 +47,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 	{
 		bIsFirstClient = true;
 
-		Defines::bShouldSpawnFloorLoot = true;
-
-		if (Engine_Version >= 423)
-		{
-			static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
-			Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
-		}
+		Defines::bShouldSpawnFloorLoot = Looting::bInitialized;
 
 		static auto func1 = FindObject("/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
 
@@ -218,6 +213,8 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		std::cout << "Boss: " << Boss << '\n';
 
 		Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
+
+		Teams::AssignTeam(PlayerController);
 	}
 
 	return false;

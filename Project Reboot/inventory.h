@@ -106,6 +106,7 @@ namespace Inventory
 
 	bool ServerExecuteInventoryItem(UObject* Controller, UFunction* Function, void* Parameters);
 	bool ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void* Parameters);
+	bool ServerExecuteInventoryWeapon(UObject* Controller, UFunction*, void* Parameters);
 	bool ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters);
 	void HandleReloadCost(UObject* Weapon, int AmountToRemove);
 }

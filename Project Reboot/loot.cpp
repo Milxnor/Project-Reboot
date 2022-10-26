@@ -1,5 +1,20 @@
 #include "loot.h"
+#include "helper.h"
 #include "datatables.h"
+
+UObject* Looting::GetLP()
+{
+	auto Playlist = *Helper::GetPlaylist();
+	static auto LootPackagesOffset = Playlist->GetOffset("LootPackages");
+	auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
+
+	auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
+
+	auto ClassToUse = (LootPackagesName.contains("Composite")) ?
+		FindObject("Class /Script/Engine.CompositeDataTable") : FindObject("Class /Script/Engine.DataTable");
+
+	return LoadObject(ClassToUse, LootPackagesName);
+}
 
 void Looting::SpawnForagedItems()
 {
@@ -29,8 +44,6 @@ void Looting::Initialize()
 		return;
 	}
 
-	bInitialized = true;
-
 	for (int i = 0; i < 2; i++)
 	{
 		Items.push_back(std::vector<DefinitionInRow>());
@@ -50,6 +63,8 @@ void Looting::Initialize()
 		std::cout << "Failed to get LootPackages!\n";
 		return;
 	}
+
+	bInitialized = true;
 
 	auto LootPackagesRowMap = DataTables::GetRowMap(LootPackages);
 

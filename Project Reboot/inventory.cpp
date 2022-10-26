@@ -560,6 +560,25 @@ bool Inventory::ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void
 	return false;
 }
 
+bool Inventory::ServerExecuteInventoryWeapon(UObject* Controller, UFunction*, void* Parameters)
+{
+	auto Weapon = Parameters ? *(UObject**)Parameters : nullptr;
+
+	if (!Weapon)
+		return false;
+
+	auto Instance = FindItemInInventory(Controller, Inventory::GetWeaponGuid(Weapon));
+
+	if (!Instance)
+		return false;
+
+	auto LoadedAmmo = *FFortItemEntry::GetLoadedAmmo(UFortItem::GetItemEntry(Instance));
+
+	EquipWeapon(Controller, Instance, LoadedAmmo);
+
+	return false;
+}
+
 bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 {
 	UObject* Pickup = Parameters ? *(UObject**)Parameters : nullptr;

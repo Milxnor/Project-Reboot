@@ -29,6 +29,7 @@ inline uint64_t NoMCPAddress = 0;
 inline uint64_t CanActivateAbilityAddress = 0;
 inline uint64_t FreeAddress = 0;
 inline uint64_t HandleReloadCostAddress = 0;
+inline uint64_t ActorGetNetModeAddress = 0;
 
 static bool InitializePatterns()
 {
@@ -60,6 +61,7 @@ static bool InitializePatterns()
 	std::string CantBuildPattern = "";
 	std::string ReplaceBuildingActorPattern = "";
 	std::string WorldGetNetModePattern = "";
+	std::string ActorGetNetModePattern = "";
 	std::string NoMCPPattern = "";
 	std::string CanActivateAbilityPattern = "";
 	std::string FreePattern = "";
@@ -205,7 +207,8 @@ static bool InitializePatterns()
 		CanActivateAbilityPattern = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 		HandleReloadCostPattern = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
-		
+		ActorGetNetModePattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 33 C0 48 C7";
+
 		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
 		bIsNoMCPRelative = true; */
@@ -326,6 +329,7 @@ static bool InitializePatterns()
 		CanActivateAbilityPattern = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0 8B DA 48";
 		HandleReloadCostPattern = "89 54 24 10 55 53 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 8B DA";
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
+		// ActorGetNetModePattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 48 8B 9B ? ? ? ? BA ? ? ? ? 8B";
 
 		if (Fortnite_Version == 15.30)
 			TickFlushPattern = "4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC 80 02 ? ? 48 8B 05 AF B7 51 04 48 33 C4 48 89 85 ? 01 ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8";
@@ -392,7 +396,7 @@ static bool InitializePatterns()
 		ServerReplicateActorsOffset = Fortnite_Version >= 7.40 && Fortnite_Version < 8.40 ? 0x57 : 
 			Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 0x5A) : 0x56;
 
-		// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, other S11 is 0x5A
+	// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, other S11 is 0x5A
 
 	else if (Fortnite_Season == 12 || Fortnite_Season == 13)
 		ServerReplicateActorsOffset = 0x5D;
@@ -438,6 +442,7 @@ static bool InitializePatterns()
 	FreeAddress = Memory::FindPattern(FreePattern);
 	HandleReloadCostAddress = Memory::FindPattern(HandleReloadCostPattern);
 	CanActivateAbilityAddress = Memory::FindPattern(CanActivateAbilityPattern);
+	ActorGetNetModeAddress = Memory::FindPattern(ActorGetNetModePattern);
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
 
@@ -463,6 +468,7 @@ static bool InitializePatterns()
 	std::cout << std::format("FreeAddress: 0x{:x}\n", (uintptr_t)FreeAddress - Base);
 	std::cout << std::format("HandleReloadCostAddress: 0x{:x}\n", (uintptr_t)HandleReloadCostAddress - Base);
 	std::cout << std::format("CanActivateAbilityAddress: 0x{:x}\n", (uintptr_t)CanActivateAbilityAddress - Base);
+	std::cout << std::format("ActorGetNetModeAddress: 0x{:x}\n", (uintptr_t)ActorGetNetModeAddress - Base);
 
 	if (!InitHostAddress || !StaticFindObjectAddress || !ProcessEventAddress || !ObjectsAddress)
 		return false;

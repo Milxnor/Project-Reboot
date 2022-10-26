@@ -166,6 +166,53 @@ bool Server::Listen(int Port)
 	return true;
 }
 
+static __int64 rettruae() { return 1; }
+
+__int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a4)
+{
+	std::cout << "No Reserve!\n";
+	return 0;
+}
+
+__int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection)
+{
+	static auto Connection_ViewTargetOffset = Connection->GetOffset("ViewTarget");
+	static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
+	static auto Connection_OwningActorOffset = Connection->GetOffset("OwningActor");
+
+	auto Connection_ViewTarget = *(UObject**)(__int64(Connection) + Connection_ViewTargetOffset);
+	auto Connection_PlayerController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+
+	static auto Viewer_ConnectionOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "Connection");
+	*(UObject**)(__int64(NetViewer) + Viewer_ConnectionOffset) = Connection;
+
+	static auto Viewer_InViewerOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "InViewer");
+	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = Connection_PlayerController ? Connection_PlayerController : *(UObject**)(__int64(Connection) + Connection_OwningActorOffset);
+
+	static auto Viewer_ViewTargetOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewTarget");
+	auto Viewer_ViewTarget = (UObject**)(__int64(NetViewer) + Viewer_ViewTargetOffset);
+	*Viewer_ViewTarget = Connection_ViewTarget;
+
+	static auto Viewer_ViewLocationOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewLocation");
+	auto Viewer_ViewLocation = (FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset);
+
+	if (*Viewer_ViewTarget)
+		*(FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset) = Helper::GetActorLocation(*Viewer_ViewTarget);
+
+	float CP, SP, CY, SY;
+
+	FRotator ViewRotation = (*Viewer_ViewTarget) ? Helper::GetActorRotation(*Viewer_ViewTarget) : FRotator();
+
+	SinCos(&SP, &CP, DegreesToRadians(ViewRotation.Pitch));
+	SinCos(&SY, &CY, DegreesToRadians(ViewRotation.Yaw));
+
+	static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
+
+	*(FVector*)(__int64(NetViewer) + Viewer_ViewDirOffset) = FVector(CP * CY, CP * SY, SP);
+
+	return NetViewer;
+}
+
 void Server::Hooks::Initialize()
 {
 	// if (false)
@@ -183,6 +230,23 @@ void Server::Hooks::Initialize()
 	std::cout << MH_StatusToString(MH_CreateHook((PVOID)NoReserveAddress, Server::Hooks::NoReservation, (PVOID*)&Defines::NoReservation)) << '\n';
 	std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
 
+	/*
+
+	MH_CreateHook((PVOID)ActorGetNetModeAddress, rettruae, nullptr);
+	MH_EnableHook((PVOID)ActorGetNetModeAddress);
+
+	{
+		auto sig = Memory::FindPattern("40 57 48 83 EC 20 48 8B B9 ? ? ? ? 48 85 FF 74 53");
+
+		std::cout << "ugh: " << sig << '\n';
+
+		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::GetViewTarget, nullptr)) << '\n';
+		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
+	}
+	
+	*/
+
+
 	if (Fortnite_Version < 17.00)
 	{
 		auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
@@ -190,7 +254,7 @@ void Server::Hooks::Initialize()
 		if (!sig)
 			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
 
-		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::NetViewerConstructorDetour, nullptr)) << '\n';
+		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, nullptr)) << '\n';
 		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 	}
 }
@@ -520,6 +584,19 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 void Server::Hooks::KickPlayer(UObject* GameSession, UObject* Controller, FText a3)
 {
+	static bool bbb = false;
+
+	if (!bbb)
+	{
+		bbb = true;
+
+		if (Engine_Version >= 423)
+		{
+			static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
+			Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+		}
+	}
+
 	std::cout << "KickPlayer!\n";
 	return;
 }
@@ -530,47 +607,138 @@ char Server::Hooks::ValidationFailure(__int64* a1, __int64 a2)
 	return false;
 }
 
-__int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a4)
+struct FTViewTarget
 {
-	std::cout << "No Reserve!\n";
-	return 0;
+	UObject* Target;
+	// FMinimalViewInfo POV;
+
+	UObject** GetPlayerState()
+	{
+		return nullptr;
+	}
+};
+
+void CheckViewTarget(FTViewTarget* ViewTarget, UObject* OwningController)
+{
+	if (!OwningController)
+		return;
+
+	if (ViewTarget->Target == NULL)
+	{
+		ViewTarget->Target = OwningController;
+	}
+
+	auto PlayerState = ViewTarget->GetPlayerState();
+
+	// Update ViewTarget PlayerState (used to follow same player through pawn transitions, etc., when spectating)
+	if (ViewTarget->Target == OwningController)
+	{
+		*PlayerState = NULL;
+	}
+	else if (ViewTarget->Target) // Controller
+	{
+		*PlayerState = Helper::GetPlayerStateFromController(ViewTarget->Target);
+	}
+	else if (ViewTarget->Target) // Pawn
+	{
+		*PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(ViewTarget->Target)); // TODO Not do this
+	}
+	else if (ViewTarget->Target) // PlayerState
+	{
+		*PlayerState = ViewTarget->Target;
+	}
+	else
+	{
+		*PlayerState = nullptr;
+	}
+
+	if (*PlayerState) // && IsValidChecked(PlayerState))
+	{
+		// if (!IsValid(Target) || !Cast<APawn>(Target) || (CastChecked<APawn>(Target)->GetPlayerState() != PlayerState))
+		{
+			ViewTarget->Target = nullptr;
+
+			auto PlayerStateOwner = Helper::GetOwner(*PlayerState);
+
+			// not viewing pawn associated with VT.PlayerState, so look for one
+			// Assuming on server, so PlayerState Owner is valid
+			if (Helper::GetOwner(*PlayerState) == nullptr)
+			{
+				PlayerState = nullptr;
+			}
+			else
+			{
+				if (PlayerStateOwner) // controller also augaYh3quy318f92i
+				{
+					// UObject* PlayerStateViewTarget = PlayerStateOwner->GetPawn();
+					// if (IsValid(PlayerStateViewTarget))
+					{
+						// OwningController->PlayerCameraManager->AssignViewTarget(PlayerStateViewTarget, *this);
+					}
+					// else
+					{
+						ViewTarget->Target = *PlayerState; // this will cause it to update to the next Pawn possessed by the player being viewed
+					}
+				}
+				else
+				{
+					PlayerState = nullptr;
+				}
+			}
+		}
+	}
+
+	// if (!IsValid(Target))
+	/*
+	{
+		if (OwningController->GetPawn() && !OwningController->GetPawn()->IsPendingKillPending())
+		{
+			OwningController->PlayerCameraManager->AssignViewTarget(OwningController->GetPawn(), *this);
+		}
+		else
+		{
+			OwningController->PlayerCameraManager->AssignViewTarget(OwningController, *this);
+		}
+	} */
 }
 
-__int64 __fastcall Server::Hooks::NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection)
+UObject* GetViewTargetCameraManager(UObject* NonConstThis)
 {
-	static auto Connection_ViewTargetOffset = Connection->GetOffset("ViewTarget");
-	static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
-	static auto Connection_OwningActorOffset = Connection->GetOffset("OwningActor");
+	static auto PendingViewTargetOffset = NonConstThis->GetOffset("PendingViewTarget");
+	auto PendingViewTarget = Get<FTViewTarget>(NonConstThis, PendingViewTargetOffset);
 
-	auto Connection_ViewTarget = *(UObject**)(__int64(Connection) + Connection_ViewTargetOffset);
-	auto Connection_PlayerController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+	static auto PCOwnerOffset = NonConstThis->GetOffset("PCOwner");
+	auto PCOwner = *Get<UObject*>(NonConstThis, PCOwnerOffset);
 
-	static auto Viewer_ConnectionOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "Connection");
-	*(UObject**)(__int64(NetViewer) + Viewer_ConnectionOffset) = Connection;
+	if (PendingViewTarget->Target)
+	{
+		CheckViewTarget(PendingViewTarget, PCOwner);
 
-	static auto Viewer_InViewerOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "InViewer");
-	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = Connection_PlayerController ? Connection_PlayerController : *(UObject**)(__int64(Connection) + Connection_OwningActorOffset);
+		if (PendingViewTarget->Target)
+			return PendingViewTarget->Target;
+	}
 
-	static auto Viewer_ViewTargetOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewTarget");
-	auto Viewer_ViewTarget = (UObject**)(__int64(NetViewer) + Viewer_ViewTargetOffset);
-	*Viewer_ViewTarget = Connection_ViewTarget;
+	static auto ViewTargetOffset = NonConstThis->GetOffset("ViewTarget");
+	auto ViewTarget = Get<FTViewTarget>(NonConstThis, ViewTargetOffset);
 
-	static auto Viewer_ViewLocationOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewLocation");
-	auto Viewer_ViewLocation = (FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset);
+	CheckViewTarget(ViewTarget, PCOwner);
+	return ViewTarget->Target;
+}
 
-	if (*Viewer_ViewTarget)
-		*(FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset) = Helper::GetActorLocation(*Viewer_ViewTarget);
+UObject* Server::Hooks::GetViewTarget(UObject* PC, __int64 Unused, __int64 a3)
+{
+	auto Pawn = Helper::GetPawnFromController(PC);
 
-	float CP, SP, CY, SY;
+	return Pawn ? Pawn : PC;
 
-	FRotator ViewRotation = (*Viewer_ViewTarget) ? Helper::GetActorRotation(*Viewer_ViewTarget) : FRotator();
+	// skunk buit work
+	UObject* PlayerCameraManager = nullptr;
 
-	SinCos(&SP, &CP, DegreesToRadians(ViewRotation.Pitch));
-	SinCos(&SY, &CY, DegreesToRadians(ViewRotation.Yaw));
+	UObject* CameraManagerViewTarget = PlayerCameraManager ? GetViewTargetCameraManager(PlayerCameraManager) : nullptr;
 
-	static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
+	// https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Source/Runtime/Engine/Private/PlayerCameraManager.cpp#L235
+	// https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Source/Runtime/Engine/Private/PlayerCameraManager.cpp#L1603
+	// https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Source/Runtime/Engine/Private/PlayerCameraManager.cpp#L195
 
-	*(FVector*)(__int64(NetViewer) + Viewer_ViewDirOffset) = FVector(CP * CY, CP * SY, SP);
-
-	return NetViewer;
+	return CameraManagerViewTarget ? CameraManagerViewTarget : PC;
 }

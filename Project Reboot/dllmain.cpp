@@ -159,18 +159,34 @@ DWORD WINAPI Input(LPVOID)
         {
             // dumps objects
 
-            auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
-
-            std::ofstream obj("ObjectsDump.txt");
-            
-            for (int i = 0; i < ObjectNum; i++)
+            if (true)
             {
-                auto CurrentObject = GetObjectByIndex(i);
-                
-                if (!CurrentObject)
-                    continue;
+                auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
 
-                obj << CurrentObject->GetFullName() << '\n';
+                std::ofstream obj("ObjectsDump.txt");
+
+                for (int i = 0; i < ObjectNum; i++)
+                {
+                    auto CurrentObject = GetObjectByIndex(i);
+
+                    if (!CurrentObject)
+                        continue;
+
+                    obj << CurrentObject->GetFullName() << '\n';
+                }
+            }
+            else
+            {
+                /* auto Loot_AthenaFloorLootDrops = Looting::PickLootDrops("Loot_AthenaFloorLoot");
+
+                std::cout << "Size: " << Loot_AthenaFloorLootDrops.size() << '\n';
+
+                for (auto& Drop : Loot_AthenaFloorLootDrops)
+                {
+                    auto Def = Drop.first;
+
+                    std::cout << std::format("[{}] {}\n", Drop.second, Def ? Def->GetFullName() : "NULL");
+                } */
             }
         }
 
@@ -178,10 +194,7 @@ DWORD WINAPI Input(LPVOID)
     }
 }
 
-__int64 rettrue()
-{
-    return 1;
-}
+__int64 rettrue() { return 1; }
 
 DWORD WINAPI Initialize(LPVOID)
 {
@@ -263,6 +276,8 @@ DWORD WINAPI Initialize(LPVOID)
         : "/Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop", Inventory::ServerAttemptInventoryDrop);
     AddHook(Fortnite_Season < 13 ? "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"
         : "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", Inventory::ServerHandlePickup);
+
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon", Inventory::ServerExecuteInventoryWeapon);
 
     AddHook("/Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
 

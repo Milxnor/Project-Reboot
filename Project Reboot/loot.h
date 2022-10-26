@@ -61,7 +61,7 @@ namespace Looting
 	inline int FactionLootItems = 3;
 
 	static UObject* GetLTD() { return FindObject("/Game/Items/Datatables/AthenaLootTierData_Client.AthenaLootTierData_Client"); }
-	static UObject* GetLP() { return FindObject("/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client"); }
+	UObject* GetLP();
 	// { return FindObject("/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client"); }
 
 	void Initialize();
