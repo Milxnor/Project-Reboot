@@ -49,6 +49,7 @@ namespace Helper
 	UObject* GetOwner(UObject* Actor);
 	int GetMaxBullets(UObject* Definition);
 	UObject* GetPickaxeDef(UObject* Controller);
+	int* GetPlayersLeft();
 
 	FVector GetActorForwardVector(UObject* Actor);
 	FVector GetActorRightVector(UObject* Actor);

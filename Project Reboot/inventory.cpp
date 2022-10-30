@@ -329,6 +329,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
+	static auto FortContextTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortContextTrapItemDefinition");
 
 	UObject* Wep = nullptr;
 
@@ -357,13 +358,73 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		static auto GetWeaponActorClass = FindObject<UFunction>("/Script/FortniteGame.FortWeaponItemDefinition.GetWeaponActorClass");
 		ItemDefinition->ProcessEvent(GetWeaponActorClass, &WeaponClass);
 
-		auto TrapToolClass = WeaponClass; // FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_BuildingTools/TrapTool.TrapTool_C");
-		auto newTrapTool = Helper::Easy::SpawnActor(TrapToolClass, Helper::GetActorLocation(Pawn));
+		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+
+		Wep = CurrentWeapon;
+
+		std::cout << "ItemDefinition: " << ItemDefinition->GetFullName() << '\n';
+		std::cout << "WeaponClass: " << WeaponClass->GetFullName() << '\n';
+		std::cout << "Wep Before: " << Wep->GetFullName() << '\n';
+
+		auto PawnLoc = Helper::GetActorLocation(Pawn);
+		auto newtool = Helper::Easy::SpawnActor(WeaponClass, Helper::GetActorLocation(Pawn));
 
 		static auto PickUpActor = FindObject<UFunction>("/Script/FortniteGame.FortPawn.PickUpActor");
-		struct { UObject* PickupActor; UObject* PlacementDecoItemDefinition; } parms{ newTrapTool, ItemDefinition };
+		struct { UObject* PickupActor; UObject* PlacementDecoItemDefinition; } parms{ newtool, ItemDefinition };
 
-		Pawn->ProcessEvent(PickUpActor, &parms);
+		Pawn->ProcessEvent(PickUpActor, &parms); // TODO NOT DO THIS
+
+		std::cout << "Wep After: " << Wep->GetFullName() << '\n';
+
+		static UObject* FortContextTrapTool = FindObject("/Script/FortniteGame.FortDecoTool_ContextTrap");
+
+		// IDK
+
+		if (Wep->IsA(FortContextTrapTool))
+		{
+			static auto ContextTrapItemDefinitionOffset = Wep->GetOffset("ContextTrapItemDefinition");
+			auto ContextTrapItemDefinition = Get<UObject*>(Wep, ContextTrapItemDefinitionOffset);
+
+			*ContextTrapItemDefinition = ItemDefinition->IsA(FortContextTrapItemDefinitionClass) ? ItemDefinition : nullptr;
+		}
+
+		// std::cout << "CurrentWeapon: " << CurrentWeapon->GetFullName() << '\n';
+
+		/* static auto FortDecoHelperClass = FindObject("/Script/FortniteGame.FortDecoHelper");
+		auto NewFortDecoHelper = Helper::Easy::SpawnActor(FortDecoHelperClass, PawnLoc);
+
+		static auto DecoHelperOffset = Wep->GetOffset("DecoHelper");
+		auto DecoHelper = Get<UObject*>(Wep, DecoHelperOffset);
+
+		std::cout << "DecoHelper: " << *DecoHelper << '\n';
+
+		*DecoHelper = NewFortDecoHelper;
+
+		static auto TrapPickerDecoHelperOffset = Controller->GetOffset("TrapPickerDecoHelper");
+		auto TrapPickerDecoHelper = Get<UObject*>(Controller, TrapPickerDecoHelperOffset);
+
+		std::cout << "TrapPickerDecoHelper: " << *TrapPickerDecoHelper << '\n';
+
+		*TrapPickerDecoHelper = *DecoHelper;
+
+		if (!TrapPickerDecoHelper)
+			return nullptr;
+
+		static auto DecoItemDefinitionOffset = (*TrapPickerDecoHelper)->GetOffset("DecoItemDefinition");
+		auto DecoItemDefinition = Get<UObject*>(*TrapPickerDecoHelper, DecoItemDefinitionOffset);
+
+		*DecoItemDefinition = ItemDefinition;
+
+		std::cout << "Wep: " << Wep->GetFullName() << '\n';
+
+		// *DecoHelper = TrapPickerDecoHelper;
+
+		static auto ItemDefinitionOffset = Wep->GetOffset("ItemDefinition");
+		*Get<UObject*>(Wep, ItemDefinitionOffset) = ItemDefinition;
+
+		*/
+
+		// PC-TrapPickerDecoHelper
 	}
 
 	else
@@ -398,8 +459,10 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 		if (Wep)
 		{
-			static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
-			*Get<int>(Wep, AmmoCountOffset) = Ammo;
+			{
+				static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
+				*Get<int>(Wep, AmmoCountOffset) = Ammo;
+			}
 		}
 	}
 

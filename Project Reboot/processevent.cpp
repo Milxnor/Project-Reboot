@@ -60,6 +60,8 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		AddHook("/Script/FortniteGame.FortPhysicsPawn.ServerMove", ServerUpdatePhysicsParamsHook);
 
+		// AddHook("/Script/FortniteGame.FortPlayerController.ClientForceWorldInventoryUpdate", ClientForceWorldInventoryUpdate);
+			
 		if (Engine_Version > 424)
 			AddHook("/Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", Harvesting::BlueprintCanAttemptGenerateResources);
 		else
@@ -77,6 +79,45 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 	if (PlayerController)
 	{
+		auto PlayerState = Helper::GetPlayerStateFromController(PlayerController);
+
+		if (!PlayerState)
+			return PlayerController;
+
+		/* static auto InventoryNetworkManagementComponentOffset = PlayerController->GetOffset("InventoryNetworkManagementComponent");
+
+		std::cout << "InventoryNetworkManagementComponent: " << *Get<UObject*>(PlayerController, InventoryNetworkManagementComponentOffset) << '\n';
+
+		*Get<UObject*>(PlayerController, InventoryNetworkManagementComponentOffset) = nullptr;
+
+		auto WorldInventory = Inventory::GetWorldInventory(PlayerController);
+
+		static auto ForceNetUpdate = FindObject<UFunction>("/Script/Engine.Actor.ForceNetUpdate");
+		WorldInventory->ProcessEvent(ForceNetUpdate);
+
+		static auto NetUpdateFrequencyOffset = WorldInventory->GetOffset("NetUpdateFrequency");
+		*Get<float>(WorldInventory, NetUpdateFrequencyOffset) = 100.f;
+
+		static auto MinNetUpdateFrequencyOffset = WorldInventory->GetOffset("MinNetUpdateFrequency");
+		*Get<float>(WorldInventory, MinNetUpdateFrequencyOffset) = 100.f;
+
+		static auto NetPriorityOffset = WorldInventory->GetOffset("NetPriority");
+		*Get<float>(WorldInventory, NetPriorityOffset) = 3.f; */
+
+		/* static auto AttributeSetsOffset = PlayerState->GetOffset("AttributeSets");
+		auto AttributeSets = Get<__int64>(PlayerState, AttributeSetsOffset);
+		auto HomebaseSet = *(UObject**)(__int64(AttributeSets) + 0x48);
+
+		// *(UObject**)(__int64(AttributeSets) + 0x48) = nullptr;
+
+		static auto WorldInventorySizeBonusOffset = HomebaseSet->GetOffset("WorldInventorySizeBonus");
+
+		auto WorldInventorySizeBonus = Get<FFortGameplayAttributeData>(HomebaseSet, WorldInventorySizeBonusOffset);
+
+		*WorldInventorySizeBonus = FFortGameplayAttributeData(); */
+
+		std::cout << "set!\n";
+
 		if (Fortnite_Version < 7.4)
 		{
 			static const auto QuickBarsClass = FindObject("/Script/FortniteGame.FortQuickBars");
@@ -85,12 +126,10 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			*(UObject**)(__int64(PlayerController) + QuickBarsOffset) = Helper::Easy::SpawnActor(QuickBarsClass, FVector(), FRotator(), PlayerController);
 		}
 
-		auto PlayerState = Helper::GetPlayerStateFromController(PlayerController);
-
 		static auto bHasServerFinishedLoadingOffset = PlayerController->GetOffset("bHasServerFinishedLoading");
 		*Get<bool>(PlayerController, bHasServerFinishedLoadingOffset) = true;
 
-		static auto bHasStartedPlayingOffset = PlayerState->GetOffset("bHasStartedPlaying");
+		static auto bHasStartedPlayingOffset = PlayerState->GetOffset("bHasStartedPlaying"); // BITFIELD
 		*Get<bool>(PlayerState, bHasStartedPlayingOffset) = true;
 
 		auto PlayerStart = Helper::GetPlayerStart();
@@ -144,12 +183,18 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static UObject* Def5 = FindObject("/HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
 		auto Def5Instance = Inventory::GiveItem(PlayerController, Def5, EFortQuickBars::Primary, 5); */
 
-		static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
+		/* static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
 		std::cout << "Def1: " << Def1 << '\n';
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
 		
 		static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
-		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2); */
+
+		static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
+		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
+
+		static UObject* Def2 = FindObject("/Game/Items/Traps/WIP/TID_Rail_Turret.TID_Rail_Turret");
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0);
 
 		//
 
@@ -249,7 +294,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			{
 				static auto CurrentPlaylistInfoOffset = GameState->GetOffset("CurrentPlaylistInfo");
 
-				static auto PlaylistReplicationKeyOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray", ("PlaylistReplicationKey"));
+				static auto PlaylistReplicationKeyOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray", "PlaylistReplicationKey");
 
 				auto PlaylistInfo = (void*)(__int64(GameState) + CurrentPlaylistInfoOffset);
 				auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
@@ -279,6 +324,11 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			if (LastSafeZoneIndexOffset != -1)
 				*(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
 		}
+
+		auto PlayersLeft = Helper::GetPlayersLeft();
+
+		if (PlayersLeft)
+			*PlayersLeft = 0;
 
 		std::cout << "Ready to start match!\n";
 	}
@@ -430,25 +480,73 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 			*(float*)(__int64(DeathInfo) + DistanceOffset) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
 	}
 
+	auto PlayersLeftPtr = Helper::GetPlayersLeft();
+
+	if (PlayersLeftPtr)
+	{
+		(*PlayersLeftPtr)--;
+		auto PlayersLeft = *PlayersLeftPtr;
+
+		auto GameState = Helper::GetGameState();
+
+		auto TeamsLeftOffset = GameState->GetOffset("TeamsLeft");
+
+		auto TeamsLeft = *Get<int>(GameState, TeamsLeftOffset);
+
+		std::cout << "TeamsLeft: " << TeamsLeft << '\n';
+
+		if (TeamsLeft <= 1) // && (int)Playlist->WinCondition <= 1
+		{
+			static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+			auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+
+			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::EndGame;
+
+			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+
+			GameState->ProcessEvent(OnRepGamePhase, &OldPhase); 
+
+			static auto EndGamePhaseStarted = FindObject<UFunction>("/Script/FortniteGame.FortGameModeAthena.EndGamePhaseStarted");
+			Helper::GetGameMode()->ProcessEvent(EndGamePhaseStarted);
+		}
+	}
+
 	return false;
 }
 
 bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters)
 {
+	auto o = Controller;
+
 	if (Engine_Version >= 424)
 		Controller = Helper::GetOwnerOfComponent(Controller); // CurrentAircraft
 
 	auto Rotation = Parameters ? *(FRotator*)Parameters : FRotator();
 
-	auto GameState = Helper::GetGameState();
+	UObject* Aircraft = nullptr;
 
-	static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
-	auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+	if (Engine_Version >= 424)
+	{
+		static auto CurrentAircraftOffset = o->GetOffset("CurrentAircraft");
 
-	if (!Aircrafts)
-		return false;
+		if (CurrentAircraftOffset != 0)
+		{
+			Aircraft = *Get<UObject*>(o, CurrentAircraftOffset);
+		}
+	}
 
-	auto Aircraft = Aircrafts->At(0);
+	if (!Aircraft)
+	{
+		auto GameState = Helper::GetGameState();
+
+		static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
+		auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+
+		if (!Aircrafts)
+			return false;
+
+		Aircraft = Aircrafts->At(0);
+	}
 
 	if (!Aircraft)
 		return false;
@@ -784,7 +882,9 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "BlueprintGetInteractionTime") &&
 			!strstr(FunctionName.c_str(), "OnServerStopCallback") &&
 			!strstr(FunctionName.c_str(), "Light Flash Timeline__UpdateFunc") &&
-			!strstr(FunctionName.c_str(), "MainFlightPath__UpdateFunc"))
+			!strstr(FunctionName.c_str(), "MainFlightPath__UpdateFunc") &&
+			!strstr(FunctionName.c_str(), "PlayStartedIdleRotationAudio") &&
+			!strstr(FunctionName.c_str(), "BGA_Athena_FlopperSpawn_"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

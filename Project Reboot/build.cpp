@@ -101,9 +101,65 @@ namespace Build
 		return false;
 	}
 
-	bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
+	bool ServerSpawnDeco(UObject* DecoTool, UFunction*, void* Parameters)
 	{
+		if (!Parameters)
+			return false;
 
+		// void ServerSpawnDeco(const struct FVector& Location, const struct FRotator& Rotation, class ABuildingSMActor* AttachedActor, TEnumAsByte<EBuildingAttachmentType> InBuildingAttachmentType);
+		// 	void ServerSpawnDeco(const struct FVector& Location, const struct FRotator& Rotation, class ABuildingSMActor* AttachedActor);
+
+		struct ServerSpawnDeco_Params { FVector Location; FRotator Rotation; UObject* AttachedActor; };
+
+		auto Params = (ServerSpawnDeco_Params*)Parameters;
+
+		auto Pawn = Helper::GetOwner(DecoTool);
+		auto Controller = Helper::GetControllerFromPawn(Pawn);
+
+		static auto ItemDefinitionOffset = DecoTool->GetOffset("ItemDefinition");
+		auto TrapItemDefinition = *(UObject**)(__int64(DecoTool) + ItemDefinitionOffset);
+
+		static auto GetBlueprintClass = FindObject<UFunction>("/Script/FortniteGame.FortDecoItemDefinition.GetBlueprintClass");
+		UObject* BlueprintClass = nullptr;
+		TrapItemDefinition->ProcessEvent(GetBlueprintClass, &BlueprintClass);
+
+		if (!BlueprintClass)
+			return false;
+
+		auto NewTrap = Helper::Easy::SpawnActor(BlueprintClass, Params->Location, Params->Rotation);
+
+		if (!NewTrap)
+			return false;
+
+		if (!Defines::bIsPlayground)
+		{
+			// Inventory::DecreaseItemCount(Controller, Inventory::FindItemInInventory(Controller, TrapItemDefinition), 1);
+		}
+
+		std::cout << "New Trap name: " << NewTrap->GetFullName() << '\n';
+
+		static auto AttachedToOffset = NewTrap->GetOffset("AttachedTo");
+		auto AttachedTo = (UObject**)(__int64(NewTrap) + AttachedToOffset);
+		*AttachedTo = Params->AttachedActor;
+
+		static auto OnRep_AttachedTo = FindObject<UFunction>("/Script/FortniteGame.BuildingTrap.OnRep_AttachedTo");
+		NewTrap->ProcessEvent(OnRep_AttachedTo);
+
+		// BuildingActor->BuildingAttachmentType = Params->InBuildingAttachmentType;
+
+		// SetBuildingActorTeam(NewTrap, *Teams::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
+
+		static auto TrapDataOffset = NewTrap->GetOffset("TrapData");
+		auto TrapData = (UObject**)(__int64(NewTrap) + TrapDataOffset);
+		*TrapData = TrapItemDefinition; // probably useless
+
+		static auto TrapLevelOffset = NewTrap->GetOffset("TrapLevel");
+		auto TrapLevel = (int*)(__int64(NewTrap) + TrapLevelOffset);
+		// *TrapLevel = 1; // ??
+
+		Helper::InitializeBuildingActor(Controller, NewTrap);
+
+		return false;
 	}
 
 	bool ServerCreateBuildingAndSpawnDeco(UObject* DecoTool, UFunction*, void* Parameters)

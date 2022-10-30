@@ -512,6 +512,15 @@ UObject* Helper::GetPickaxeDef(UObject* Controller)
 	return PickaxeDef;
 }
 
+int* Helper::GetPlayersLeft()
+{
+	auto GameState = GetGameState();
+
+	static auto PlayersLeftOffset = GameState->GetOffset("PlayersLeft");
+
+	return Get<int>(GameState, PlayersLeftOffset);
+}
+
 FVector Helper::GetActorForwardVector(UObject* Actor)
 {
 	static auto GetActorForwardVectorFN = FindObject<UFunction>("/Script/Engine.Actor.GetActorForwardVector");
