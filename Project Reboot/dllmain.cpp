@@ -10,9 +10,12 @@
 #include "inventory.h"
 #include "abilities.h"
 #include "build.h"
+#include "gui.h"
 #include "edit.h"
 #include "loot.h"
 #include "interaction.h"
+
+// DEFINE_LOG_CATEGORY_STATIC(LogInit, ELogLevel::All)
 
 DWORD WINAPI Input(LPVOID)
 {
@@ -208,6 +211,8 @@ DWORD WINAPI Initialize(LPVOID)
         SetConsoleTitleA("Project Reboot V2");
     }
 
+    // Log::Init();
+
     if (MH_Initialize() != MH_OK)
     {
         MessageBoxA(0, "MinHook failed to initialize", "Project Reboot V2", MB_ICONERROR);
@@ -219,6 +224,8 @@ DWORD WINAPI Initialize(LPVOID)
         MessageBoxA(0, "Failed to setup patterns", "Project Reboot V2", MB_ICONERROR);
         return 1;
     }
+
+    CreateThread(0, 0, GuiThread, 0, 0, 0);
 
     MH_CreateHook((PVOID)CanActivateAbilityAddress, rettrue, nullptr); // TODO: Find a better fix
     MH_EnableHook((PVOID)CanActivateAbilityAddress);
@@ -245,6 +252,7 @@ DWORD WINAPI Initialize(LPVOID)
     }
     
     std::cout << "Initialized\n";
+    // LOG(LogInit, All, L"Initialized");
     std::cout << "Fortnite_Season: " << Fortnite_Season << '\n';
     std::cout << "GiveAbilityS14ANDS15: " << Defines::GiveAbilityS14ANDS15 << '\n';
     std::cout << "GiveAbilityAddress: " << GiveAbilityAddress << '\n';
@@ -306,6 +314,48 @@ DWORD WINAPI Initialize(LPVOID)
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     // Level.Free();
+
+    auto matchmaking = Memory::FindPattern("83 BD ? ? ? ? 01 7F 18 49 8D 4D D8 48 8B D6 E8 ? ? ? ? 48");
+
+    matchmaking = matchmaking ? matchmaking : Memory::FindPattern("83 7D 88 01 7F 0D 48 8B CE E8");
+
+    Defines::bMatchmakingSupported = matchmaking;
+    int idx = 0;
+
+    if (Defines::bMatchmakingSupported) // now check if it leads to the right place and where the jg is at
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            auto byte = (uint8_t*)(matchmaking + i);
+
+            if (IsBadReadPtr(byte))
+                continue;
+
+            // std::cout << std::format("[{}] 0x{:x}\n", i, (int)*byte);
+
+            if (*byte == 0x7F)
+            {
+                Defines::bMatchmakingSupported = true;
+                idx = i;
+                break;
+            }
+
+            Defines::bMatchmakingSupported = false;
+        }
+    }
+
+    std::cout << "Matchmaking will " << (Defines::bMatchmakingSupported ? "be supported\n" : "not be supported\n");
+
+    if (Defines::bMatchmakingSupported)
+    {
+        std::cout << "idx: " << idx << '\n';
+
+        auto before = (uint8_t*)(matchmaking + idx);
+
+        std::cout << "before byte: " << (int)*before << '\n';
+
+        *before = 0x74;
+    }
 
     return 0;
 }

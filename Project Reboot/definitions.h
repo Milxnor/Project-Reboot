@@ -12,11 +12,16 @@ namespace Defines
 	inline bool bRandomSkin = true;
 	inline bool bRandomPickaxe = true;
 
+	// DON'T CHANGE HERE
+
+	inline bool bMatchmakingSupported = false;
 	inline bool bShouldSpawnFloorLoot = false;
 	inline bool bShouldSpawnVehicles = false;
 	inline bool bShouldSpawnForagedItems = false;
 
 	inline int AmountOfRestarts = 0;
+
+	// TO HERE
 
 	inline std::vector<std::pair<UObject*, std::string>> ObjectsToLoad;
 

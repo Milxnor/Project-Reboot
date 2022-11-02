@@ -21,7 +21,7 @@ bool Teams::AssignTeam(UObject* Controller)
 	auto GameState = Helper::GetGameState();
 	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-	int MaxPlayersPerTeam = 2;
+	int MaxPlayersPerTeam = 1;
 
 	static auto TeamsOffset = FindOffsetStruct("Class /Script/FortniteGame.FortGameState", "Teams", true);
 	auto AllTeams = (TArray<AFortTeamInfo*>*)(__int64(GameState) + TeamsOffset);

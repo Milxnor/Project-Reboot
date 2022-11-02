@@ -2,7 +2,7 @@
 
 bool Events::HasEvent()
 {
-
+	return false;
 }
 
 void Events::StartEvent()

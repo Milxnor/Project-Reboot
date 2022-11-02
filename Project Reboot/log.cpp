@@ -1,4 +1,4 @@
-/* #include "log.h"
+#include "log.h"
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -111,4 +111,4 @@ void Log::Log_Internal(std::shared_ptr<spdlog::logger> Logger, ELogLevel Level, 
 void Log::Log_Internal(std::shared_ptr<spdlog::logger> Logger, ELogLevel Level, const std::wstring& Message)
 {
     Log_Internal(Logger, Level, std::string(Message.begin(), Message.end()));
-} */
+}

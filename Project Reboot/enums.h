@@ -194,6 +194,12 @@ enum class EFortCustomPartType : uint8_t
 	EFortCustomPartType_MAX = 7
 };
 
+struct FAthenaMatchTeamStats
+{
+	int                                                Place;                                                    // 0x0000(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	int                                                TotalPlayers;                                             // 0x0004(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+
 template<class TEnum>
 struct TEnumAsByte
 {

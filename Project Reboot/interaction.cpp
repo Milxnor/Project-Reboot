@@ -26,17 +26,6 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 		auto bAlreadySearchedBitfield = Get<PlaceholderBitfield>(BuildingContainer, bAlreadySearchedOffset);
 
-		if (Engine_Version >= 420 && Engine_Version < 424)
-		{
-			if (bAlreadySearchedBitfield->Fourth)
-				return false;
-
-			bAlreadySearchedBitfield->Fourth = true;
-
-			static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
-			BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
-		}
-
 		if (ReceivingActorName.contains("Chest"))
 		{
 			auto DefInRow = Looting::GetRandomItem(ItemType::Weapon);
@@ -72,7 +61,23 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
 				else
 					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+
+				// BuildingContainer->ProcessEvent(FindObject<UFunction>("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C.OnSetSearched"));
+				// BuildingContainer->ProcessEvent(FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.BounceContainer"));
+				// BuildingContainer->ProcessEvent(FindObject<UFunction>("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C.OnLoot"));
+
 			}
+		}
+
+		if (Engine_Version >= 420 && Engine_Version < 424)
+		{
+			if (bAlreadySearchedBitfield->Fourth)
+				return false;
+
+			bAlreadySearchedBitfield->Fourth = true;
+
+			static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
+			BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
 		}
 	}
 

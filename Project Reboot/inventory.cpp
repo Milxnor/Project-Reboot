@@ -327,6 +327,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 	if (!Pawn)
 		return nullptr;
 
+	static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
 	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
 	static auto FortContextTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortContextTrapItemDefinition");
@@ -349,10 +350,25 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 			ItemDefinition->ProcessEvent(GetDecoItemDefinition, &GadgetDefinition);
 		}
 
+		std::cout << "GadgetDefinition: " << GadgetDefinition << '\n';
+
+		auto CharacterPartsOffset = ItemDefinition->GetOffset("CharacterParts");
+		auto CharacterParts = Get<TArray<UObject*>>(ItemDefinition, CharacterPartsOffset);
+
+		for (int i = 0; i < CharacterParts->size(); i++)
+		{
+			auto CharacterPart = CharacterParts->At(i);
+
+			Helper::ChoosePart(Pawn, (EFortCustomPartType)i, CharacterPart);
+		}
+
+		if (!GadgetDefinition)
+			return nullptr;
+
 		EquipWeapon(Controller, Guid, GadgetDefinition, Ammo);
 	}
-
-	else if (ItemDefinition->IsA(FortDecoItemDefinitionClass))
+		
+	else if ((ItemDefinition->IsA(FortDecoItemDefinitionClass) && Engine_Version >= 424) || ItemDefinition->IsA(FortTrapItemDefinitionClass)) // IDK
 	{
 		UObject* WeaponClass = nullptr;
 		static auto GetWeaponActorClass = FindObject<UFunction>("/Script/FortniteGame.FortWeaponItemDefinition.GetWeaponActorClass");
@@ -461,7 +477,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		{
 			{
 				static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
-				*Get<int>(Wep, AmmoCountOffset) = Ammo;
+				// *Get<int>(Wep, AmmoCountOffset) = Ammo;
 			}
 		}
 	}

@@ -2,8 +2,6 @@
 
 #include <iostream> // todo remove
 
-/*
-
 #include <vector>
 #include <spdlog/spdlog.h>
 
@@ -71,5 +69,3 @@ public:
         { \
             LogCategory##CategoryName() : LogCategory(#CategoryName, DefaultLevel) {} \
         } CategoryName;
-
-*/

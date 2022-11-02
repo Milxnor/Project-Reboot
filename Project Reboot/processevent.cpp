@@ -56,7 +56,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		AddHook("/Script/FortniteGame.FortMatchAnalytics.OnGamePhaseChanged", OnGamePhaseChanged);
 
-		AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+		// AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
 		AddHook("/Script/FortniteGame.FortPhysicsPawn.ServerMove", ServerUpdatePhysicsParamsHook);
 
@@ -73,6 +73,19 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			else
 				AddHook("/Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C.OnDamageServer", Harvesting::OnDamageServer);
 		}
+
+		auto GameState = Helper::GetGameState();
+		static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+		static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+		auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+
+		*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
+
+		static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+
+		GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+
+		// *Get<float>(GameState, WarmupCountdownEndTimeOffset) = 1000.f;
 	}
 
 	UObject* PlayerController = *(UObject**)Parameters;
@@ -482,18 +495,18 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 	auto PlayersLeftPtr = Helper::GetPlayersLeft();
 
+	auto GameState = Helper::GetGameState();
+
+	auto TeamsLeftOffset = GameState->GetOffset("TeamsLeft");
+
+	auto TeamsLeft = *Get<int>(GameState, TeamsLeftOffset);
+
+	std::cout << "TeamsLeft: " << TeamsLeft << '\n';
+
 	if (PlayersLeftPtr)
 	{
 		(*PlayersLeftPtr)--;
 		auto PlayersLeft = *PlayersLeftPtr;
-
-		auto GameState = Helper::GetGameState();
-
-		auto TeamsLeftOffset = GameState->GetOffset("TeamsLeft");
-
-		auto TeamsLeft = *Get<int>(GameState, TeamsLeftOffset);
-
-		std::cout << "TeamsLeft: " << TeamsLeft << '\n';
 
 		if (TeamsLeft <= 1) // && (int)Playlist->WinCondition <= 1
 		{
@@ -510,6 +523,105 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 			Helper::GetGameMode()->ProcessEvent(EndGamePhaseStarted);
 		}
 	}
+
+	static auto PlaceOffset = DeadPlayerState->GetOffsetSlow("Place");
+	auto Place = Get<int>(DeadPlayerState, PlaceOffset);
+
+	*Place = TeamsLeft;
+
+	static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
+	DeadPlayerState->ProcessEvent(OnRep_Place);
+
+	static auto TeamScoreOffset = DeadPlayerState->GetOffsetSlow("TeamScore");
+	auto TeamScore = Get<int>(DeadPlayerState, TeamScoreOffset);
+
+	*TeamScore = TeamsLeft;
+
+	static auto OnRep_TeamScore = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScore");
+	DeadPlayerState->ProcessEvent(OnRep_TeamScore);
+
+	static auto TeamScorePlacementOffset = DeadPlayerState->GetOffsetSlow("TeamScorePlacement");
+	auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
+
+	*TeamScorePlacement = TeamsLeft;
+
+	static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
+	DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
+
+	static auto bMarkedAliveOffset = DeadController->GetOffset("bMarkedAlive");
+	*Get<bool>(DeadController, bMarkedAliveOffset) = false;
+
+	struct FAthenaRewardResult
+	{
+		int                                                LevelsGained;                                             // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		int                                                BookLevelsGained;                                         // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		int                                                TotalSeasonXpGained;                                      // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		int                                                TotalBookXpGained;                                        // 0x000C(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		int                                                PrePenaltySeasonXpGained;                                 // 0x0010(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		unsigned char                                      UnknownData00[0x4];                                       // 0x0014(0x0004) MISSED OFFSET
+		TArray<__int64>       XpMultipliers;                                            // 0x0018(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
+		TArray<__int64>                   Rewards;                                                  // 0x0028(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
+		float                                              AntiAddictionMultiplier;                                  // 0x0038(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		unsigned char                                      UnknownData01[0x4];                                       // 0x003C(0x0004) MISSED OFFSET
+	};
+
+	// 	void ClientSendEndBattleRoyaleMatchForPlayer(bool bSuccess, const struct FAthenaRewardResult& Result);
+
+	static auto ClientSendEndBattleRoyaleMatchForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendEndBattleRoyaleMatchForPlayer");
+	int TotalSeasonXpGained = INT32_MAX; // This is the only one that u can see
+	struct { bool bSuccess; FAthenaRewardResult res; } parm { true, FAthenaRewardResult(1500, 1200, TotalSeasonXpGained, 1400)};
+
+	DeadController->ProcessEvent(ClientSendEndBattleRoyaleMatchForPlayer, &parm); // lil xp thingy
+
+	struct FAthenaMatchStats
+	{
+		FString                                     StatBucket;                                               // 0x0000(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+		FString                                     MatchID;                                                  // 0x0010(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+		FString                                     MatchEndTime;                                             // 0x0020(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+		FString                                     MatchPlatform;                                            // 0x0030(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+		int                                                Stats[0x14];                                              // 0x0040(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+		TArray<__int64>                  WeaponStats;                                              // 0x0090(0x0010) (ZeroConstructor, NativeAccessSpecifierPrivate)
+	};
+
+	FAthenaMatchStats Stats{};
+	Stats.Stats[3] = 100; // Elimations I think
+
+	auto teamStats = FAthenaMatchTeamStats();
+	teamStats.Place = *Place;
+	teamStats.TotalPlayers = PlayersLeftPtr ? (*PlayersLeftPtr) + 1 : 100;
+
+	if (false) // 7.40
+	{
+		static auto MatchReportOffset = DeadController->GetOffset("MatchReport");
+		auto MatchReport = Get<UObject*>(DeadController, MatchReportOffset);
+
+		std::cout << "MatchReport: " << *MatchReport << '\n';
+
+		if (*MatchReport)
+		{
+			static auto MatchStatsOffset = (*MatchReport)->GetOffsetSlow("MatchStats");
+			auto MatchStats = *Get<FAthenaMatchStats>(*MatchReport, MatchStatsOffset);
+
+			static auto TeamStatsOffset = (*MatchReport)->GetOffsetSlow("TeamStats");
+			auto TeamStats = Get<FAthenaMatchTeamStats>(*MatchReport, TeamStatsOffset);
+
+			static auto bHasTeamStatsOffset = (*MatchReport)->GetOffsetSlow("bHasTeamStats");
+			auto bHasTeamStats = Get<bool>(*MatchReport, bHasTeamStatsOffset);
+
+			*bHasTeamStats = true;
+
+			std::cout << "MatchStats.Stats[2]: " << MatchStats.Stats[2] << '\n';
+
+			Stats = MatchStats;
+			teamStats = *TeamStats;
+		}
+	}
+
+	static auto ClientSendMatchStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendMatchStatsForPlayer");
+	// DeadController->ProcessEvent(ClientSendMatchStatsForPlayer, &Stats); // For now, because the size of the struct changes and im too lazy to allocate it
+
+	static auto ClientSendTeamStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendTeamStatsForPlayer");
+	DeadController->ProcessEvent(ClientSendTeamStatsForPlayer, &teamStats); // "You came x out of y Players"
 
 	return false;
 }

@@ -33,6 +33,12 @@
     <Filter Include="Source\Unreal">
       <UniqueIdentifier>{fcfcaf89-6ca6-430b-8d68-b67271cb6685}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Third Party">
+      <UniqueIdentifier>{462f4df8-eaa8-4c98-b4a1-f24f3676fd30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party\ImGui">
+      <UniqueIdentifier>{789ce21c-00a5-4223-b304-754d2965ff09}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -104,6 +110,30 @@
     <ClCompile Include="discord.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_demo.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_draw.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_impl_dx9.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_impl_win32.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_stdlib.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_tables.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\other\inc\ImGui\imgui_widgets.cpp">
+      <Filter>Third Party\ImGui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -168,6 +198,9 @@
     </ClInclude>
     <ClInclude Include="discord.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="fontawesome.h">
+      <Filter>Third Party</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

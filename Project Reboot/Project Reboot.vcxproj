@@ -160,6 +160,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\other\inc\ImGui\imgui.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_impl_dx9.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_stdlib.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="..\other\inc\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="abilities.cpp" />
     <ClCompile Include="build.cpp" />
     <ClCompile Include="calendar.cpp" />
@@ -193,6 +201,7 @@
     <ClInclude Include="edit.h" />
     <ClInclude Include="enums.h" />
     <ClInclude Include="events.h" />
+    <ClInclude Include="fontawesome.h" />
     <ClInclude Include="gui.h" />
     <ClInclude Include="harvesting.h" />
     <ClInclude Include="helper.h" />
