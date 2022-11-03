@@ -41,7 +41,17 @@ static bool InitializePatterns()
 	if (!SpawnActorAddr)
 		SpawnActorAddr = Memory::FindPattern("48 89 5C 24 ? 55 56 57 48 8B EC 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 F0 0F 28 05 ? ? ? ? 48 8B FA 0F 28 0D ? ? ? ? 48 8B D9 48 8B 75 40 0F 29 45 C0 0F 28 05 ? ? ? ? 0F 29 45 E0 0F 29 4D D0 4D 85 C0 74 12 F3 41 0F 10 50 ? F2 41 0F 10 18");
 
+	if (!SpawnActorAddr)
+		SpawnActorAddr = Memory::FindPattern("48 89 5C 24 ? 55 56 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 2F 0F 28 0D ? ? ? ? 48 8B FA 0F 28 15 ? ? ? ? 48 8B D9 0F"); // 20.00
+
 	SpawnActorO = decltype(SpawnActorO)(SpawnActorAddr);
+
+	/* if (!SpawnActorO)
+	{
+		SpawnActorAddr = Memory::FindPattern("48 8B C4 55 53 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 A8 0F 29 78 98 44 0F 29 40 ? 44 0F 29 88 ? ? ? ? 44 0F 29 90 ? ? ? ? 44 0F 29 98 ? ? ? ? 44 0F 29 A0 ? ? ? ? 44 0F 29 A8 ? ? ? ? 44 0F 29 B0 ? ? ? ? 44 0F 29 B8 ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33"); // 20.00
+
+		SpawnActorTransform = decltype(SpawnActorTransform)(SpawnActorAddr);
+	} */
 
 	std::string InitHostPattern = "";
 	std::string StaticFindObjectPattern = "";
@@ -352,7 +362,7 @@ static bool InitializePatterns()
 		InitListenPattern = "4C 8B DC 49 89 5B 08 49 89 73 10 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
 		TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B F9 48";
 		KickPlayerPattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 48 83 65 ? ? 4C 8B F2";
-		ValidationFailurePattern = "48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 DB 48 8B F2 89 9D ? ? ? ? 4C 8B E9 E8 ? ? ? ? "; // 14.60
+		ValidationFailurePattern = "48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 DB 48 8B F2 89 9D ? ? ? ? 4C 8B E9 E8 ? ? ? ?"; // 14.60
 		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
 		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 8B 81 ? ? ? ? 49"; // 14.60
@@ -380,12 +390,26 @@ static bool InitializePatterns()
 
 	if (Engine_Version == 500)
 	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
+		InitHostPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 4C 8B F1 48 8D 3D ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 4C 89 64 24 ? 55 41 55 41 57 48 8B EC 48 83 EC 60 45 8A E1";
+		StaticLoadObjectPattern = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 33 DB 4C 8B AD ? ? ? ? 83";
+		ProcessEventPattern = "40 55 53 56 57 41 54 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85";
+		PauseBeaconRequestsPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 83 EC 20 33 ED 48 8B F1 84 D2 74 27 80 3D";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
+		InitListenPattern = "4C 8B DC 49 89 5B 10 49 89 73 18 57 48 83 EC 50 48 8B BC 24 ?? ?? ?? ?? 49 8B F0 48 8B";
+		TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 8A A1";
+		KickPlayerPattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 48 83 65 ? ? 4C 8B F2";
+		ValidationFailurePattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 60 48 8B DA 48 8B F1";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 8B DA 4C 8B";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0 0F 8F";
+		CantBuildPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 70 49 8B E9 4D 8B F8 48 8B DA 48 8B F9 BE";
+		ReplaceBuildingActorPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B A5";
+		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
+		CanActivateAbilityPattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D 68 B1 48 81 EC ? ? ? ? 4D";
+		FreePattern = "48 85 C9 0F 84 ? ? ? ? 48 89 5C 24 ? 57 48 83 EC 20 48 8B 3D ? ? ? ? 48 8B D9 48";
+		NoReservePattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9";
+		HandleReloadCostPattern = "89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 40 B6 03 8B DA";
 	}
 
 	if (Engine_Version == 420)
@@ -404,10 +428,8 @@ static bool InitializePatterns()
 		ServerReplicateActorsOffset = 0x5E;
 	else if (Fortnite_Season >= 15 && Engine_Version < 500) // 15-18 = 0x5F
 		ServerReplicateActorsOffset = 0x5F;
-	else if (Fortnite_Season == 19)
+	else if (Fortnite_Season >= 19)
 		ServerReplicateActorsOffset = 0x66;
-	else
-		ServerReplicateActorsOffset = 0x67; // S20
 
 	Offset_InternalOffset = Engine_Version >= 425 && Engine_Version < 500 ? 0x4C : 0x44;
 	SuperStructOffset = Engine_Version >= 422 ? 0x40 : 0x30;
@@ -446,6 +468,7 @@ static bool InitializePatterns()
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
 
+	std::cout << std::format("SpawnActorAddress: 0x{:x}\n", (uintptr_t)SpawnActorAddr - Base);
 	std::cout << std::format("InitHostAddress: 0x{:x}\n", (uintptr_t)InitHostAddress - Base);
 	std::cout << std::format("StaticFindObjectAddress: 0x{:x}\n", (uintptr_t)StaticFindObjectAddress - Base);
 	std::cout << std::format("StaticLoadObjectAddress: 0x{:x}\n", (uintptr_t)StaticLoadObjectAddress - Base);

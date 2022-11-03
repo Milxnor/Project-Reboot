@@ -4,10 +4,35 @@
 
 UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rotation, UObject* Owner)
 {
-	FActorSpawnParameters SpawnParameters{};
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	SpawnParameters.Owner = Owner;
-	return SpawnActorO(Helper::GetWorld(), Class, &Location, &Rotation, SpawnParameters);
+	bool bUseDouble = Fortnite_Version >= 20.00;
+	bool bUseNewSpawnParameters = false; // die
+	auto quat = Rotation.Quaternion();
+
+	if (!bUseDouble)
+	{
+		FActorSpawnParameters SpawnParameters{};
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		SpawnParameters.Owner = Owner;
+
+		FTransform transform = FTransform(quat, Location);
+
+		return SpawnActorO ? SpawnActorO(Helper::GetWorld(), Class, &Location, &Rotation, &SpawnParameters)
+			: SpawnActorTransform(Helper::GetWorld(), Class, &transform, &SpawnParameters);
+	}
+	else
+	{
+		FActorSpawnParametersNew SpawnParameters{};
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		SpawnParameters.Owner = Owner;
+
+		auto DLocation = Location.ToDouble();
+		auto DQuat = quat.ToDouble();
+
+		DTransform transform = DTransform(DQuat, DLocation);
+
+		return SpawnActorO ? SpawnActorO(Helper::GetWorld(), Class, &Location, &Rotation, &SpawnParameters)
+			: SpawnActorTransform(Helper::GetWorld(), Class, &transform, &SpawnParameters);
+	}
 }
 
 UObject* Helper::Easy::SpawnObject(UObject* Class, UObject* Outer)

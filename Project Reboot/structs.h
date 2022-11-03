@@ -159,6 +159,35 @@ struct UObject
 
 struct UField : UObject { UField* Next; };
 
+struct FFunctionStorage
+{
+	void* HeapAllocation;
+#if TFUNCTION_USES_INLINE_STORAGE
+	// Inline storage for an owned object
+	TAlignedBytes<TFUNCTION_INLINE_SIZE, TFUNCTION_INLINE_ALIGNMENT> InlineAllocation;
+#endif
+};
+
+template <bool bUnique>
+struct TFunctionStorage : FFunctionStorage
+{
+
+};
+
+template <typename StorageType, typename Ret, typename... ParamTypes>
+struct TFunctionRefBase
+{
+	// Ret(*Callable)(void*, ParamTypes&...) = nullptr;
+	void* Callable;
+	StorageType Storage;
+};
+
+template<typename FuncType>
+class TFunction : public TFunctionRefBase<TFunctionStorage<false>, FuncType>
+{
+
+};
+
 struct FActorSpawnParameters
 {
 	FName Name;
@@ -174,10 +203,41 @@ struct FActorSpawnParameters
 	EObjectFlags ObjectFlags;
 };
 
+struct FActorSpawnParametersNew
+{
+	FName Name;
+	UObject* Template; // AActor*
+	UObject* Owner; // AActor*
+	UObject* Instigator; // APawn*
+	UObject* OverrideLevel; // ULevel*
+	UObject* OverrideParentComponent;
+	ESpawnActorCollisionHandlingMethod SpawnCollisionHandlingOverride;
+	// ESpawnActorScaleMethod TransformScaleMethod = ESpawnActorScaleMethod::MultiplyWithRoot;
+	uint8_t TransformScaleMethod;
+	uint16_t	bRemoteOwned : 1;
+	uint16_t	bNoFail : 1;
+	uint16_t	bDeferConstruction : 1;
+	uint16_t	bAllowDuringConstructionScript : 1;
+
+	enum class ESpawnActorNameMode : uint8_t
+	{
+		Required_Fatal,
+		Required_ErrorAndReturnNull,
+		Required_ReturnNull,
+		Requested
+	};
+
+	ESpawnActorNameMode NameMode;
+	EObjectFlags ObjectFlags;
+
+	TFunction<void(UObject*)> CustomPreSpawnInitalization; // my favorite
+};
+
 inline UObject* (*StaticFindObjectO)(UObject* Class, UObject* InOuter, const TCHAR* Name, bool ExactClass);
 inline UObject* (*StaticLoadObjectO)(UObject* Class, UObject* InOuter, const TCHAR* Name, const TCHAR* Filename, uint32_t LoadFlags, UObject* Sandbox, bool bAllowObjectReconciliation, void* InSerializeContext);
 inline void (*ProcessEventO)(UObject* object, UObject* func, void* Parameters);
-inline UObject* (*SpawnActorO)(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters);
+inline UObject* (*SpawnActorO)(UObject* World, UObject* Class, void* Position, void* Rotation, void* SpawnParameters);
+inline UObject* (*SpawnActorTransform)(UObject* World, UObject* Class, void* UserTransformPtr, void* SpawnParameters);
 
 template <typename T = UObject>
 static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name, int LoadFlags = 0)

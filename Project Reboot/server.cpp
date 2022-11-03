@@ -40,6 +40,8 @@ void Server::SetWorld(UObject* World)
 				SetWorldIndex = 0x72;
 			else if (Fortnite_Season == 18)
 				SetWorldIndex = 0x73;
+			else if (Fortnite_Season == 20)
+				SetWorldIndex = 0x7A; // 20.00
 
 			std::cout << "SetWorldIndex: " << SetWorldIndex << '\n';
 
@@ -110,6 +112,11 @@ bool Server::Listen(int Port)
 	
 	FString NetDriverNameFStr = L"GameNetDriver"; // to free
 	*Get<FName>(NetDriver, NetDriverNameOffset) = Helper::Conversion::StringToName(NetDriverNameFStr);
+
+	static auto ReplicationDriverClassOffset = NetDriver->GetOffset("ReplicationDriverClass");
+	static auto FortReplicationGraphClass = FindObject("/Script/FortniteGame.FortReplicationGraph");
+
+	*Get<UObject*>(NetDriver, ReplicationDriverClassOffset) = FortReplicationGraphClass;
 
 	auto InitListenResult = Defines::InitListen(NetDriver, World, InURL, false, Error);
 

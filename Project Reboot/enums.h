@@ -12,6 +12,13 @@
 // TODO Better file name
 // This is more like a utility/random stuff file
 
+struct DVector // lmao
+{
+	double X;
+	double Y;
+	double Z;
+};
+
 struct FVector
 {
 	float X;
@@ -55,6 +62,12 @@ struct FVector
 	std::string Describe()
 	{
 		return std::format("{} {} {}", std::to_string(X), std::to_string(Y), std::to_string(Z));
+	}
+
+	DVector ToDouble()
+	{
+		DVector newVec = DVector(X, Y, Z); // ??
+		return newVec;
 	}
 };
 
@@ -355,6 +368,14 @@ enum class EFortPickupSpawnSource : uint8_t
 	EFortPickupSpawnSource_MAX = 5
 };
 
+struct DQuat
+{
+	double W;
+	double X;
+	double Y;
+	double Z;
+};
+
 struct FQuat
 {
 	float W;
@@ -364,21 +385,31 @@ struct FQuat
 
 	void Describe() { std::cout << std::format("{} {} {} {}\n", W, X, Y, Z); }
 
+	DQuat ToDouble()
+	{
+		DQuat Quat = DQuat(W, X, Y, Z); // ??
+		return Quat;
+	}
+
 	inline FRotator Rotator() const;
 };
 
-struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8e09b606f10a09776b4d1f38/Engine/Source/Runtime/Core/Public/Math/TransformNonVectorized.h#L28
+struct FTransform
 {
 	FQuat Rotation;
 	FVector Translation;
 	char pad_1C[0x4]; // Padding never changes
 	FVector Scale3D = FVector{ 1, 1, 1 };
 	char pad_2C[0x4];
+};
 
-	/* bool ContainsNaN() const
-	{
-		return (Translation.ContainsNaN() || Rotation.ContainsNaN() || Scale3D.ContainsNaN());
-	} */
+struct DTransform
+{
+	DQuat Rotation;
+	DVector Translation;
+	char pad_1C[0x4]; // Padding never changes
+	DVector Scale3D = DVector{ 1, 1, 1 };
+	char pad_2C[0x4];
 };
 
 static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)

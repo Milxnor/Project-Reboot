@@ -67,7 +67,10 @@ void UObject::ProcessEvent(struct UFunction* Function, void* Parameters)
 template <typename ObjectType>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class, UObject* InOuter)
 {
-	auto ObjectNameCut = ObjectName; // ObjectName.substr(ObjectName.find(" ") + 1);
+	if (!StaticFindObjectO)
+		return (ObjectType*)FindObjectSlow(ObjectName);
+
+	auto& ObjectNameCut = ObjectName; // ObjectName.substr(ObjectName.find(" ") + 1);
 	auto ObjectNameWide = std::wstring(ObjectNameCut.begin(), ObjectNameCut.end()).c_str();
 
 	return (ObjectType*)StaticFindObjectO(Class, InOuter, ObjectNameWide, false);

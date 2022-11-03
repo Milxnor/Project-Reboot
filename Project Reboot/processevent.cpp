@@ -569,7 +569,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 	static auto ClientSendEndBattleRoyaleMatchForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendEndBattleRoyaleMatchForPlayer");
 	int TotalSeasonXpGained = INT32_MAX; // This is the only one that u can see
-	struct { bool bSuccess; FAthenaRewardResult res; } parm { true, FAthenaRewardResult(1500, 1200, TotalSeasonXpGained, 1400)};
+	struct { bool bSuccess; FAthenaRewardResult res; } parm { true, FAthenaRewardResult(1500, 1200, TotalSeasonXpGained, 1400)}; // MatchReport->EndOfMatchResults
 
 	DeadController->ProcessEvent(ClientSendEndBattleRoyaleMatchForPlayer, &parm); // lil xp thingy
 
@@ -588,7 +588,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 	auto teamStats = FAthenaMatchTeamStats();
 	teamStats.Place = *Place;
-	teamStats.TotalPlayers = PlayersLeftPtr ? (*PlayersLeftPtr) + 1 : 100;
+	teamStats.TotalPlayers = PlayersLeftPtr ? (*PlayersLeftPtr) + 1 : 100; // i believe this is supposed to be how many players were at aircraft
 
 	if (false) // 7.40
 	{
@@ -597,7 +597,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 		std::cout << "MatchReport: " << *MatchReport << '\n';
 
-		if (*MatchReport)
+		if (*MatchReport) // null yay!!
 		{
 			static auto MatchStatsOffset = (*MatchReport)->GetOffsetSlow("MatchStats");
 			auto MatchStats = *Get<FAthenaMatchStats>(*MatchReport, MatchStatsOffset);
