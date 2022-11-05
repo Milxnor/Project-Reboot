@@ -269,7 +269,7 @@ DWORD WINAPI Initialize(LPVOID)
 
     static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
 
-    FString Level = Engine_Version < 424 ? L"Athena_Terrain" : (Engine_Version < 500 ? L"Apollo_Terrain" : L"Artemis_Terrain");
+    FString Level = Defines::GetMapName();
 
     PC->ProcessEvent(SwitchLevel, &Level);
     

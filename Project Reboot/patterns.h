@@ -393,7 +393,8 @@ static bool InitializePatterns()
 		InitHostPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 4C 8B F1 48 8D 3D ? ? ? ?";
 		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 4C 89 64 24 ? 55 41 55 41 57 48 8B EC 48 83 EC 60 45 8A E1";
 		StaticLoadObjectPattern = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 33 DB 4C 8B AD ? ? ? ? 83";
-		ProcessEventPattern = "40 55 53 56 57 41 54 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85";
+		// ProcessEventPattern = "40 55 53 56 57 41 54 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85";
+		ProcessEventPattern = "40 55 53 56 57 41 54 41 56 41 57 48 81 EC ? ? ? ? 48 8D ? 24";
 		PauseBeaconRequestsPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 83 EC 20 33 ED 48 8B F1 84 D2 74 27 80 3D";
 		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1";
 		InitListenPattern = "4C 8B DC 49 89 5B 10 49 89 73 18 57 48 83 EC 50 48 8B BC 24 ?? ?? ?? ?? 49 8B F0 48 8B";
@@ -410,6 +411,24 @@ static bool InitializePatterns()
 		FreePattern = "48 85 C9 0F 84 ? ? ? ? 48 89 5C 24 ? 57 48 83 EC 20 48 8B 3D ? ? ? ? 48 8B D9 48";
 		NoReservePattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9";
 		HandleReloadCostPattern = "89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 40 B6 03 8B DA";
+		FreePattern = "48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85"; // 22.3
+
+		if (Fortnite_Version == 19.10)
+		{
+			StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 70 33 FF 48 8D 05 ? ? ? ? 40 38 3D";
+			ValidationFailurePattern = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 60 48 8B FA 48 8B F1 E8 ? ? ? ? 48 8B D0 E8 ? ? ? ? 85 C0";
+		}
+	}
+
+	if (Fortnite_Season == 22)
+	{
+		TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8D 91";
+		ValidationFailurePattern = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 60 48 8B FA 48 8B F1 E8 ? ? ? ? 48 8B D0 E8";
+		NoReservePattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9 45 8A F8 4C 8B F2 48 8B F9 45 32 E4 E8";
+		GiveAbilityPattern = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8B EC 48 83 EC 30 49 8B 40 10 45 33 F6 4D 8B F8 48 8B F2 48 8B F9";
+		StaticFindObjectPattern = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 F6 4C 8B E1 48 83 CB FF";
+		StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 81 EC ? ? ? ? 33";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 8B FA 4D 8B E0 33 D2 4C 8B F1";
 	}
 
 	if (Engine_Version == 420)
@@ -417,8 +436,8 @@ static bool InitializePatterns()
 	else if (Engine_Version == 421)
 		ServerReplicateActorsOffset = Fortnite_Season == 5 ? 0x54 : 0x56;
 	else if (Engine_Version >= 422 && Engine_Version <= 424)
-		ServerReplicateActorsOffset = Fortnite_Version >= 7.40 && Fortnite_Version < 8.40 ? 0x57 : 
-			Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 0x5A) : 0x56;
+		ServerReplicateActorsOffset = Fortnite_Version >= 7.40 && Fortnite_Version < 8.40 ? 0x57 :
+		Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 0x5A) : 0x56;
 
 	// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, other S11 is 0x5A
 
@@ -428,8 +447,10 @@ static bool InitializePatterns()
 		ServerReplicateActorsOffset = 0x5E;
 	else if (Fortnite_Season >= 15 && Engine_Version < 500) // 15-18 = 0x5F
 		ServerReplicateActorsOffset = 0x5F;
-	else if (Fortnite_Season >= 19)
+	else if (Fortnite_Season >= 19 && Fortnite_Season <= 20)
 		ServerReplicateActorsOffset = 0x66;
+	else if (Fortnite_Season >= 21)
+		ServerReplicateActorsOffset = 0x67; // checked onb 22.30
 
 	Offset_InternalOffset = Engine_Version >= 425 && Engine_Version < 500 ? 0x4C : 0x44;
 	SuperStructOffset = Engine_Version >= 422 ? 0x40 : 0x30;
@@ -493,7 +514,7 @@ static bool InitializePatterns()
 	std::cout << std::format("CanActivateAbilityAddress: 0x{:x}\n", (uintptr_t)CanActivateAbilityAddress - Base);
 	std::cout << std::format("ActorGetNetModeAddress: 0x{:x}\n", (uintptr_t)ActorGetNetModeAddress - Base);
 
-	if (!InitHostAddress || !StaticFindObjectAddress || !ProcessEventAddress || !ObjectsAddress)
+	if (!InitHostAddress || !ProcessEventAddress || !ObjectsAddress)
 		return false;
 
 	Defines::InitHost = decltype(Defines::InitHost)(InitHostAddress);

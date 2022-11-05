@@ -273,6 +273,64 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
 
 		Teams::AssignTeam(PlayerController);
+
+		static auto OtherRiftClass = FindObject("/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
+
+		UObject* NewPortal = nullptr;
+
+		std::cout << "OtherRiftClass: " << OtherRiftClass << '\n';
+
+		const wchar_t* url = L"https://media.discordapp.net/attachments/993197214744715284/1038297667463291001/45F01C49-1220-426C-973B-110583AC1B4F.png"; // std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end()).c_str();
+
+		if (OtherRiftClass)
+		{
+			NewPortal = Helper::Easy::SpawnActor(OtherRiftClass, Helper::GetActorLocation(Helper::GetPlayerStart()));
+
+			static auto DestinationActorOffset = NewPortal->GetOffset("DestinationActor");
+			*Get<UObject*>(NewPortal, DestinationActorOffset) = Pawn;
+
+			static auto CreatorNameOffset = NewPortal->GetOffset("CreatorName");
+			*Get<FString>(NewPortal, CreatorNameOffset) = L"MILXNORDEV";
+
+			static auto UserDescriptionOffset = NewPortal->GetOffset("UserDescription");
+			*Get<FString>(NewPortal, UserDescriptionOffset) = L"Project Reboot bad tbh";
+
+			static auto ImageURLOffset = NewPortal->GetOffset("ImageURL");
+			*Get<FString>(NewPortal, ImageURLOffset) = url;
+
+			static auto OnThumbnailTextureReady = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnThumbnailTextureReady");
+			NewPortal->ProcessEvent(OnThumbnailTextureReady);
+
+			static auto OnRep_ImageURLChanged = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_ImageURLChanged");
+			NewPortal->ProcessEvent(OnRep_ImageURLChanged);
+
+			static auto UniqueIdOffset = PlayerState->GetOffset("UniqueId");
+
+			static auto OwningPlayerOffset = NewPortal->GetOffset("OwningPlayer");
+			*Get<FUniqueNetIdRepl>(NewPortal, OwningPlayerOffset) = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
+
+			static auto bIsPublishedPortalOffset = NewPortal->GetOffset("bIsPublishedPortal");
+			*Get<bool>(NewPortal, bIsPublishedPortalOffset) = false;
+
+			static auto OnRep_PublishedPortal = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PublishedPortal");
+			NewPortal->ProcessEvent(OnRep_PublishedPortal);
+
+			static auto OnRep_OwningPlayer = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_OwningPlayer");
+			NewPortal->ProcessEvent(OnRep_OwningPlayer);
+
+			static auto bPortalOpenOffset = NewPortal->GetOffset("bPortalOpen");
+			*Get<bool>(NewPortal, bPortalOpenOffset) = true;
+
+			static auto OnRep_PortalOpen = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PortalOpen");
+			NewPortal->ProcessEvent(OnRep_PortalOpen);
+		}
+
+		Helper::InitializeBuildingActor(PlayerController, NewPortal);
+	
+		static int OwnedPortalOffset = PlayerController->GetOffset("OwnedPortal");
+		*Get<UObject*>(PlayerController, OwnedPortalOffset) = NewPortal;
+
+		Defines::Portal = NewPortal;
 	}
 
 	return false;
@@ -344,6 +402,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			*PlayersLeft = 0;
 
 		std::cout << "Ready to start match!\n";
+
+		LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
 	}
 
 	return false;

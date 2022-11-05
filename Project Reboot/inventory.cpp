@@ -469,7 +469,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 		else
 		{
-			Pawn->ProcessEvent(EquipWeaponDefinition, &S16_params);
+			Pawn->ProcessEvent(EquipWeaponDefinition, &S17_params);
 			Wep = S17_params.Wep;
 		}
 

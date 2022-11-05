@@ -121,7 +121,7 @@ void* GetNextOfChild(void* Child)
 		return ((UField*)Child)->Next;
 }
 
-UObject* LoadObject(UObject* Class, const std::string& Name)
+UObject* LoadObject(UObject* Class, const std::string& Name) // dont trust ret
 {
 	UObject* Object = FindObject(Name);
 
@@ -131,10 +131,11 @@ UObject* LoadObject(UObject* Class, const std::string& Name)
 
 		int attempts = 0;
 
-		while (attempts < 5000 && !Object)
+		while (attempts < 1000 && !Object)
 		{
 			Object = FindObject(Name);
 			attempts++;
+			// Sleep(5);
 		}
 	}
 

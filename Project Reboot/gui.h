@@ -370,6 +370,25 @@ DWORD WINAPI GuiThread(LPVOID)
 
 						auto TimeSeconds = Helper::GetTimeSeconds();
 
+						ImGui::Checkbox("Playground", &Defines::bIsPlayground);
+						ImGui::Checkbox("Test", &Defines::bTest1);
+						
+						ImGui::InputText("URL", &Defines::urlForPortal);
+
+						if (ImGui::Button("Apply"))
+						{
+							const wchar_t* url = std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end()).c_str();
+
+							static auto ImageURLOffset = Defines::Portal->GetOffset("ImageURL");
+							*Get<FString>(Defines::Portal, ImageURLOffset) = url;
+
+							static auto OnThumbnailTextureReady = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnThumbnailTextureReady");
+							Defines::Portal->ProcessEvent(OnThumbnailTextureReady);
+
+							static auto OnRep_ImageURLChanged = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_ImageURLChanged");
+							Defines::Portal->ProcessEvent(OnRep_ImageURLChanged);
+						}
+
 						ImGui::Text(("Game has been going on for " + std::to_string(TimeSeconds)).c_str());
 						ImGui::SliderFloat("Warmup end", WarmupCountdownEndTime, TimeSeconds + 10, TimeSeconds + 1000);
 					}

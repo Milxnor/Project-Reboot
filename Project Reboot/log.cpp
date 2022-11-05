@@ -1,5 +1,7 @@
 #include "log.h"
 
+/*
+
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <filesystem>
@@ -112,3 +114,5 @@ void Log::Log_Internal(std::shared_ptr<spdlog::logger> Logger, ELogLevel Level, 
 {
     Log_Internal(Logger, Level, std::string(Message.begin(), Message.end()));
 }
+
+*/

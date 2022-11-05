@@ -593,7 +593,7 @@ std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncl
 
 UObject* Helper::GetPlayerStart()
 {
-	static auto WarmupClass = /* bIsCreative ? FindObject("/Script/FortniteGame.FortPlayerStartCreative") : */ FindObject(("/Script/FortniteGame.FortPlayerStartWarmup"));
+	static auto WarmupClass = Defines::bIsCreative ? FindObject("/Script/FortniteGame.FortPlayerStartCreative") : FindObject(("/Script/FortniteGame.FortPlayerStartWarmup"));
 	
 	if (!WarmupClass)
 		return nullptr;

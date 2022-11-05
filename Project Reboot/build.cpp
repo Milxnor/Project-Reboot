@@ -113,6 +113,9 @@ namespace Build
 
 		auto Params = (ServerSpawnDeco_Params*)Parameters;
 
+		if (!Params->AttachedActor)
+			return false;
+
 		auto Pawn = Helper::GetOwner(DecoTool);
 		auto Controller = Helper::GetControllerFromPawn(Pawn);
 
@@ -165,5 +168,29 @@ namespace Build
 	bool ServerCreateBuildingAndSpawnDeco(UObject* DecoTool, UFunction*, void* Parameters)
 	{
 		// First, the params were Location and Rotation, then BuildingLocation, BuildingRotation, Location, and Rotation.
+
+		static auto BuildingRotationOffset = FindOffsetStruct2("/Script/FortniteGame.FortDecoTool.ServerSpawnDeco", "BuildingRotation", true, true);
+
+		UObject* BuildingClass = nullptr;
+		FVector TrapLocation;
+		FRotator TrapRotation{};
+		UObject* NewBuilding = nullptr;
+
+		struct ServerSpawnDeco_Params { FVector Location; FRotator Rotation; UObject* AttachedActor; };
+
+		if (BuildingRotationOffset != 0) // skunked
+		{
+			// const struct FVector_NetQuantize10& BuildingLocation, const struct FRotator& BuildingRotation, const struct FVector_NetQuantize10& Location, const struct FRotator& Rotation, TEnumAsByte<EBuildingAttachmentType> InBuildingAttachmentType
+			struct parms { FVector BuildingLocation; FRotator BuildingRotation; FVector Location; FRotator Rotation; };
+
+			auto Params = (parms*)Parameters;
+
+			TrapLocation = Params->Location;
+			TrapRotation = Params->Rotation;
+		}
+
+		ServerSpawnDeco_Params ServerSpawnDeco_params = { TrapLocation, TrapRotation, NewBuilding };
+
+		ServerSpawnDeco(DecoTool, nullptr, &ServerSpawnDeco_params); // Spawn the trap
 	}
 }
