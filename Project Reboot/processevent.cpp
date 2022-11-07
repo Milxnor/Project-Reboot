@@ -10,6 +10,7 @@
 #include "calendar.h"
 #include "loot.h"
 #include "team.h"
+#include "events.h"
 
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters)
 {
@@ -392,7 +393,6 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			FVector NewSize = FVector{ 10000, 10000, 10000 };
 			NewVolume->ProcessEvent(UpdateSize, &NewSize); */
 		}
-
 	}
 
 	return false;
@@ -420,8 +420,10 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			Server::Hooks::Initialize();
 		}
 
-		static auto Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
-			FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		// static auto Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
+			// FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+
+		static auto Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
 
@@ -473,6 +475,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			*PlayersLeft = 0;
 
 		std::cout << "Ready to start match!\n";
+
+		Events::LoadEvent();
 
 		if (Defines::bIsCreative)
 			LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // scuffed

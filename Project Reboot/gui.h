@@ -265,7 +265,7 @@ DWORD WINAPI GuiThread(LPVOID)
 		static int PlayerTab = -1;
 		static bool bInformationTab = false;
 
-		auto bLoaded = Looting::bInitialized;
+		auto bLoaded = Server::BeaconHost; // Looting::bInitialized;
 
 		if (!ImGui::IsWindowCollapsed())
 		{
@@ -374,6 +374,16 @@ DWORD WINAPI GuiThread(LPVOID)
 						
 						ImGui::InputText("URL", &Defines::urlForPortal);
 
+						if (ImGui::Button("loadevent"))
+						{
+							Events::LoadEvent();
+						}
+
+						if (ImGui::Button("startevent"))
+						{
+							Events::StartEvent();
+						}
+
 						if (ImGui::Button("Apply"))
 						{
 							auto aa = std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end());
@@ -389,8 +399,91 @@ DWORD WINAPI GuiThread(LPVOID)
 							Defines::Portal->ProcessEvent(OnRep_ImageURLChanged);
 						}
 
+						if (ImGui::Button("Test 1"))
+						{
+							static auto AA = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C.OnReady_2EECFA4440823DD0EABF17B9AC633C22");
+							static auto BB = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C:OnReady_A7045E554BE892DB5B8EE0B1B9B949AE");
+
+							auto Loader = GetEventLoader();
+
+							std::cout << "AA: " << AA << '\n';
+
+							Loader->ProcessEvent(AA);
+						}
+
+						if (ImGui::Button("Test 2"))
+						{
+							static auto AA = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C.OnReady_2EECFA4440823DD0EABF17B9AC633C22");
+							static auto BB = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C.OnReady_A7045E554BE892DB5B8EE0B1B9B949AE");
+
+							auto Loader = GetEventLoader();
+
+							std::cout << "BB: " << BB << '\n';
+
+							Loader->ProcessEvent(BB);
+						}
+
 						ImGui::Text(("Game has been going on for " + std::to_string(TimeSeconds)).c_str());
 						ImGui::SliderFloat("Warmup end", WarmupCountdownEndTime, TimeSeconds + 10, TimeSeconds + 1000);
+					}
+				}
+
+				else if (Tab == PLAYERS_TAB)
+				{
+					if (bLoaded)
+					{
+						std::vector<UObject*> AllControllers;
+
+						auto labmada = [&AllControllers](UObject* Controller) {
+							AllControllers.push_back(Controller);
+						};
+
+						Helper::LoopConnections(labmada);
+
+						if (PlayerTab != -1)
+						{
+							for (int i = 0; i < AllControllers.size(); i++)
+							{
+								auto CurrentController = AllControllers.at(i);
+
+								auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
+
+								/* FString NameFStr;
+
+								static auto GetPlayerName = FindObject<UFunction>("/Script/Engine.PlayerState.GetPlayerName");
+								CurrentPlayerState->ProcessEvent(GetPlayerName, &NameFStr);
+
+								const wchar_t* NameWCStr = NameFStr.Data.Data;
+								std::wstring NameWStr = std::wstring(NameWCStr);
+								std::string Name = std::string(NameWStr.begin(), NameWStr.end());
+
+								auto NameCStr = Name.c_str();
+
+								if (ImGui::Button(NameCStr))
+								{
+									PlayerTab = i;
+								} */
+							}
+						}
+						else
+						{
+							auto CurrentController = AllControllers.at(PlayerTab);
+							static std::string WID;
+							ImGui::InputText("WID To Give", &WID);
+
+							if (ImGui::Button("Give Item"))
+							{
+								if (WID.find(".") == std::string::npos)
+									WID = std::format("{}.{}", WID, WID);
+
+								auto wid = FindObjectSlow(WID);
+
+								if (wid)
+									Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
+								else
+									std::cout << "Unable to find WID!\n";
+							}
+						}
 					}
 				}
 			}

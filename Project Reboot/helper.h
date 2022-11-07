@@ -4,6 +4,7 @@
 
 #include "definitions.h"
 #include "enums.h"
+#include <functional>
 
 namespace Helper
 {
@@ -50,6 +51,7 @@ namespace Helper
 	int GetMaxBullets(UObject* Definition);
 	UObject* GetPickaxeDef(UObject* Controller);
 	int* GetPlayersLeft();
+	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 
 	FVector GetActorForwardVector(UObject* Actor);
 	FVector GetActorRightVector(UObject* Actor);

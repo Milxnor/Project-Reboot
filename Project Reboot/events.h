@@ -2,10 +2,16 @@
 
 #include "structs.h"
 
+UObject* GetEventLoader();
+
+UObject*& GetEventScripting();
+
 namespace Events
 {
-	bool HasEvent(); // Does this version have a event?
+	inline bool bHasBeenLoaded = false;
 
+	bool HasEvent(); // Does this version have a event?
+	void LoadEvent();
 	void StartEvent();
 
 	// Stuff for specific events

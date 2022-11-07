@@ -546,6 +546,47 @@ int* Helper::GetPlayersLeft()
 	return Get<int>(GameState, PlayersLeftOffset);
 }
 
+void Helper::LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn)
+{
+	auto World = Helper::GetWorld();
+
+	if (World)
+	{
+		static auto NetDriverOffset = World->GetOffset("NetDriver");
+		auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
+		if (NetDriver)
+		{
+			static auto ClientConnectionsOffset = NetDriver->GetOffset("ClientConnections");
+			auto ClientConnections = (TArray<UObject*>*)(__int64(NetDriver) + ClientConnectionsOffset);
+
+			if (ClientConnections)
+			{
+				for (int i = 0; i < ClientConnections->Num(); i++)
+				{
+					auto Connection = ClientConnections->At(i);
+
+					if (!Connection)
+						continue;
+
+					static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
+					auto aaController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+
+					if (aaController)
+					{
+						// auto aaPlayerState = Helper::GetPlayerStateFromController(aaController);
+						auto aaPawn = Helper::GetPawnFromController(aaController);
+
+						if (aaPawn || bPassWithNoPawn)
+						{
+							fn(aaController);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 FVector Helper::GetActorForwardVector(UObject* Actor)
 {
 	static auto GetActorForwardVectorFN = FindObject<UFunction>("/Script/Engine.Actor.GetActorForwardVector");
