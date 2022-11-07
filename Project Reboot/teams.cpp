@@ -15,13 +15,13 @@ bool Teams::AssignTeam(UObject* Controller)
 	using AFortTeamPrivateInfo = UObject;
 	using AController = UObject;
 
-	static int NextTeamIndex = 3;
+	static int NextTeamIndex = 4;
 	static int CurrentNumPlayersOnTeam = 0; // Scuffed
 
 	auto GameState = Helper::GetGameState();
 	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-	int MaxPlayersPerTeam = 1;
+	int MaxPlayersPerTeam = 2;
 
 	static auto TeamsOffset = FindOffsetStruct("Class /Script/FortniteGame.FortGameState", "Teams", true);
 	auto AllTeams = (TArray<AFortTeamInfo*>*)(__int64(GameState) + TeamsOffset);
@@ -40,7 +40,7 @@ bool Teams::AssignTeam(UObject* Controller)
 	auto OldTeamIndex = *TeamIndexPtr;
 	auto SquadIdPtr = Get<int>(PlayerState, SquadIdOffset);
 
-	auto NextSquadId = NextTeamIndex - 0;
+	auto NextSquadId = NextTeamIndex; // Engine_Version < 424 ? NextTeamIndex - 0 : NextTeamIndex + 1;
 
 	*TeamIndexPtr = NextTeamIndex;
 
@@ -65,6 +65,7 @@ bool Teams::AssignTeam(UObject* Controller)
 		FGameMemberInfo MemberInfo;
 		MemberInfo.TeamIndex = *TeamIndexPtr;
 		MemberInfo.SquadId = *SquadIdPtr;
+		MemberInfo.funny = AllTeams->Num() + *SquadIdPtr; +*TeamIndexPtr;
 		MemberInfo.MemberUniqueId = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
 
 		if (Members)

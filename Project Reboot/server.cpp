@@ -236,8 +236,11 @@ void Server::Hooks::Initialize()
 	std::cout << MH_StatusToString(MH_CreateHook((PVOID)ValidationFailureAddress, Server::Hooks::ValidationFailure, (PVOID*)&Defines::ValidationFailure)) << '\n';
 	std::cout << MH_StatusToString(MH_EnableHook((PVOID)ValidationFailureAddress)) << '\n';
 
-	std::cout << MH_StatusToString(MH_CreateHook((PVOID)NoReserveAddress, Server::Hooks::NoReservation, (PVOID*)&Defines::NoReservation)) << '\n';
-	std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
+	if (Engine_Version < 424)
+	{
+		std::cout << MH_StatusToString(MH_CreateHook((PVOID)NoReserveAddress, Server::Hooks::NoReservation, (PVOID*)&Defines::NoReservation)) << '\n';
+		std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
+	}
 
 	/*
 
@@ -608,6 +611,7 @@ void Server::Hooks::KickPlayer(UObject* GameSession, UObject* Controller, FText 
 		{
 			static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
 			Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+			std::cout << "wtf!\n";
 		}
 	}
 

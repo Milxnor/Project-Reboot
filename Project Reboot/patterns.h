@@ -443,9 +443,10 @@ static bool InitializePatterns()
 		ServerReplicateActorsOffset = Fortnite_Season == 5 ? 0x54 : 0x56;
 	else if (Engine_Version >= 422 && Engine_Version <= 424)
 		ServerReplicateActorsOffset = Fortnite_Version >= 7.40 && Fortnite_Version < 8.40 ? 0x57 :
-		Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 0x5A) : 0x56;
+		Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 
+			(Fortnite_Version == 11.31 ? 0x59 : 0x5A)) : 0x56;
 
-	// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, other S11 is 0x5A
+	// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, 11.31 = 0x59, other S11 is 0x5A
 
 	else if (Fortnite_Season == 12 || Fortnite_Season == 13)
 		ServerReplicateActorsOffset = 0x5D;

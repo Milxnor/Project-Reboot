@@ -111,17 +111,17 @@ DWORD WINAPI Input(LPVOID)
             static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
             auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
-            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset) << '\n';
 
             *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
 
-            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset) << '\n';
 
             static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
             GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
 
-            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset) << '\n';
             std::cout << "TimeSeconds: " << Helper::GetTimeSeconds() << '\n';
         }
 
@@ -155,7 +155,7 @@ DWORD WINAPI Input(LPVOID)
 
             auto GameState = Helper::GetGameState();
             static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
-            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset);    
+            std::cout << "WarmupCountdownEndTime: " << *Get<float>(GameState, WarmupCountdownEndTimeOffset) << '\n';
         }
 
         else if (GetAsyncKeyState(VK_F12) & 1)
@@ -299,6 +299,8 @@ DWORD WINAPI Initialize(LPVOID)
 
     AddHook(Engine_Version < 423 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInteract" :
         "/Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract", Interaction::ServerAttemptInteract);
+
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped", ServerLoadingScreenDropped);
 
     // if (false)
     {

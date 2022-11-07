@@ -15,6 +15,7 @@ bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters);
 bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters);
 bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Parameters);
 bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Parameters);
+bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 static bool ClientForceWorldInventoryUpdate(UObject* Controller, UFunction*, void* Parameters) { return true; }
 

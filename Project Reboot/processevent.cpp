@@ -85,6 +85,9 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
 
+		static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
+		Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+
 		// *Get<float>(GameState, WarmupCountdownEndTimeOffset) = 1000.f;
 	}
 
@@ -202,12 +205,12 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static UObject* Def5 = FindObject("/HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
 		auto Def5Instance = Inventory::GiveItem(PlayerController, Def5, EFortQuickBars::Primary, 5); */
 
-		/* static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
+		static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
 		std::cout << "Def1: " << Def1 << '\n';
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
 		
 		static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
-		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2); */
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
 
 		/* static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
@@ -277,8 +280,6 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		std::cout << "Boss: " << Boss << '\n';
 
 		Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
-
-		Teams::AssignTeam(PlayerController);
 		
 		if (Defines::bIsCreative)
 		{
@@ -630,7 +631,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 	auto TeamsLeftOffset = GameState->GetOffset("TeamsLeft");
 
-	auto TeamsLeft = *Get<int>(GameState, TeamsLeftOffset);
+	auto TeamsLeft = *PlayersLeftPtr; // *Get<int>(GameState, TeamsLeftOffset);
 
 	std::cout << "TeamsLeft: " << TeamsLeft << '\n';
 
@@ -753,6 +754,16 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters)
 
 	static auto ClientSendTeamStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendTeamStatsForPlayer");
 	DeadController->ProcessEvent(ClientSendTeamStatsForPlayer, &teamStats); // "You came x out of y Players"
+
+	static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
+
+	auto DeathLocation = Helper::GetActorLocation(DeadPawn);
+
+	DeathLocation.Describe();
+
+	auto Chip = Helper::Easy::SpawnActor(ChipClass, DeathLocation, Helper::GetActorRotation(DeadPawn));
+
+	// Helper::InitializeBuildingActor(DeadController, Chip);
 
 	return false;
 }
@@ -1030,6 +1041,28 @@ bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Para
 	auto Def = *FFortItemEntry::GetItemDefinition(CreativeItemEntry);
 
 	Inventory::GiveItem(Controller, Def, Inventory::WhatQuickBars(Def), 1);
+
+	return false;
+}
+
+bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	auto TeamIDX = Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller));
+
+	std::cout << "TeamIDX: " << *TeamIDX << '\n';
+
+	static auto SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "SquadId", true);
+
+	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
+
+	auto TeamIndexPtr = Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller));
+	auto SquadIdPtr = Get<int>(PlayerState, SquadIdOffset);
+
+	std::cout << "SquadIdPtr: " << *SquadIdPtr << '\n';
+
+	// if (*TeamIDX <= 3)
+
+	Teams::AssignTeam(Controller);
 
 	return false;
 }

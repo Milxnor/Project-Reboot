@@ -368,7 +368,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		EquipWeapon(Controller, Guid, GadgetDefinition, Ammo);
 	}
 		
-	else if ((ItemDefinition->IsA(FortDecoItemDefinitionClass) && Engine_Version >= 424) || ItemDefinition->IsA(FortTrapItemDefinitionClass)) // IDK
+	else if (false) // (ItemDefinition->IsA(FortDecoItemDefinitionClass) && Engine_Version >= 424) || ItemDefinition->IsA(FortTrapItemDefinitionClass)) // IDK
 	{
 		UObject* WeaponClass = nullptr;
 		static auto GetWeaponActorClass = FindObject<UFunction>("/Script/FortniteGame.FortWeaponItemDefinition.GetWeaponActorClass");
