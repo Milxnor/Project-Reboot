@@ -139,7 +139,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     bool res = false;
 
-    if (Engine_Version == 426 && Fortnite_Version < 17.00)
+    if (Engine_Version == 426 && Fortnite_Season < 17)
         res = Defines::InternalTryActivateAbilityFTS(ASC, Handle, *(PadHex10*)PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
     else
         res = Defines::InternalTryActivateAbility(ASC, Handle, *(PadHex18*)PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
@@ -243,20 +243,12 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
     std::cout << "giving ability: " << DefaultObject->GetFullName() << '\n';
 
-    if (Fortnite_Season == 14 || Fortnite_Season == 15)
-        Defines::GiveAbilityS14ANDS15(AbilitySystemComponent, Handle, *(PadHexE0*)NewSpec);
+    if (Fortnite_Season >= 14 && Fortnite_Season < 17)
+        Defines::GiveAbilityS14ABOVE(AbilitySystemComponent, Handle, *(PadHexE0*)NewSpec);
+    else if (Fortnite_Season >= 17)
+        Defines::GiveAbilityS17ABOVE(AbilitySystemComponent, Handle, *(PadHexE8*)NewSpec);
     else if (Engine_Version < 426 && Engine_Version >= 420)
         Defines::GiveAbility(AbilitySystemComponent, Handle, *(PadHexC8*)NewSpec);
-    /* else if (Engine_Version < 420)
-        Defines::GiveAbilityOLDDD(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0>*)NewSpec);
-    else if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 15)
-        Defines::GiveAbilityS14ANDS15(AbilitySystemComponent, Handle, *(PaddingDec224*)NewSpec);
-    else if (std::floor(FnVerDouble) == 16)
-        Defines::GiveAbilityS16(AbilitySystemComponent, Handle, *(PaddingDec232*)NewSpec);
-    else if (Engine_Version == 426)
-        Defines::GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>*)NewSpec);
-    else
-        Defines::GiveAbilityNewer(AbilitySystemComponent, Handle, *(FGameplayAbilitySpecNewer*)NewSpec); */
 
     return NewSpec;
 }

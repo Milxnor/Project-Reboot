@@ -58,7 +58,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		// AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
-		AddHook("/Script/FortniteGame.FortPhysicsPawn.ServerMove", ServerUpdatePhysicsParamsHook);
+		AddHook("/Script/FortniteGame.FortPhysicsPawn.ServerMove", ServerUpdatePhysicsParams);
 
 		// AddHook("/Script/FortniteGame.FortPlayerController.ClientForceWorldInventoryUpdate", ClientForceWorldInventoryUpdate);
 			
@@ -178,6 +178,12 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 		auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
+		if (Defines::bIsCreative)
+		{
+			static UObject* PhoneDef = FindObject("/Game/Athena/Items/Weapons/Prototype/WID_CreativeTool.WID_CreativeTool");
+			auto CreativeToolInstance = Inventory::GiveItem(PlayerController, PhoneDef, EFortQuickBars::Primary, 1);
+		}
+
 		//
 
 		/* static UObject* Def1 = FindObject("/HighTower/Items/HoneyDew/Fist/Abilities/WID_HighTower_HoneyDew_Fists.WID_HighTower_HoneyDew_Fists");
@@ -203,11 +209,11 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
 		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2); */
 
-		static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
+		/* static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
 
 		static UObject* Def2 = FindObject("/Game/Items/Traps/WIP/TID_Rail_Turret.TID_Rail_Turret");
-		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0);
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0); */
 
 		//
 
@@ -216,7 +222,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
 
-		if (Engine_Version < 426 || Fortnite_Season == 14 || Fortnite_Season == 15)
+		if ((Engine_Version < 426 || Fortnite_Season >= 14) && Fortnite_Season < 17)
 		{
 			if (Fortnite_Version < 8.30)
 			{
@@ -273,64 +279,119 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
 
 		Teams::AssignTeam(PlayerController);
-
-		static auto OtherRiftClass = FindObject("/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
-
-		UObject* NewPortal = nullptr;
-
-		std::cout << "OtherRiftClass: " << OtherRiftClass << '\n';
-
-		const wchar_t* url = L"https://media.discordapp.net/attachments/993197214744715284/1038297667463291001/45F01C49-1220-426C-973B-110583AC1B4F.png"; // std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end()).c_str();
-
-		if (OtherRiftClass)
+		
+		if (Defines::bIsCreative)
 		{
-			NewPortal = Helper::Easy::SpawnActor(OtherRiftClass, Helper::GetActorLocation(Helper::GetPlayerStart()));
+			static auto OtherRiftClass = FindObject("/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
 
-			static auto DestinationActorOffset = NewPortal->GetOffset("DestinationActor");
-			*Get<UObject*>(NewPortal, DestinationActorOffset) = Pawn;
+			UObject* NewPortal = nullptr;
 
-			static auto CreatorNameOffset = NewPortal->GetOffset("CreatorName");
-			*Get<FString>(NewPortal, CreatorNameOffset) = L"MILXNORDEV";
+			std::cout << "OtherRiftClass: " << OtherRiftClass << '\n';
 
-			static auto UserDescriptionOffset = NewPortal->GetOffset("UserDescription");
-			*Get<FString>(NewPortal, UserDescriptionOffset) = L"Project Reboot bad tbh";
+			const wchar_t* url = L"https://media.discordapp.net/attachments/993197214744715284/1038297667463291001/45F01C49-1220-426C-973B-110583AC1B4F.png"; // std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end()).c_str();
 
-			static auto ImageURLOffset = NewPortal->GetOffset("ImageURL");
-			*Get<FString>(NewPortal, ImageURLOffset) = url;
+			if (OtherRiftClass)
+			{
+				NewPortal = Helper::Easy::SpawnActor(OtherRiftClass, Helper::GetActorLocation(Helper::GetPlayerStart()));
 
-			static auto OnThumbnailTextureReady = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnThumbnailTextureReady");
-			NewPortal->ProcessEvent(OnThumbnailTextureReady);
+				static auto DestinationActorOffset = NewPortal->GetOffset("DestinationActor");
+				*Get<UObject*>(NewPortal, DestinationActorOffset) = Pawn;
 
-			static auto OnRep_ImageURLChanged = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_ImageURLChanged");
-			NewPortal->ProcessEvent(OnRep_ImageURLChanged);
+				static auto CreatorNameOffset = NewPortal->GetOffset("CreatorName");
+				*Get<FString>(NewPortal, CreatorNameOffset) = L"MILXNORDEV";
 
-			static auto UniqueIdOffset = PlayerState->GetOffset("UniqueId");
+				static auto UserDescriptionOffset = NewPortal->GetOffset("UserDescription");
+				*Get<FString>(NewPortal, UserDescriptionOffset) = L"Project Reboot bad tbh";
 
-			static auto OwningPlayerOffset = NewPortal->GetOffset("OwningPlayer");
-			*Get<FUniqueNetIdRepl>(NewPortal, OwningPlayerOffset) = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
+				static auto ImageURLOffset = NewPortal->GetOffset("ImageURL");
+				*Get<FString>(NewPortal, ImageURLOffset) = url;
 
-			static auto bIsPublishedPortalOffset = NewPortal->GetOffset("bIsPublishedPortal");
-			*Get<bool>(NewPortal, bIsPublishedPortalOffset) = false;
+				static auto OnThumbnailTextureReady = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnThumbnailTextureReady");
+				NewPortal->ProcessEvent(OnThumbnailTextureReady);
 
-			static auto OnRep_PublishedPortal = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PublishedPortal");
-			NewPortal->ProcessEvent(OnRep_PublishedPortal);
+				static auto OnRep_ImageURLChanged = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_ImageURLChanged");
+				NewPortal->ProcessEvent(OnRep_ImageURLChanged);
 
-			static auto OnRep_OwningPlayer = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_OwningPlayer");
-			NewPortal->ProcessEvent(OnRep_OwningPlayer);
+				static auto UniqueIdOffset = PlayerState->GetOffset("UniqueId");
 
-			static auto bPortalOpenOffset = NewPortal->GetOffset("bPortalOpen");
-			*Get<bool>(NewPortal, bPortalOpenOffset) = true;
+				static auto OwningPlayerOffset = NewPortal->GetOffset("OwningPlayer");
+				*Get<FUniqueNetIdRepl>(NewPortal, OwningPlayerOffset) = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
 
-			static auto OnRep_PortalOpen = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PortalOpen");
-			NewPortal->ProcessEvent(OnRep_PortalOpen);
+				static auto bIsPublishedPortalOffset = NewPortal->GetOffset("bIsPublishedPortal");
+				*Get<bool>(NewPortal, bIsPublishedPortalOffset) = false;
+
+				static auto OnRep_PublishedPortal = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PublishedPortal");
+				NewPortal->ProcessEvent(OnRep_PublishedPortal);
+
+				static auto OnRep_OwningPlayer = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_OwningPlayer");
+				NewPortal->ProcessEvent(OnRep_OwningPlayer);
+
+				static auto bPortalOpenOffset = NewPortal->GetOffset("bPortalOpen");
+				*Get<bool>(NewPortal, bPortalOpenOffset) = true;
+
+				static auto OnRep_PortalOpen = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PortalOpen");
+				NewPortal->ProcessEvent(OnRep_PortalOpen);
+			}
+
+			Helper::InitializeBuildingActor(PlayerController, NewPortal);
+
+			static int OwnedPortalOffset = PlayerController->GetOffset("OwnedPortal");
+			*Get<UObject*>(PlayerController, OwnedPortalOffset) = NewPortal;
+
+			Defines::Portal = NewPortal;
+
+			auto GameState = Helper::GetGameState();
+			static auto VolumeManagerOffset = GameState->GetOffset("VolumeManager");
+
+			auto VolumeManager = Get<UObject*>(GameState, VolumeManagerOffset);
+			std::cout << "VolumeManager: " << *VolumeManager << '\n';
+
+			if (!*VolumeManager)
+			{
+				static auto VolumeManagerClass = FindObject("/Game/Athena/BuildingActors/FortVolumeManager_BP.FortVolumeManager_BP_C");
+				*VolumeManager = Helper::Easy::SpawnActor(VolumeManagerClass, Helper::GetActorLocation(Pawn));
+			}
+
+			std::cout << "VolumeManager: " << *VolumeManager << '\n';
+
+			static auto VolumeClass = FindObject("/Script/FortniteGame.FortVolume");
+			auto NewVolume = Helper::Easy::SpawnActor(VolumeClass, Helper::GetActorLocation(Pawn));
+			Helper::InitializeBuildingActor(PlayerController, NewVolume);
+
+			if (*VolumeManager)
+			{
+				struct FVolumePlayerStateInfo : public FFastArraySerializerItem
+				{
+					unsigned char                                      UnknownData00[0x4];                                       // 0x000C(0x0004) MISSED OFFSET
+					UObject* PlayerState;                                              // 0x0010(0x0008) (ZeroConstructor, Transient, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					UObject* Volume;                                                   // 0x0018(0x0008) (ZeroConstructor, Transient, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				};
+
+				struct FFortVolumeActiveUsers : public FastTArray::FFastArraySerializerOL
+				{
+					TArray<FVolumePlayerStateInfo>              Items;                                                    // 0x00B0(0x0010) (ZeroConstructor, Transient, NativeAccessSpecifierPrivate)
+					UObject* Manager;                                                  // 0x00C0(0x0008) (ZeroConstructor, Transient, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+				};
+
+				static auto VolumeObjectsOffset = (*VolumeManager)->GetOffset("VolumeObjects");
+				Get<TArray<UObject*>>(*VolumeManager, VolumeObjectsOffset)->Add(NewVolume);
+
+				static auto VolumeActivePlayersOffset = (*VolumeManager)->GetOffset("VolumeActivePlayers");
+				auto VolumeActivePlayers = Get<FFortVolumeActiveUsers>(*VolumeManager, VolumeActivePlayersOffset);
+
+				VolumeActivePlayers->Manager = *VolumeManager;
+				FVolumePlayerStateInfo newinfo;
+				newinfo.PlayerState = PlayerState;
+				newinfo.Volume = NewVolume;
+				VolumeActivePlayers->Items.Add(newinfo);
+				FastTArray::MarkArrayDirty(VolumeActivePlayers);
+			}
+
+			/* static auto UpdateSize = FindObject<UFunction>("/Script/FortniteGame.FortVolume.UpdateSize");
+			FVector NewSize = FVector{ 10000, 10000, 10000 };
+			NewVolume->ProcessEvent(UpdateSize, &NewSize); */
 		}
 
-		Helper::InitializeBuildingActor(PlayerController, NewPortal);
-	
-		static int OwnedPortalOffset = PlayerController->GetOffset("OwnedPortal");
-		*Get<UObject*>(PlayerController, OwnedPortalOffset) = NewPortal;
-
-		Defines::Portal = NewPortal;
 	}
 
 	return false;
@@ -345,7 +406,12 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		auto GameState = Helper::GetGameState();
 
 		static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+		auto OldGamePhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+
 		*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::None;
+
+		static auto OnRep_GamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+		GameState->ProcessEvent(OnRep_GamePhase, &OldGamePhase);
 
 		if (!Server::BeaconHost)
 		{
@@ -353,7 +419,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			Server::Hooks::Initialize();
 		}
 
-		static auto Playlist = FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		static auto Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
+			FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
 
@@ -386,7 +453,10 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		Calendar::FixLocations();
 
-		Looting::Initialize();
+		if (Fortnite_Season < 16)
+			Looting::Initialize();
+		else
+			std::cout << "This version does not support looting!\n";
 
 		if (Fortnite_Version >= 13)
 		{
@@ -403,7 +473,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		std::cout << "Ready to start match!\n";
 
-		LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
+		if (Defines::bIsCreative)
+			LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // scuffed
 	}
 
 	return false;
@@ -820,7 +891,7 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 	return false;
 }
 
-bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* Parameters) // FortAthenaVehicle
+bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Parameters) // FortAthenaVehicle
 {
 	if (Vehicle && Parameters)
 	{
@@ -949,6 +1020,20 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 	return false;
 }
 
+bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	if (!Parameters || !Defines::bIsCreative) // We should do more checks than this..
+		return false;
+
+	auto CreativeItemEntry = (__int64*)Parameters;
+
+	auto Def = *FFortItemEntry::GetItemDefinition(CreativeItemEntry);
+
+	Inventory::GiveItem(Controller, Def, Inventory::WhatQuickBars(Def), 1);
+
+	return false;
+}
+
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
 	auto funcObject = FindObject<UFunction>(str);
@@ -1056,7 +1141,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "Light Flash Timeline__UpdateFunc") &&
 			!strstr(FunctionName.c_str(), "MainFlightPath__UpdateFunc") &&
 			!strstr(FunctionName.c_str(), "PlayStartedIdleRotationAudio") &&
-			!strstr(FunctionName.c_str(), "BGA_Athena_FlopperSpawn_"))
+			!strstr(FunctionName.c_str(), "BGA_Athena_FlopperSpawn_") &&
+			!strstr(FunctionName.c_str(), "CheckShouldDisplayUI"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

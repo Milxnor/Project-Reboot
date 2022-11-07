@@ -254,7 +254,7 @@ DWORD WINAPI Initialize(LPVOID)
     std::cout << "Initialized\n";
     // LOG(LogInit, All, L"Initialized");
     std::cout << "Fortnite_Season: " << Fortnite_Season << '\n';
-    std::cout << "GiveAbilityS14ANDS15: " << Defines::GiveAbilityS14ANDS15 << '\n';
+    std::cout << "GiveAbilityS14ABOVE: " << Defines::GiveAbilityS14ABOVE << '\n';
     std::cout << "GiveAbilityAddress: " << GiveAbilityAddress << '\n';
     std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
 
@@ -262,6 +262,11 @@ DWORD WINAPI Initialize(LPVOID)
     FastTArray::FastArraySerializerStruct = FindObjectSlow("ScriptStruct /Script/Engine.FastArraySerializer", false);
     Abilities::GameplayAbilitySpecClass = FindObjectSlow("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", false);
     Editing::EditToolDefinition = FindObject("/Game/Items/Weapons/BuildingTools/EditTool.EditTool");
+
+    static auto SizeOfGameplayAbilitySpec = Helper::GetSizeOfClass(Abilities::GameplayAbilitySpecClass);
+
+    std::cout << "SizeOfGameplayAbilitySpec: " << SizeOfGameplayAbilitySpec << '\n';
+    std::cout << "SizeOfPredictionKey: " << Helper::GetSizeOfClass(FindObjectSlow("ScriptStruct /Script/GameplayAbilities.PredictionKey", false)) << '\n';
 
     auto PC = Helper::GetLocalPlayerController();
 
@@ -278,6 +283,8 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
     AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
     AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
+
+    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerGiveCreativeItem", ServerGiveCreativeItem);
 
     AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
     AddHook(Engine_Version >= 420 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"
@@ -302,7 +309,7 @@ DWORD WINAPI Initialize(LPVOID)
     
     AddHook("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
 
-    if (InternalTryActivateAbilityAddress && GiveAbilityAddress)
+    if (InternalTryActivateAbilityAddress && GiveAbilityAddress && Fortnite_Season < 17)
     {
         AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
         AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);

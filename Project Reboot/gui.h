@@ -371,13 +371,13 @@ DWORD WINAPI GuiThread(LPVOID)
 						auto TimeSeconds = Helper::GetTimeSeconds();
 
 						ImGui::Checkbox("Playground", &Defines::bIsPlayground);
-						ImGui::Checkbox("Test", &Defines::bTest1);
 						
 						ImGui::InputText("URL", &Defines::urlForPortal);
 
 						if (ImGui::Button("Apply"))
 						{
-							const wchar_t* url = std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end()).c_str();
+							auto aa = std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end());
+							const wchar_t* url = aa.c_str();
 
 							static auto ImageURLOffset = Defines::Portal->GetOffset("ImageURL");
 							*Get<FString>(Defines::Portal, ImageURLOffset) = url;

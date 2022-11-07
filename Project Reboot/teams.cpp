@@ -62,7 +62,7 @@ bool Teams::AssignTeam(UObject* Controller)
 
 		static auto UniqueIdOffset = PlayerState->GetOffset("UniqueId");
 
-		FGameMemberInfo MemberInfo = FGameMemberInfo{ -1, -1, -1 };
+		FGameMemberInfo MemberInfo;
 		MemberInfo.TeamIndex = *TeamIndexPtr;
 		MemberInfo.SquadId = *SquadIdPtr;
 		MemberInfo.MemberUniqueId = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);

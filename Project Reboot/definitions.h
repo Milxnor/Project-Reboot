@@ -11,8 +11,8 @@ namespace Defines
 	inline bool bIsLateGame = false;
 	inline bool bRandomSkin = true;
 	inline bool bRandomPickaxe = true;
-	inline bool bIsCreative = true;
-	inline std::string urlForPortal = "https://media.discordapp.net/attachments/1037527510797275216/1038295538602364980/unknown.png";
+	inline bool bIsCreative = false;
+	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
 	inline UObject* Portal = nullptr;
 
 	// DON'T CHANGE HERE
@@ -21,7 +21,6 @@ namespace Defines
 	inline bool bShouldSpawnFloorLoot = false;
 	inline bool bShouldSpawnVehicles = false;
 	inline bool bShouldSpawnForagedItems = false;
-	inline bool bTest1 = false;
 
 	inline int AmountOfRestarts = 0;
 
@@ -46,11 +45,8 @@ namespace Defines
 	inline bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex10 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 
 	inline FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexC8 inSpec); // 4.20-4.25 etc.
-	inline FGameplayAbilitySpecHandle* (*GiveAbilityS14ANDS15)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE0 inSpec);
-	/* inline FGameplayAbilitySpecHandle* (*GiveAbilityOLDDD)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0> inSpec);
-	inline FGameplayAbilitySpecHandle* (*GiveAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50> inSpec);
-	inline FGameplayAbilitySpecHandle* (*GiveAbilityNewer)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpecNewer inSpec);
-	inline FGameplayAbilitySpecHandle* (*GiveAbilityS16)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PaddingDec232 inSpec); */
+	inline FGameplayAbilitySpecHandle* (*GiveAbilityS14ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE0 inSpec);
+	inline FGameplayAbilitySpecHandle* (*GiveAbilityS17ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE8 inSpec);
 
 	static FString GetMapName()
 	{
@@ -93,6 +89,7 @@ namespace Defines
 			else
 			{
 				std::cout << "You are on a version that either doesn't have creative or we don't support creative for it!\n";
+				bIsCreative = false;
 			}
 		}
 

@@ -313,86 +313,12 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 			auto loaded = StaticLoadObject(Object.first, nullptr, Object.second);
 			// std::cout << "Loaded " << Object.second << " at " << loaded << '\n';
-			Helper::Easy::SpawnActor(loaded, FVector());
+
+			if (Defines::bIsCreative)
+				Helper::Easy::SpawnActor(loaded, FVector()); // scuffed
+
 			Defines::ObjectsToLoad.erase(Defines::ObjectsToLoad.begin() + i);
 		}
-	}
-	
-	if (Defines::bTest1)
-	{
-		Defines::bTest1 = false;
-		auto afda = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
-		auto NewPortal = Helper::Easy::SpawnActor(afda, Helper::GetActorLocation(Helper::GetPlayerStart()));
-
-		static auto DestinationActorOffset = NewPortal->GetOffset("DestinationActor");
-		*Get<UObject*>(NewPortal, DestinationActorOffset) = NewPortal;
-
-		struct FCreativeIslandMatchmakingSettings
-		{
-		public:
-			int32_t                                        MinimumNumberOfPlayers;                            // 0x0(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			int32_t                                        MaximumNumberOfPlayers;                            // 0x4(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                MmsType;                                           // 0x8(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                Override_Playlist;                                 // 0x18(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			int32_t                                        PlayerCount;                                       // 0x28(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			int32_t                                        NumberOfTeams;                                     // 0x2C(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			int32_t                                        PlayersPerTeam;                                    // 0x30(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			bool                                         bAllowJoinInProgress;                              // 0x34(0x1)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			uint8_t                                        Pad_3C38[0x3];                                     // Fixing Size After Last Property  [ Dumper-7 ]
-			uint8_t                  JoinInProgressType;                                // 0x38(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			uint8_t                                        JoinInProgressTeam;                                // 0x3C(0x1)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			uint8_t                                        Pad_3C39[0x3];                                     // Fixing Size Of Struct [ Dumper-7 ]
-		};
-
-		using FLocalizedStringPair = void*;
-
-		struct FCreativeLoadedLinkData
-		{
-		public:
-			FString                                CreatorName;                                       // 0x0(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                SupportCode;                                       // 0x10(0x10)(ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                Mnemonic;                                          // 0x20(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			int32_t                                        Version;                                           // 0x30(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			uint8_t                                        Pad_3C3A[0x4];                                     // Fixing Size After Last Property  [ Dumper-7 ]
-			TArray<FLocalizedStringPair>          LinkTitle;                                         // 0x38(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FText                                  AltTitle;                                          // 0x48(0x18)(BlueprintVisible, BlueprintReadOnly, NativeAccessSpecifierPublic)
-			TArray<FLocalizedStringPair>          LinkTagline;                                       // 0x60(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			TArray<FString>                        DescriptionTags;                                   // 0x70(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			TArray<FLocalizedStringPair>          IslandIntroduction;                                // 0x80(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                LinkYoutubeId;                                     // 0x90(0x10)(ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                ImageUrl;                                          // 0xA0(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                IslandType;                                        // 0xB0(0x10)(ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                QuestContextTag;                                   // 0xC0(0x10)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FString                                AccountId;                                         // 0xD0(0x10)(ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FCreativeIslandMatchmakingSettings    MatchmakingSettings;                               // 0xE0(0x40)(BlueprintVisible, BlueprintReadOnly, NativeAccessSpecifierPublic)
-		};
-
-		static auto IslandInfoOffset = NewPortal->GetOffset("IslandInfo");
-		auto IslandInfo = Get<FCreativeLoadedLinkData>(NewPortal, IslandInfoOffset);
-
-		IslandInfo->ImageUrl = L"https://media.discordapp.net/attachments/1037502171765297203/1038283493186220062/IMG_7570.jpg";
-		IslandInfo->CreatorName = L"MILXNORDEV";
-		IslandInfo->Version = 1.0;
-
-		// static auto UniqueIdOffset = PlayerState->GetOffset("UniqueId");
-
-		// tatic auto OwningPlayerOffset = NewPortal->GetOffset("OwningPlayer");
-		// *Get<FUniqueNetIdRepl>(NewPortal, OwningPlayerOffset) = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
-
-		static auto bIsPublishedPortalOffset = NewPortal->GetOffset("bIsPublishedPortal");
-		*Get<bool>(NewPortal, bIsPublishedPortalOffset) = false;
-
-		static auto OnRep_PublishedPortal = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PublishedPortal");
-		NewPortal->ProcessEvent(OnRep_PublishedPortal);
-
-		static auto OnRep_OwningPlayer = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_OwningPlayer");
-		NewPortal->ProcessEvent(OnRep_OwningPlayer);
-
-		static auto bPortalOpenOffset = NewPortal->GetOffset("bPortalOpen");
-		*Get<bool>(NewPortal, bPortalOpenOffset) = true;
-
-		static auto OnRep_PortalOpen = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PortalOpen");
-		NewPortal->ProcessEvent(OnRep_PortalOpen);
 	}
 
 	if (Defines::bShouldSpawnForagedItems)

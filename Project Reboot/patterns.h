@@ -221,6 +221,7 @@ static bool InitializePatterns()
 
 		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
+					
 		bIsNoMCPRelative = true; */
 
 		if (Fortnite_Season == 5)
@@ -247,6 +248,11 @@ static bool InitializePatterns()
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
+
+		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B";
+		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
+
+		bIsNoMCPRelative = true; */
 	}
 
 	if (Engine_Version == 423)
@@ -365,7 +371,7 @@ static bool InitializePatterns()
 		ValidationFailurePattern = "48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 DB 48 8B F2 89 9D ? ? ? ? 4C 8B E9 E8 ? ? ? ?"; // 14.60
 		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
 		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
-		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 8B 81 ? ? ? ? 49"; // 14.60
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C"; // 14.60
 		CantBuildPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 60 4D 8B F1 4D";
 		ReplaceBuildingActorPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 48";
 		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
@@ -411,12 +417,12 @@ static bool InitializePatterns()
 		FreePattern = "48 85 C9 0F 84 ? ? ? ? 48 89 5C 24 ? 57 48 83 EC 20 48 8B 3D ? ? ? ? 48 8B D9 48";
 		NoReservePattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9";
 		HandleReloadCostPattern = "89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 40 B6 03 8B DA";
-		FreePattern = "48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85"; // 22.3
 
 		if (Fortnite_Version == 19.10)
 		{
 			StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 70 33 FF 48 8D 05 ? ? ? ? 40 38 3D";
 			ValidationFailurePattern = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 60 48 8B FA 48 8B F1 E8 ? ? ? ? 48 8B D0 E8 ? ? ? ? 85 C0";
+			FreePattern = "48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85"; // 22.3
 		}
 	}
 
@@ -481,7 +487,7 @@ static bool InitializePatterns()
 	CantBuildAddress = Memory::FindPattern(CantBuildPattern);
 	ReplaceBuildingActorAddress = Memory::FindPattern(ReplaceBuildingActorPattern);
 	WorldGetNetModeAddress = Memory::FindPattern(WorldGetNetModePattern);
-	NoMCPAddress = bIsNoMCPRelative ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
+	NoMCPAddress = Engine_Version < 424 ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
 	FreeAddress = Memory::FindPattern(FreePattern);
 	HandleReloadCostAddress = Memory::FindPattern(HandleReloadCostPattern);
 	CanActivateAbilityAddress = Memory::FindPattern(CanActivateAbilityPattern);
@@ -535,8 +541,10 @@ static bool InitializePatterns()
 	else
 		Defines::InternalTryActivateAbility = decltype(Defines::InternalTryActivateAbility)(InternalTryActivateAbilityAddress);
 
-	if (Fortnite_Season == 14 || Fortnite_Season == 15)
-		Defines::GiveAbilityS14ANDS15 = decltype(Defines::GiveAbilityS14ANDS15)(GiveAbilityAddress);
+	if (Fortnite_Season >= 14 && Fortnite_Season < 17)
+		Defines::GiveAbilityS14ABOVE = decltype(Defines::GiveAbilityS14ABOVE)(GiveAbilityAddress);
+	else if (Fortnite_Season >= 17)
+		Defines::GiveAbilityS17ABOVE = decltype(Defines::GiveAbilityS17ABOVE)(GiveAbilityAddress);
 	else
 		Defines::GiveAbility = decltype(Defines::GiveAbility)(GiveAbilityAddress);
 
