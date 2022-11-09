@@ -92,6 +92,30 @@ void Calendar::FixLocations()
 			}
 		}
 
+		else if (Fortnite_Season == 12)
+		{
+			if (Fortnite_Version == 12.41)
+			{
+				auto JS03 = FindObject(("LF_Athena_POI_19x19_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_Athena_POI_19x19_2"));
+				ShowFoundation(JS03);
+
+				auto JH00 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head6_18"));
+				ShowFoundation(JH00);
+
+				auto JH01 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head5_14"));
+				ShowFoundation(JH01);
+
+				auto JH02 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head3_8"));
+				ShowFoundation(JH02);
+
+				auto JH03 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head_2"));
+				ShowFoundation(JH03);
+
+				auto JH04 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head4_11"));
+				ShowFoundation(JH04);
+			}
+		}
+
 		auto TheBlock = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
 		ShowFoundation(TheBlock);
 	}

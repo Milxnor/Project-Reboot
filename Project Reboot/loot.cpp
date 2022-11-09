@@ -5,6 +5,10 @@
 UObject* Looting::GetLP()
 {
 	auto Playlist = *Helper::GetPlaylist();
+
+	if (!Playlist)
+		return nullptr;
+
 	static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
 	auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
 

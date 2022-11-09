@@ -414,16 +414,9 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto OnRep_GamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 		GameState->ProcessEvent(OnRep_GamePhase, &OldGamePhase);
 
-		if (!Server::BeaconHost)
-		{
-			Server::Listen();
-			Server::Hooks::Initialize();
-		}
-
-		// static auto Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
-			// FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
-
-		static auto Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
+		static auto Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") : FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		// static auto Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
+		// static auto Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
 
@@ -446,6 +439,12 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 				static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
 				GameState->ProcessEvent(OnRep_CurrentPlaylistInfo);
 			}
+		}
+
+		if (!Server::BeaconHost)
+		{
+			Server::Listen();
+			Server::Hooks::Initialize();
 		}
 
 		static auto GameSessionOffset = GameMode->GetOffset("GameSession");
@@ -1051,6 +1050,8 @@ bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Para
 
 bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* Parameters)
 {
+	// skunked
+
 	auto TeamIDX = Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller));
 
 	std::cout << "TeamIDX: " << *TeamIDX << '\n';

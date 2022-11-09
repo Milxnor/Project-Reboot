@@ -3,8 +3,7 @@
 #include "structs.h"
 
 UObject* GetEventLoader();
-
-UObject*& GetEventScripting();
+UObject* GetEventScripting();
 
 namespace Events
 {

@@ -224,8 +224,11 @@ static bool InitializePatterns()
 					
 		bIsNoMCPRelative = true; */
 
-		if (Fortnite_Season == 5)
+		if (Fortnite_Version <= 6.02)
 			ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1";
+
+		if (Fortnite_Version >= 6.3)
+			PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44";
 	}
 
 	if (Engine_Version == 422)
@@ -423,6 +426,10 @@ static bool InitializePatterns()
 			StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 70 33 FF 48 8D 05 ? ? ? ? 40 38 3D";
 			ValidationFailurePattern = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 60 48 8B FA 48 8B F1 E8 ? ? ? ? 48 8B D0 E8 ? ? ? ? 85 C0";
 			FreePattern = "48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85"; // 22.3
+			CantBuildPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 60 49 8B E9 4D 8B F8 48 8B DA 48 8B";
+
+			ToStringO = decltype(ToStringO)(Memory::FindPattern("48 89 5C 24 ? 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 83 79 04 00 48 8B DA 0F 85 ? ? ? ? 48 89 BC 24 ? ? ? ? E8 ? ? ? ? 48 8B F8 48 8D 54 24 ? 48 8B C8"));
+			std::cout << "ToStringO: " << ToStringO << '\n';
 		}
 	}
 
@@ -464,6 +471,7 @@ static bool InitializePatterns()
 	ChildPropertiesOffset = Engine_Version >= 425 ? 0x50 : SuperStructOffset + 8;
 	PropertiesSizeOffset = ChildPropertiesOffset + 8;
 
+	std::cout << "Fortnite_Version: " << Fortnite_Version << '\n';
 	std::cout << std::format("Offset_InternalOffset: 0x{:x}\n", Offset_InternalOffset);
 	std::cout << std::format("SuperStructOffset: 0x{:x}\n", SuperStructOffset);
 	std::cout << std::format("ChildPropertiesOffset: 0x{:x}\n", ChildPropertiesOffset);

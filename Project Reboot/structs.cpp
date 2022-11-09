@@ -22,36 +22,63 @@ std::string FName::ToString()
 
 std::string UObject::GetName()
 {
-	static auto GetObjectNameFunction = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetObjectName");
-	static auto KismetSystemLibrary = FindObject("/Script/Engine.Default__KismetSystemLibrary");
+	/* if (!StaticFindObjectO)
+	{
+		FString temp;
 
-	struct { UObject* Object; FString ReturnValue; } GetObjectName_Params{ this };
+		ToStringO(&this->NamePrivate, temp);
 
-	KismetSystemLibrary->ProcessEvent(GetObjectNameFunction, &GetObjectName_Params);
+		auto Str = temp.ToString();
 
-	auto Ret = GetObjectName_Params.ReturnValue;
-	auto RetStr = Ret.ToString();
+		temp.Free();
 
-	Ret.Free();
+		return Str;
+	}
+	else */
+	{
+		static auto GetObjectNameFunction = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetObjectName");
+		static auto KismetSystemLibrary = FindObject("/Script/Engine.Default__KismetSystemLibrary");
 
-	return RetStr;
+		struct { UObject* Object; FString ReturnValue; } GetObjectName_Params{ this };
+
+		KismetSystemLibrary->ProcessEvent(GetObjectNameFunction, &GetObjectName_Params);
+
+		auto Ret = GetObjectName_Params.ReturnValue;
+		auto RetStr = Ret.ToString();
+
+		Ret.Free();
+
+		return RetStr;
+	}
 }
 
 std::string UObject::GetPathName()
-{
-	static auto GetPathNameFunction = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetPathName");
-	static auto KismetSystemLibrary = FindObject("/Script/Engine.Default__KismetSystemLibrary");
+{	
+	/* if (!StaticFindObjectO)
+	{
+		std::string temp;
 
-	struct { UObject* Object; FString ReturnValue; } GetPathName_Params{this};
+		for (auto outer = OuterPrivate; outer; outer = outer->OuterPrivate)
+			temp = std::format("{}.{}", outer->GetName(), temp);
 
-	KismetSystemLibrary->ProcessEvent(GetPathNameFunction, &GetPathName_Params);
+		return std::format("{}{}", ClassPrivate->GetName(), temp, this->GetName());
+	}
+	else */
+	{
+		static auto GetPathNameFunction = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetPathName");
+		static auto KismetSystemLibrary = FindObject("/Script/Engine.Default__KismetSystemLibrary");
 
-	auto Ret = GetPathName_Params.ReturnValue;
-	auto RetStr = Ret.ToString();
+		struct { UObject* Object; FString ReturnValue; } GetPathName_Params{ this };
 
-	Ret.Free();
+		KismetSystemLibrary->ProcessEvent(GetPathNameFunction, &GetPathName_Params);
 
-	return RetStr;
+		auto Ret = GetPathName_Params.ReturnValue;
+		auto RetStr = Ret.ToString();
+
+		Ret.Free();
+
+		return RetStr;
+	}
 }
 
 std::string UObject::GetFullName()
@@ -68,7 +95,7 @@ template <typename ObjectType>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class, UObject* InOuter)
 {
 	if (!StaticFindObjectO)
-		return (ObjectType*)FindObjectSlow(ObjectName);
+		return (ObjectType*)FindObjectSlow(ObjectName); // (ObjectType*)FindObjectSlow(Class->GetName() + " " + ObjectName, false);
 
 	auto& ObjectNameCut = ObjectName; // ObjectName.substr(ObjectName.find(" ") + 1);
 	auto ObjectNameWide = std::wstring(ObjectNameCut.begin(), ObjectNameCut.end()).c_str();
@@ -230,10 +257,10 @@ UObject* GetDefaultObject(UObject* Class)
 	return FindObject(DefaultAbilityName);
 }
 
-int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool bPrint)
+int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool bPrint, bool bWarnIfNotFound)
 {
 	if (Engine_Version >= 425) // fprop dont think work with this
-		return GetOffsetSlow(MemberName);
+		return GetOffsetSlow(MemberName, bPrint, bWarnIfNotFound);
 
 	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
 
@@ -257,7 +284,9 @@ int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool 
 
 	if (!Property) // Didn't find property
 	{
-		std::cout << "Failed to find " << MemberName << '\n';
+		if (bWarnIfNotFound)
+			std::cout << "Failed to find3 " << MemberName << '\n';
+
 		return 0;
 	}
 
@@ -265,7 +294,7 @@ int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool 
 	return offsetPtr ? *offsetPtr : 0;
 }
 
-int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint)
+int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint, bool bWarnIfNotFound)
 {
 	for (auto CurrentClass = ClassPrivate; CurrentClass; CurrentClass = *(UObject**)(__int64(CurrentClass) + SuperStructOffset))
 	{
@@ -299,7 +328,8 @@ int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint)
 		}
 	}
 
-	std::cout << "Failed to find " << MemberName << '\n';
+	if (bWarnIfNotFound)
+		std::cout << "Failed to find0 " << MemberName << '\n';
 
 	return 0;
 }

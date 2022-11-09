@@ -363,7 +363,10 @@ UObject** Helper::GetPlaylist()
 {
 	auto GameState = Helper::GetGameState();
 
-	if (Fortnite_Version >= 6.10)
+	static auto CurrentPlaylistDataOffset = GameState->GetOffset("CurrentPlaylistData", false, false, false);
+
+	// if (Fortnite_Version >= 6.10) // 6.00
+	if (CurrentPlaylistDataOffset == 0)
 	{
 		static auto BasePlaylistOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray", ("BasePlaylist"));
 
@@ -379,8 +382,6 @@ UObject** Helper::GetPlaylist()
 	}
 	else
 	{
-		static auto CurrentPlaylistDataOffset = GameState->GetOffset("CurrentPlaylistData");
-
 		auto PlaylistData = (UObject**)(__int64(GameState) + CurrentPlaylistDataOffset);
 
 		return PlaylistData;

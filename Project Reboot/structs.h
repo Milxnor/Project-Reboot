@@ -151,8 +151,8 @@ struct UObject
 
 	void ProcessEvent(struct UFunction* Function, void* Parameters = nullptr);
 
-	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false);
-	int GetOffsetSlow(const std::string& MemberName, bool bPrint = false);
+	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false, bool bWarnIfNotFound = true);
+	int GetOffsetSlow(const std::string& MemberName, bool bPrint = false, bool bWarnIfNotFound = true);
 
 	bool IsA(UObject* otherClass);
 };
@@ -238,6 +238,7 @@ inline UObject* (*StaticLoadObjectO)(UObject* Class, UObject* InOuter, const TCH
 inline void (*ProcessEventO)(UObject* object, UObject* func, void* Parameters);
 inline UObject* (*SpawnActorO)(UObject* World, UObject* Class, void* Position, void* Rotation, void* SpawnParameters);
 inline UObject* (*SpawnActorTransform)(UObject* World, UObject* Class, void* UserTransformPtr, void* SpawnParameters);
+inline void (*ToStringO)(struct FName*, class FString&); // DONT UYSE
 
 template <typename T = UObject>
 static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name, int LoadFlags = 0)

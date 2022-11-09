@@ -40,7 +40,7 @@ void Server::SetWorld(UObject* World)
 				SetWorldIndex = 0x72;
 			else if (Fortnite_Season == 18)
 				SetWorldIndex = 0x73;
-			else if (Fortnite_Season == 20)
+			else if (Fortnite_Season >= 19 && Fortnite_Season < 21)
 				SetWorldIndex = 0x7A; // 20.00
 			else if (Fortnite_Season == 22)
 				SetWorldIndex = 0x7B;
