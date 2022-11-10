@@ -24,6 +24,7 @@
 #include "loot.h"
 #include "events.h"
 #include "helper.h"
+#include "calendar.h"
 
 #define GAME_TAB 1
 #define PLAYERS_TAB 2
@@ -309,7 +310,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (Events::HasEvent())
+				// if (Events::HasEvent())
 				{
 					if (ImGui::BeginTabItem(("Event")))
 					{
@@ -374,14 +375,21 @@ DWORD WINAPI GuiThread(LPVOID)
 						
 						ImGui::InputText("URL", &Defines::urlForPortal);
 
-						if (ImGui::Button("loadevent"))
+						if (ImGui::Button("Dump OBjects"))
 						{
-							Events::LoadEvent();
-						}
+							auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
 
-						if (ImGui::Button("startevent"))
-						{
-							Events::StartEvent();
+							std::ofstream obj("ObjectsDump.txt");
+
+							for (int i = 0; i < ObjectNum; i++)
+							{
+								auto CurrentObject = GetObjectByIndex(i);
+
+								if (!CurrentObject)
+									continue;
+
+								obj << CurrentObject->GetFullName() << '\n';
+							}
 						}
 
 						if (ImGui::Button("Apply"))
@@ -399,28 +407,12 @@ DWORD WINAPI GuiThread(LPVOID)
 							Defines::Portal->ProcessEvent(OnRep_ImageURLChanged);
 						}
 
-						if (ImGui::Button("Test 1"))
+						if (ImGui::Button("show funny flying aircfaft"))
 						{
-							static auto AA = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C.OnReady_2EECFA4440823DD0EABF17B9AC633C22");
-							static auto BB = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C:OnReady_A7045E554BE892DB5B8EE0B1B9B949AE");
+							auto foundation = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Lobby_Foundation3");
+							std::cout << "foundation: " << foundation << '\n';
 
-							auto Loader = GetEventLoader();
-
-							std::cout << "AA: " << AA << '\n';
-
-							Loader->ProcessEvent(AA);
-						}
-
-						if (ImGui::Button("Test 2"))
-						{
-							static auto AA = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C.OnReady_2EECFA4440823DD0EABF17B9AC633C22");
-							static auto BB = FindObject<UFunction>("/Junior/Blueprints/BP_Junior_Loader.BP_Junior_Loader_C.OnReady_A7045E554BE892DB5B8EE0B1B9B949AE");
-
-							auto Loader = GetEventLoader();
-
-							std::cout << "BB: " << BB << '\n';
-
-							Loader->ProcessEvent(BB);
+							ShowFoundation(foundation);
 						}
 
 						ImGui::Text(("Game has been going on for " + std::to_string(TimeSeconds)).c_str());
@@ -484,6 +476,24 @@ DWORD WINAPI GuiThread(LPVOID)
 									std::cout << "Unable to find WID!\n";
 							}
 						}
+					}
+				}
+
+				else if (Tab == EVENT_TAB)
+				{
+					if (ImGui::Button("loadevent"))
+					{
+						Events::LoadEvent();
+					}
+
+					if (ImGui::Button("startevent"))
+					{
+						Events::StartEvent();
+					}
+
+					if ((Fortnite_Version == 7.10 || Fortnite_Version == 11.31) && ImGui::Button("Start New Years Event"))
+					{
+						Events::StartNewYears();
 					}
 				}
 			}

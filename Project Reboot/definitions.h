@@ -12,6 +12,7 @@ namespace Defines
 	inline bool bRandomSkin = true;
 	inline bool bRandomPickaxe = true;
 	inline bool bIsCreative = false;
+	inline bool bIsGoingToPlayMainEvent = false;
 	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
 	inline UObject* Portal = nullptr;
 

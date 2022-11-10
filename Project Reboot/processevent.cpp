@@ -31,6 +31,8 @@ bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Par
 
 bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Parameters)
 {
+	ProcessEventO(Object, Function, Parameters);
+
 	if (!Parameters) // possible?
 		return false;
 	
@@ -75,16 +77,21 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 				AddHook("/Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C.OnDamageServer", Harvesting::OnDamageServer);
 		}
 
-		auto GameState = Helper::GetGameState();
-		static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
-		static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
-		auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+		bool bGoIntoWarmup = !Defines::bIsGoingToPlayMainEvent;
 
-		*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
+		if (bGoIntoWarmup)
+		{
+			auto GameState = Helper::GetGameState();
+			static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+			static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+			auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
-		static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
 
-		GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+
+			GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+		}
 
 		static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
 		Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
@@ -149,7 +156,10 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static auto bHasStartedPlayingOffset = PlayerState->GetOffset("bHasStartedPlaying"); // BITFIELD
 		*Get<bool>(PlayerState, bHasStartedPlayingOffset) = true;
 
-		auto PlayerStart = Helper::GetPlayerStart();
+		// static auto WarmupPlayerStartOffset = PlayerController->GetOffset("WarmupPlayerStart");
+		// std::cout << "WarmupPlayerStart: " << *Get<UObject*>(PlayerController, WarmupPlayerStartOffset) << '\n';
+
+		auto PlayerStart = Helper::GetPlayerStart(); // *Get<UObject*>(PlayerController, WarmupPlayerStartOffset); // Helper::GetPlayerStart();
 		
 		if (!PlayerStart)
 		{
@@ -158,9 +168,11 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			// return false;
 		}
 
-		bool bSpawnIsland = true; // Engine_Version >= 424; // or else u die
+		bool bSpawnIsland = !Defines::bIsGoingToPlayMainEvent; // skunk
 
 		auto SpawnLocation = !PlayerStart || !bSpawnIsland ? FVector{ 1250, 1818, 3284 } : Helper::GetActorLocation(PlayerStart);
+
+		std::cout << SpawnLocation.Describe() << '\n';
 
 		auto Pawn = Helper::SpawnPawn(PlayerController, SpawnLocation, true);
 
@@ -281,7 +293,19 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		std::cout << "Boss: " << Boss << '\n';
 
 		Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
-		
+
+		if (Defines::bIsGoingToPlayMainEvent)
+		{
+			static auto CheatManagerOffset = PlayerController->GetOffset("CheatManager");
+			auto CheatManager = (UObject**)(__int64(PlayerController) + CheatManagerOffset);
+
+			static auto CheatManagerClass = FindObject("/Script/Engine.CheatManager");
+			*CheatManager = Helper::Easy::SpawnObject(CheatManagerClass, PlayerController);
+
+			static auto God = FindObject<UFunction>("/Script/Engine.CheatManager.God");
+			(*CheatManager)->ProcessEvent(God);
+		}
+
 		if (Defines::bIsCreative)
 		{
 			static auto OtherRiftClass = FindObject("/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
@@ -395,7 +419,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		}
 	}
 
-	return false;
+	return true;
 }
 
 bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
@@ -414,9 +438,28 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto OnRep_GamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 		GameState->ProcessEvent(OnRep_GamePhase, &OldGamePhase);
 
-		static auto Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") : FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
-		// static auto Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
-		// static auto Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
+		UObject* Playlist = nullptr;
+
+		if (Defines::bIsGoingToPlayMainEvent)
+		{
+			if (Fortnite_Version == 18.40)
+				Playlist = FindObject("/GuavaPlaylist/Playlist/Playlist_Guava.Playlist_Guava");
+			else if (Fortnite_Version == 17.50)
+				Playlist = FindObject("/KiwiPlaylist/Playlists/Playlist_Kiwi.Playlist_Kiwi");
+			else if (Fortnite_Version == 17.30)
+				Playlist = FindObject("/BuffetPlaylist/Playlist/Playlist_Buffet.Playlist_Buffet");
+			else if (Fortnite_Version == 14.60)
+				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
+			else if (Fortnite_Version <= 12.41)
+				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
+		}
+		else
+		{
+			Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
+				FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		}
+
+		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
 
@@ -460,7 +503,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		else
 			std::cout << "This version does not support looting!\n";
 
-		if (Fortnite_Version >= 13)
+		if (Fortnite_Version >= 13 && Playlist)
 		{
 			static auto LastSafeZoneIndexOffset = Playlist->GetOffset("LastSafeZoneIndex");
 
@@ -1180,7 +1223,12 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "MainFlightPath__UpdateFunc") &&
 			!strstr(FunctionName.c_str(), "PlayStartedIdleRotationAudio") &&
 			!strstr(FunctionName.c_str(), "BGA_Athena_FlopperSpawn_") &&
-			!strstr(FunctionName.c_str(), "CheckShouldDisplayUI"))
+			!strstr(FunctionName.c_str(), "CheckShouldDisplayUI") &&
+			!strstr(FunctionName.c_str(), "Timeline_0__UpdateFunc") &&
+			!strstr(FunctionName.c_str(), "ClientMoveResponsePacked") &&
+			!strstr(FunctionName.c_str(), "ExecuteUbergraph_B_Athena_FlopperSpawnWorld_Placement") &&
+			!strstr(FunctionName.c_str(), "Countdown__UpdateFunc") &&
+			!strstr(FunctionName.c_str(), "OnParachuteTrailUpdated"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

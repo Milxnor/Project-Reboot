@@ -251,6 +251,14 @@ static bool InitializePatterns()
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?";
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
+		HandleReloadCostPattern = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85"; // got on 7.10
+		CanActivateAbilityPattern = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
+
+		if (Fortnite_Version == 7.10)
+		{
+			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 49 89 7B E8 48 8B F9 4D 89 73 D0";
+			SetWorldPattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B";
+		}
 
 		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B";
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
@@ -387,6 +395,12 @@ static bool InitializePatterns()
 			TickFlushPattern = "E8 ? ? ? ? 48 8B CB E8 ? ? ? ? 84 C0 0F 85 ? ? ? ? 48 8D 4D E7";
 			bIsTickFlushRelative = true;
 			// TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A"; // 17.10
+		
+			if (Fortnite_Version == 17.30 || Fortnite_Version == 17.50)
+			{
+				WorldGetNetModePattern = "48 83 EC 28 48 83 79 ? ? 75 20 48 8B 91 ? ? ? ? 48 85 D2 74 1E 48 8B 02 48 8B CA FF 90";
+				NoMCPPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 57 48 83 EC 20 65 48 8B 04 25 ? ? ? ? BA ? ? ? ? 48 8B 08 8B 04 0A 39 05 ? ? ? ? 7F 23 8A 05 ? ? ? ? 48";
+			}
 		}	
 
 		if (Fortnite_Season == 18) // 18.40 specifically
@@ -451,7 +465,7 @@ static bool InitializePatterns()
 	else if (Engine_Version >= 422 && Engine_Version <= 424)
 		ServerReplicateActorsOffset = Fortnite_Version >= 7.40 && Fortnite_Version < 8.40 ? 0x57 :
 		Engine_Version == 424 ? (Fortnite_Version >= 11.00 && Fortnite_Version <= 11.01 ? 0x57 : 
-			(Fortnite_Version == 11.31 ? 0x59 : 0x5A)) : 0x56;
+			(Fortnite_Version == 11.30 || Fortnite_Version == 11.31 ? 0x59 : 0x5A)) : 0x56;
 
 	// ^ I know this makes no sense, 7.40-8.40 is 0x57, other 7-10 is 0x56, 11.00-11.01 = 0x57, 11.31 = 0x59, other S11 is 0x5A
 

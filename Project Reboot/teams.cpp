@@ -52,7 +52,7 @@ bool Teams::AssignTeam(UObject* Controller)
 	static auto OnRep_SquadId = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_SquadId");
 	PlayerState->ProcessEvent(OnRep_SquadId);
 
-	if (Engine_Version >= 422)
+	if (Fortnite_Version >= 7.40)
 	{
 		static auto GameMemberInfoArrayOffset = GameState->GetOffset("GameMemberInfoArray");
 		auto GameMemberInfoArray = (void*)(__int64(GameState) + GameMemberInfoArrayOffset);
@@ -65,7 +65,7 @@ bool Teams::AssignTeam(UObject* Controller)
 		FGameMemberInfo MemberInfo;
 		MemberInfo.TeamIndex = *TeamIndexPtr;
 		MemberInfo.SquadId = *SquadIdPtr;
-		MemberInfo.funny = AllTeams->Num() + *SquadIdPtr; +*TeamIndexPtr;
+		MemberInfo.funny = AllTeams->Num() + *SquadIdPtr + *TeamIndexPtr;
 		MemberInfo.MemberUniqueId = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
 
 		if (Members)
