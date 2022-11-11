@@ -14,6 +14,7 @@
 #include "edit.h"
 #include "loot.h"
 #include "interaction.h"
+#include <intrin.h>
 
 // DEFINE_LOG_CATEGORY_STATIC(LogInit, ELogLevel::All)
 
@@ -197,6 +198,24 @@ DWORD WINAPI Input(LPVOID)
     }
 }
 
+__int64 (*Unetdriver_getnetmodeO)(__int64 a1);
+
+__int64 Unetdriver_getnetmodeDetour(__int64 a1)
+{
+    auto OG = Unetdriver_getnetmodeO(a1);
+
+    static bool bprinted = false;
+
+    if (!bprinted)
+    {
+        std::cout << "OG: " << OG << '\n';
+        std::cout << "aaaret: " << (uintptr_t)_ReturnAddress() - __int64(GetModuleHandleW(0)) << '\n';
+        bprinted = true;
+    }
+
+    return 1;
+}
+
 __int64 rettrue() { return 1; }
 
 DWORD WINAPI Initialize(LPVOID)
@@ -251,6 +270,50 @@ DWORD WINAPI Initialize(LPVOID)
         std::cout << "WorldGetNetModeAddress: " << WorldGetNetModeAddress << '\n';
     }
     
+    bool bIsSettingGIsClient = false;
+    bool bSetGIsClientSuccessful = false;
+
+    if (bIsSettingGIsClient)
+    {
+        auto GIsClientAddr = Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
+        std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
+        // GIsClientAddr = __int64(GetModuleHandleW(0)) + 0x9C0AF6B; // 18.40
+        // std::cout << "GIsClientSig off: " << GIsClientAddr << '\n';
+
+        if (GIsClientAddr)
+        {
+            std::cout << "Befrore: " << *(bool*)(GIsClientAddr) << '\n';
+            *(bool*)(GIsClientAddr) = false;
+        }
+
+        bSetGIsClientSuccessful = GIsClientAddr;
+    }
+
+    if (!bSetGIsClientSuccessful)
+    {
+        // ?? 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74
+
+        auto Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 75 0A B8 ? ? ? ? 48 83 C4 28 C3 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB EB"); // 17.3
+
+        if (!Unetdriver_getnetmodesig)
+            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48 83 C4 28 C3 B8 ? ? ? ? 48 83 C4 28 C3"); // 7.4-10.4
+
+        if (!Unetdriver_getnetmodesig)
+            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 18.4
+
+        if (!Unetdriver_getnetmodesig)
+            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48"); // 14.6-16.4 idk
+
+        if (!Unetdriver_getnetmodesig)
+            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 17.5
+
+        std::cout << "aafunynetmodev2: " << Unetdriver_getnetmodesig << '\n';
+
+        MH_CreateHook((PVOID)Unetdriver_getnetmodesig, Unetdriver_getnetmodeDetour, (PVOID*)&Unetdriver_getnetmodeO);
+        MH_EnableHook((PVOID)Unetdriver_getnetmodesig);
+    }
+
+
     std::cout << "Initialized\n";
     // LOG(LogInit, All, L"Initialized");
     std::cout << "Fortnite_Season: " << Fortnite_Season << '\n';

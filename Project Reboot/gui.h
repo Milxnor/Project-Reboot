@@ -364,6 +364,19 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					if (bLoaded)
 					{
+						static std::string ConsoleCommand;
+
+						ImGui::InputText("Console command", &ConsoleCommand);
+
+						if (ImGui::Button("Execute console command"))
+						{
+							auto wstr = std::wstring(ConsoleCommand.begin(), ConsoleCommand.end());
+
+							FString cmd = wstr.c_str();
+
+							Helper::ExecuteConsoleCommand(cmd);
+						}
+
 						auto GameState = Helper::GetGameState();
 
 						static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
@@ -420,7 +433,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				else if (Tab == PLAYERS_TAB)
+				else if (false && Tab == PLAYERS_TAB)
 				{
 					if (bLoaded)
 					{
@@ -481,6 +494,8 @@ DWORD WINAPI GuiThread(LPVOID)
 
 				else if (Tab == EVENT_TAB)
 				{
+					ImGui::Checkbox("IsGoingToPlayMainEvent", &Defines::bIsGoingToPlayMainEvent);
+
 					if (ImGui::Button("loadevent"))
 					{
 						Events::LoadEvent();
@@ -491,9 +506,20 @@ DWORD WINAPI GuiThread(LPVOID)
 						Events::StartEvent();
 					}
 
-					if ((Fortnite_Version == 7.10 || Fortnite_Version == 11.31) && ImGui::Button("Start New Years Event"))
+					if ((Fortnite_Version == 7.10 || Fortnite_Version == 11.31 || Fortnite_Version == 15.10) && ImGui::Button("Start New Years Event"))
 					{
 						Events::StartNewYears();
+					}
+
+					if (Fortnite_Version == 14.60 && ImGui::Button("Show carrier"))
+					{
+						struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ Helper::GetGameState(), *Helper::GetPlaylist(),
+							FGameplayTagContainer() };
+
+						auto fnc = FindObject<UFunction>("/Junior/Blueprints/BP_CarrierLoader.BP_CarrierLoader_C.OnReady_13D45E9346036B11F782F9922BC368EC");
+						auto loader = FindObject("/Junior/Levels/Junior_Map.Junior_Map.PersistentLevel.BP_CarrierLoader_2");
+
+						loader->ProcessEvent(fnc, &bbparms);
 					}
 				}
 			}

@@ -19,10 +19,8 @@ UObject* GetEventLoader()
 
 	if (Fortnite_Version == 11.30)
 		Loader = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_GalileoLoader_2");
-
 	if (Fortnite_Version == 12.41)
 		Loader = FindObject("/CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2");
-
 	if (Fortnite_Version == 14.60)
 		Loader = FindObject("/Junior/Levels/JuniorLoaderLevel.JuniorLoaderLevel.PersistentLevel.BP_Junior_Loader_2");
 
@@ -35,12 +33,16 @@ UObject* GetEventScripting()
 {
 	UObject* Scripting = nullptr;
 	
+	if (Fortnite_Version == 10.40)
+		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2");
 	if (Fortnite_Version == 11.30)
 		Scripting = FindObject("/Game/Athena/Prototype/Blueprints/Galileo/Galileo_scripting.Galileo_scripting.PersistentLevel.BP_Galileo_Script2_2");
 	else if (Fortnite_Version == 12.41)
 		Scripting = FindObject("/CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2");
 	else if (Fortnite_Version == 14.60)
 		Scripting = FindObject("/Junior/Levels/Junior_Map.Junior_Map.PersistentLevel.BP_Junior_Scripting_Child_2");
+	else if (Fortnite_Season == 16)
+		Scripting = FindObject("/Yogurt/Levels/YogurtLoaderLevel.YogurtLoaderLevel:PersistentLevel.BP_Yogurt_Scripting_2");
 	else if (Fortnite_Version == 17.30)
 		Scripting = FindObject("/Buffet/Levels/Buffet_P.Buffet_P.PersistentLevel.BP_Event_Master_Scripting_2");
 	else if (Fortnite_Version == 17.50)
@@ -57,7 +59,20 @@ void Events::LoadEvent()
 {
 	__int64 Condition = true;
 
-	if (Fortnite_Version == 11.30)
+	if (Fortnite_Version == 10.40)
+	{
+		auto Scripting = GetEventScripting();
+
+		if (Scripting)
+		{
+			auto LoadNightNightLevel = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/NightNight/BP_NightNight_Scripting.BP_NightNight_Scripting_C.LoadNightNightLevel");
+			Scripting->ProcessEvent(LoadNightNightLevel, &Condition);
+
+			bHasBeenLoaded = true;
+		}
+	}
+
+	else if (Fortnite_Version == 11.30)
 	{
 		auto Loader = GetEventLoader();
 
@@ -113,6 +128,33 @@ void Events::StartEvent()
 		BF->ProcessEvent(Func);
 	}
 
+	else if (Fortnite_Season == 16)
+	{
+		auto Scripting = GetEventScripting();
+
+		if (Scripting)
+		{
+			static auto cc = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.PlayBPTrailer");
+			Scripting->ProcessEvent(cc);
+
+			static auto bb = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.OnReady_F6E6B09F4E6AA115465FAABCD4B97504");
+			Scripting->ProcessEvent(bb, &bbparms);
+
+			if (true)
+			{
+				// SecondsSinceEventBegan = 1; // LocalEventPhase
+
+				static auto startvent = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.startevent");
+				Scripting->ProcessEvent(startvent, &SecondsSinceEventBegan); // very weird afeiugfq24ug2487 3q5hiu8e jheroig rewi ug9 uh35u bg35iy hu35 vgiuy53we	gh bewr5ti9ou	HG 
+			}
+			else
+			{
+				static auto playermaste = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.PlayMasterAtFrame");
+				Scripting->ProcessEvent(playermaste, &SecondsSinceEventBegan); // idk
+			}
+		}
+	}
+
 	else if (Fortnite_Version == 17.30)
 	{
 		auto Scripting = GetEventScripting();
@@ -133,14 +175,16 @@ void Events::StartEvent()
 				FString CallFunc_Concat_StrStr_ReturnValue;
 			} ccparms{ phaseIndex };
 
-			Scripting->ProcessEvent(LoadNextBuffetLevel, &ccparms);
+			// Scripting->ProcessEvent(LoadNextBuffetLevel, &ccparms);
 			Scripting->ProcessEvent(BB, &bbparms);
 			static auto skidder = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_PhaseScripting_Phase0.BP_Buffet_PhaseScripting_Phase0_C.OnReady_9397C2DA49D638685F20BF8BBAC112AD");
-			FindObject("/Buffet/Levels/Buffet_Part_0.Buffet_Part_0:PersistentLevel.BP_Buffet_PhaseScripting_Phase0_2")->ProcessEvent(skidder, &bbparms);
+			// FindObject("/Buffet/Levels/Buffet_Part_0.Buffet_Part_0:PersistentLevel.BP_Buffet_PhaseScripting_Phase0_2")->ProcessEvent(skidder, &bbparms);
 
-			Scripting->ProcessEvent(GetSequenceAndPlay, &SecondsSinceEventBegan); // idk does a lot of stuff for client
+			// Scripting->ProcessEvent(GetSequenceAndPlay, &SecondsSinceEventBegan); // idk does a lot of stuff for client
 
-			// if (false)
+			Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
+
+			if (false)
 			{
 				static auto UpdateMasterSequence = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/Buffet_SpecialEventScript.Buffet_SpecialEventScript_C.UpdateMasterSequence");
 				float Time = 330.f;
@@ -183,7 +227,7 @@ void Events::StartEvent()
 		if (SpecialScripting)
 		{
 			static auto BB = FindObject<UFunction>("/Guava/Gameplay/BP_Guava_SpecialEventScript.BP_Guava_SpecialEventScript_C.OnReady_F66ABDFF42CD295C079773B6FB935F15");
-			SpecialScripting->ProcessEvent(BB, &bbparms); // no parms
+			// SpecialScripting->ProcessEvent(BB, &bbparms); // no parms
 
 			static auto CC = FindObject<UFunction>("/GuavaPlaylist/Gameplay/BP_Guava_PreEventManager.BP_Guava_PreEventManager_C.OnReady_51E4D8B1444FA2741D53508865F6746F");
 			FindObject("/GuavaPlaylist/Levels/Guava_Preshow_Persistent.Guava_Preshow_Persistent.PersistentLevel.BP_Guava_PreEventManager_2")->ProcessEvent(CC, &bbparms);
@@ -201,7 +245,21 @@ void Events::StartEvent()
 
 	if (bHasBeenLoaded) // These versions require manual loading stuff
 	{
-		if (Fortnite_Version == 11.30)
+		if (Fortnite_Version == 10.40)
+		{
+			auto Scripting = GetEventScripting();
+
+			if (Scripting)
+			{
+				auto bb = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/NightNight/BP_NightNight_Scripting.BP_NightNight_Scripting_C.OnReady_D0847F7B4E80F01E77156AA4E7131AF6");
+				Scripting->ProcessEvent(bb, &bbparms);
+
+				auto startevent = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/NightNight/BP_NightNight_Scripting.BP_NightNight_Scripting_C.startevent");
+				Scripting->ProcessEvent(startevent);
+			}
+		}
+
+		else if (Fortnite_Version == 11.30)
 		{
 			auto Scripting = GetEventScripting();
 
@@ -234,11 +292,15 @@ void Events::StartEvent()
 
 				if (Scripting)
 				{
-					static auto startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.startevent");
+					static auto scripting_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.startevent");
+					static auto loader_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.startevent");
 					static auto BB = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.OnReady_093B6E664C060611B28F79B5E7052A39");
+					static auto CC = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.OnReady_7FE9744D479411040654F5886C078D08");
 
+					Loader->ProcessEvent(CC, &bbparms);
 					Scripting->ProcessEvent(BB, &bbparms);
-					Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
+					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
+					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 				}
 			}
 		}
@@ -270,17 +332,24 @@ void Events::StartNewYears()
 	if (Engine_Version < 500) // 7.1, 11.31, 15.1
 	{
 		auto newyeartimer = Fortnite_Version < 15.10 ? FindObject("/Game/Athena/Maps/Streaming/Athena_NYE_Celebration.Athena_NYE_Celebration.PersistentLevel.BP_NewYearTimer_2") // C1
-			: (Engine_Version < 500 ? nullptr : // 15.10
+			: (Engine_Version < 500 ? FindObject("/NewYears/Levels/Apollo_NYE_Celebration.Apollo_NYE_Celebration.PersistentLevel.BP_NewYearTimer_2") : // 15.10
 				nullptr); // C3
 
 		std::cout << "newyeartimer: " << newyeartimer << '\n';
 
 		if (newyeartimer)
 		{
-			static auto startnye = FindObject<UFunction>("/Game/Athena/Events/NewYear/BP_NewYearTimer.BP_NewYearTimer_C.startNYE");
+			auto startnye = Fortnite_Version < 15.10 ? FindObject<UFunction>("/Game/Athena/Events/NewYear/BP_NewYearTimer.BP_NewYearTimer_C.startNYE") :
+				FindObject<UFunction>("/NewYears/Blueprints/BP_NewYearTimer.BP_NewYearTimer_C.startNYE");
+
 			// /Game/Athena/Events/NewYear/BP_NewYearTimer.BP_NewYearTimer_C:TimeOfDaySetup
 
-			newyeartimer->ProcessEvent(startnye);
+			std::cout << "startnye: " << startnye << '\n';
+
+			if (startnye)
+			{
+				newyeartimer->ProcessEvent(startnye);
+			}
 		}
 	}
 }

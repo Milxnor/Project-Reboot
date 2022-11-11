@@ -62,6 +62,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		// AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
 		AddHook("/Script/FortniteGame.FortPhysicsPawn.ServerMove", ServerUpdatePhysicsParams);
+		AddHook("/Game/Athena/BuildingActors/ConsumableBGAs/CBGA_Parent.CBGA_Parent_C.OnGatherOrInteract", OnGatherOrInteract);
 
 		// AddHook("/Script/FortniteGame.FortPlayerController.ClientForceWorldInventoryUpdate", ClientForceWorldInventoryUpdate);
 			
@@ -77,7 +78,9 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 				AddHook("/Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C.OnDamageServer", Harvesting::OnDamageServer);
 		}
 
-		bool bGoIntoWarmup = !Defines::bIsGoingToPlayMainEvent;
+		bool bGoIntoWarmup = !Defines::bIsGoingToPlayMainEvent || Fortnite_Version == 14.60;
+
+		std::cout << "bGoIntoWarmup: " << bGoIntoWarmup << '\n';
 
 		if (bGoIntoWarmup)
 		{
@@ -218,18 +221,24 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		static UObject* Def5 = FindObject("/HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
 		auto Def5Instance = Inventory::GiveItem(PlayerController, Def5, EFortQuickBars::Primary, 5); */
 
-		static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
+		/* static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
 		std::cout << "Def1: " << Def1 << '\n';
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
 		
 		static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
-		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
+		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2); */
 
 		/* static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
 		auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
 
 		static UObject* Def2 = FindObject("/Game/Items/Traps/WIP/TID_Rail_Turret.TID_Rail_Turret");
 		auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0); */
+
+		if (Defines::bIsGoingToPlayMainEvent)
+		{
+			static auto PortalDeviceDef = FindObject("/Yogurt/Blueprints/WID_Yogurt_PortalDevice.WID_Yogurt_PortalDevice");
+			Inventory::GiveItem(PlayerController, PortalDeviceDef, EFortQuickBars::Primary, 1);
+		}
 
 		//
 
@@ -448,15 +457,19 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 				Playlist = FindObject("/KiwiPlaylist/Playlists/Playlist_Kiwi.Playlist_Kiwi");
 			else if (Fortnite_Version == 17.30)
 				Playlist = FindObject("/BuffetPlaylist/Playlist/Playlist_Buffet.Playlist_Buffet");
+			else if (Fortnite_Season == 16)
+				Playlist = FindObject("/Yogurt/Playlist/Playlist_Yogurt.Playlist_Yogurt");
 			else if (Fortnite_Version == 14.60)
 				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
 			else if (Fortnite_Version <= 12.41)
 				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
 		}
-		else
+		
+		if (!Playlist || !Defines::bIsGoingToPlayMainEvent)
 		{
 			Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
 				FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+				// FindObject("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
 		}
 
 		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
@@ -1008,11 +1021,12 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 					// auto Rotator = Helper::GetActorRotation(Vehicle);
 					// auto Quaternion = Rotator.Quaternion();
 
-					auto wrongRot = *Rotation;
+					/* auto wrongRot = *Rotation;
 					auto Rotator = wrongRot.Rotator();
 					std::cout << "Before: ";
 					Rotator.Describe();
-					Rotator = { Rotator.Pitch, Rotator.Roll, Rotator.Yaw };
+					Rotator = { Rotator.Pitch, Rotator.Roll, Rotator.Yaw }; */
+					auto Rotator = Helper::GetActorRotation(Vehicle);
 					// std::cout << "After Rot: ";
 					// Rotator.Describe();
 					auto Quaternion = Rotator.Quaternion();
@@ -1113,6 +1127,27 @@ bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* 
 	Teams::AssignTeam(Controller);
 
 	return false;
+}
+
+bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Parameters)
+{
+	if (!Parameters)
+		return false;
+
+	// CBGAParent->Gather
+
+	auto InteractingPawn = *(UObject**)Parameters;
+
+	if (!InteractingPawn)
+		return false;
+
+	static auto GatheredLootTierOffset = CBGAParent->GetOffset("GatheredLootTier");
+	auto GatheredLootTier = *Get<FName>(CBGAParent, GatheredLootTierOffset);
+
+	/* static auto Gather = FindObject<UFunction>("/Game/Athena/BuildingActors/ConsumableBGAs/CBGA_Parent.CBGA_Parent_C.Gather");
+	UObject* Controller = Helper::GetControllerFromPawn(InteractingPawn);
+
+	CBGAParent->ProcessEvent(Gather, &Controller); */
 }
 
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
@@ -1228,7 +1263,9 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "ClientMoveResponsePacked") &&
 			!strstr(FunctionName.c_str(), "ExecuteUbergraph_B_Athena_FlopperSpawnWorld_Placement") &&
 			!strstr(FunctionName.c_str(), "Countdown__UpdateFunc") &&
-			!strstr(FunctionName.c_str(), "OnParachuteTrailUpdated"))
+			!strstr(FunctionName.c_str(), "OnParachuteTrailUpdated") &&
+			!strstr(FunctionName.c_str(), "Moto FadeOut__UpdateFunc") &&
+			!strstr(FunctionName.c_str(), "ExecuteUbergraph_Apollo_GasPump_Valet"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

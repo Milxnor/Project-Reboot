@@ -260,10 +260,8 @@ static bool InitializePatterns()
 			SetWorldPattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B";
 		}
 
-		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B";
-		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
-
-		bIsNoMCPRelative = true; */
+		// WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B";
+		// NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
 	}
 
 	if (Engine_Version == 423)
@@ -361,6 +359,12 @@ static bool InitializePatterns()
 		if (Fortnite_Version == 15.30)
 			TickFlushPattern = "4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC 80 02 ? ? 48 8B 05 AF B7 51 04 48 33 C4 48 89 85 ? 01 ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8";
 
+		if (Fortnite_Version == 15.10)
+		{
+			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49";
+			NoMCPPattern = "48 83 EC 28 65 48 8B 04 25 ? ? ? ? 8B 0D ? ? ? ? BA ? ? ? ? 48 8B 0C C8 8B 04 0A 39 05 ? ? ? ? 7F 0C 0F B6 05 ? ? ? ? 48 83 C4 28 C3 48 8D 0D ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? ? 75 DF E8 ? ? ? ? 48 8B C8 48 8D 15 ? ? ? ? E8 ? ? ? ? 48 8D 0D";
+		}
+
 		if (Fortnite_Season == 13)
 			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 63 E0 45 33 E4 4D 89 6B D8 45";
 
@@ -389,6 +393,13 @@ static bool InitializePatterns()
 		CanActivateAbilityPattern = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0 8B DA 48";
 		FreePattern = "48 85 C9 0F 84 ? ? ? ? 48 89 5C 24 ? 57 48 83 EC 20 48 8B 3D ? ? ? ? 48 8B D9 48";
 		NoReservePattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9 45";
+		HandleReloadCostPattern = "89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 41 BD";
+
+		if (Fortnite_Season == 16)
+		{
+			WorldGetNetModePattern = "48 83 EC 28 48 83 79 ? ? 75 20 48 8B 91 ? ? ? ? 48 85 D2 74 1E 48 8B 02 48 8B CA FF 90 ? ? ? ? 84 C0";
+			NoMCPPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 57 48 83 EC 20 65 48 8B 04 25 ? ? ? ? BA ? ? ? ? 48";
+		}
 
 		if (Fortnite_Season == 17)
 		{
@@ -396,7 +407,7 @@ static bool InitializePatterns()
 			bIsTickFlushRelative = true;
 			// TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A"; // 17.10
 		
-			if (Fortnite_Version == 17.30 || Fortnite_Version == 17.50)
+			if (Fortnite_Version >= 17.30 && Fortnite_Version <= 17.50)
 			{
 				WorldGetNetModePattern = "48 83 EC 28 48 83 79 ? ? 75 20 48 8B 91 ? ? ? ? 48 85 D2 74 1E 48 8B 02 48 8B CA FF 90";
 				NoMCPPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 57 48 83 EC 20 65 48 8B 04 25 ? ? ? ? BA ? ? ? ? 48 8B 08 8B 04 0A 39 05 ? ? ? ? 7F 23 8A 05 ? ? ? ? 48";
@@ -471,9 +482,9 @@ static bool InitializePatterns()
 
 	else if (Fortnite_Season == 12 || Fortnite_Season == 13)
 		ServerReplicateActorsOffset = 0x5D;
-	else if (Fortnite_Season == 14)
+	else if (Fortnite_Season == 14 || Fortnite_Version <= 15.2) // never tested 15.2
 		ServerReplicateActorsOffset = 0x5E;
-	else if (Fortnite_Season >= 15 && Engine_Version < 500) // 15-18 = 0x5F
+	else if (Fortnite_Version >= 15.3 && Engine_Version < 500) // 15.3-18 = 0x5F
 		ServerReplicateActorsOffset = 0x5F;
 	else if (Fortnite_Season >= 19 && Fortnite_Season <= 20)
 		ServerReplicateActorsOffset = 0x66;
@@ -517,6 +528,9 @@ static bool InitializePatterns()
 	ActorGetNetModeAddress = Memory::FindPattern(ActorGetNetModePattern);
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
+
+	std::cout << "MCP REL: " << Memory::FindPattern(NoMCPPattern, true, 1) << '\n';
+	std::cout << "MCP NOTREL: " << Memory::FindPattern(NoMCPPattern) << '\n';
 
 	std::cout << std::format("SpawnActorAddress: 0x{:x}\n", (uintptr_t)SpawnActorAddr - Base);
 	std::cout << std::format("InitHostAddress: 0x{:x}\n", (uintptr_t)InitHostAddress - Base);

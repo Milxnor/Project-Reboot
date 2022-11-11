@@ -1,6 +1,5 @@
 #include "inventory.h"
 #include "helper.h"
-#include <functional>
 
 void LoopReplicatedEntries(UObject* Controller, std::function<bool(__int64*)> func)
 {

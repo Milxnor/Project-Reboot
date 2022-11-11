@@ -88,11 +88,7 @@ void Helper::ExecuteConsoleCommand(FString& Command)
 	{
 		// static auto ExecuteConsoleCommandFn = KSLClass->Function(("ExecuteConsoleCommand"));
 		static auto ExecuteConsoleCommandFn = FindObject<UFunction>(("/Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
-
-		if (ExecuteConsoleCommandFn)
-			KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
-		else
-			std::cout << ("No ExecuteConsoleCommand!\n");
+		KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
 	}
 	else
 		std::cout << ("No KismetSyustemLibrary!\n");

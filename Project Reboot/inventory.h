@@ -1,8 +1,11 @@
 #pragma once
 
 #include <iostream>
+#include <functional>
 
 #include "structs.h"
+
+void LoopReplicatedEntries(UObject* Controller, std::function<bool(__int64*)> func);
 
 namespace FFortItemEntry
 {

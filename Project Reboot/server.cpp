@@ -3,6 +3,7 @@
 #include "patterns.h"
 #include "server.h"
 #include "loot.h"
+#include <intrin.h>
 
 void Server::PauseBeaconRequests(bool bPause)
 {
@@ -34,9 +35,9 @@ void Server::SetWorld(UObject* World)
 
 			if (Fortnite_Season == 13)
 				SetWorldIndex = 0x70;
-			else if (Fortnite_Season == 14)
+			else if (Fortnite_Season == 14 || Fortnite_Version <= 15.2)
 				SetWorldIndex = 0x71;
-			else if (Fortnite_Season >= 15 && Fortnite_Season < 18)
+			else if (Fortnite_Version >= 15.3 && Fortnite_Season < 18) // i havent tested 15.2
 				SetWorldIndex = 0x72;
 			else if (Fortnite_Season == 18)
 				SetWorldIndex = 0x73;
@@ -185,18 +186,24 @@ __int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a
 
 __int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection)
 {
+	// dude 17.50 Connection != UNetConnection or something
+
 	static auto Connection_ViewTargetOffset = Connection->GetOffset("ViewTarget");
 	static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
 	static auto Connection_OwningActorOffset = Connection->GetOffset("OwningActor");
 
 	auto Connection_ViewTarget = *(UObject**)(__int64(Connection) + Connection_ViewTargetOffset);
 	auto Connection_PlayerController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+	auto Connection_OwningActor = *(UObject**)(__int64(Connection) + Connection_OwningActorOffset);
+
+	if (!Connection_OwningActor || !(!Connection_PlayerController || (Connection_PlayerController == Connection_OwningActor)))
+		return NetViewer;
 
 	static auto Viewer_ConnectionOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "Connection");
 	*(UObject**)(__int64(NetViewer) + Viewer_ConnectionOffset) = Connection;
 
 	static auto Viewer_InViewerOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "InViewer");
-	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = Connection_PlayerController ? Connection_PlayerController : *(UObject**)(__int64(Connection) + Connection_OwningActorOffset);
+	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = Connection_PlayerController ? Connection_PlayerController : Connection_OwningActor;
 
 	static auto Viewer_ViewTargetOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewTarget");
 	auto Viewer_ViewTarget = (UObject**)(__int64(NetViewer) + Viewer_ViewTargetOffset);
@@ -258,8 +265,9 @@ void Server::Hooks::Initialize()
 	
 	*/
 
+	// Maybe: 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0
 
-	if (Fortnite_Version < 17.00)
+	if (Fortnite_Version < 17.50)
 	{
 		auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
 

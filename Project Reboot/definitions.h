@@ -12,9 +12,8 @@ namespace Defines
 	inline bool bRandomSkin = true;
 	inline bool bRandomPickaxe = true;
 	inline bool bIsCreative = false;
-	inline bool bIsGoingToPlayMainEvent = false;
+	inline bool bIsGoingToPlayMainEvent = true;
 	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
-	inline UObject* Portal = nullptr;
 
 	// DON'T CHANGE HERE
 
@@ -22,6 +21,7 @@ namespace Defines
 	inline bool bShouldSpawnFloorLoot = false;
 	inline bool bShouldSpawnVehicles = false;
 	inline bool bShouldSpawnForagedItems = false;
+	inline UObject* Portal = nullptr;
 
 	inline int AmountOfRestarts = 0;
 
@@ -51,6 +51,14 @@ namespace Defines
 
 	static FString GetMapName()
 	{
+		if (bIsGoingToPlayMainEvent)
+		{
+			if (Fortnite_Season == 16)
+			{
+				return L"Apollo_Terrain_Yogurt";
+			}
+		}
+
 		if (bIsCreative)
 		{
 			if (Fortnite_Season >= 7 && Engine_Version < 424)

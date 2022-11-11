@@ -42,7 +42,7 @@ bool Teams::AssignTeam(UObject* Controller)
 
 	auto NextSquadId = NextTeamIndex; // Engine_Version < 424 ? NextTeamIndex - 0 : NextTeamIndex + 1;
 
-	*TeamIndexPtr = NextTeamIndex;
+	/* *TeamIndexPtr = NextTeamIndex;
 
 	static auto OnRep_TeamIndex = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamIndex");
 	PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIndex);
@@ -50,7 +50,7 @@ bool Teams::AssignTeam(UObject* Controller)
 	*SquadIdPtr = NextSquadId;
 
 	static auto OnRep_SquadId = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_SquadId");
-	PlayerState->ProcessEvent(OnRep_SquadId);
+	PlayerState->ProcessEvent(OnRep_SquadId); */
 
 	if (Fortnite_Version >= 7.40)
 	{
@@ -68,11 +68,10 @@ bool Teams::AssignTeam(UObject* Controller)
 		MemberInfo.funny = AllTeams->Num() + *SquadIdPtr + *TeamIndexPtr;
 		MemberInfo.MemberUniqueId = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
 
-		if (Members)
-		{
-			Members->Add(MemberInfo);
-			FastTArray::MarkArrayDirty(GameMemberInfoArray);
-		}
+		std::cout << "Members Size: " << Members->size() << '\n';
+
+		Members->Add(MemberInfo);
+		FastTArray::MarkArrayDirty(GameMemberInfoArray);
 	}
 
 	CurrentNumPlayersOnTeam++;
