@@ -15,13 +15,19 @@ bool Teams::AssignTeam(UObject* Controller)
 	using AFortTeamPrivateInfo = UObject;
 	using AController = UObject;
 
-	static int NextTeamIndex = 4;
+	static constexpr int StartingTeamIndex = 3;
+	static int NextTeamIndex = StartingTeamIndex;
 	static int CurrentNumPlayersOnTeam = 0; // Scuffed
 
 	auto GameState = Helper::GetGameState();
 	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
+	auto Playlist = *Helper::GetPlaylist();
 
-	int MaxPlayersPerTeam = 2;
+	static auto MaxSquadSizeOffset = Playlist->GetOffset("MaxSquadSize");
+
+	static int MaxPlayersPerTeam = *Get<int>(Playlist, MaxSquadSizeOffset);
+
+	std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 
 	static auto TeamsOffset = FindOffsetStruct("Class /Script/FortniteGame.FortGameState", "Teams", true);
 	auto AllTeams = (TArray<AFortTeamInfo*>*)(__int64(GameState) + TeamsOffset);
@@ -42,7 +48,7 @@ bool Teams::AssignTeam(UObject* Controller)
 
 	auto NextSquadId = NextTeamIndex; // Engine_Version < 424 ? NextTeamIndex - 0 : NextTeamIndex + 1;
 
-	/* *TeamIndexPtr = NextTeamIndex;
+	*TeamIndexPtr = NextTeamIndex;
 
 	static auto OnRep_TeamIndex = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamIndex");
 	PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIndex);
@@ -50,7 +56,33 @@ bool Teams::AssignTeam(UObject* Controller)
 	*SquadIdPtr = NextSquadId;
 
 	static auto OnRep_SquadId = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_SquadId");
-	PlayerState->ProcessEvent(OnRep_SquadId); */
+	PlayerState->ProcessEvent(OnRep_SquadId);
+
+	using AController = UObject;
+
+	static auto PlayerTeamOffset = PlayerState->GetOffset("PlayerTeam");
+	auto PlayerTeam = Get<UObject*>(PlayerState, PlayerTeamOffset);
+	auto NextPlayerTeam = AllTeams->At(*TeamIndexPtr - StartingTeamIndex);
+
+	std::cout << "PlayerTeam: " << *PlayerTeam << '\n';
+
+	*PlayerTeam = NextPlayerTeam;
+
+	static auto TeamMembersOffset = (*PlayerTeam)->GetOffset("TeamMembers");
+	auto TeamMembers = Get<TArray<AController*>>(*PlayerTeam, TeamMembersOffset);
+
+	if (CurrentNumPlayersOnTeam == 0)
+		TeamMembers->Free();
+
+	TeamMembers->Add(Controller);
+
+	static auto PlayerTeamPrivateOffset = PlayerState->GetOffset("PlayerTeamPrivate");
+	auto PlayerTeamPrivate = Get<UObject*>(PlayerState, PlayerTeamPrivateOffset);
+
+	std::cout << "PlayerTeamPrivate: " << *PlayerTeamPrivate << '\n';
+
+	static auto PrivateInfoOffset = (*PlayerTeam)->GetOffset("PrivateInfo");
+	*PlayerTeamPrivate = *Get<UObject*>(*PlayerTeam, PrivateInfoOffset);
 
 	if (Fortnite_Version >= 7.40)
 	{
@@ -65,10 +97,10 @@ bool Teams::AssignTeam(UObject* Controller)
 		FGameMemberInfo MemberInfo;
 		MemberInfo.TeamIndex = *TeamIndexPtr;
 		MemberInfo.SquadId = *SquadIdPtr;
-		MemberInfo.funny = AllTeams->Num() + *SquadIdPtr + *TeamIndexPtr;
-		MemberInfo.MemberUniqueId = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
+		// MemberInfo.funny = AllTeams->Num() + *SquadIdPtr + *TeamIndexPtr;
+		MemberInfo.MemberUniqueId = *Get<FUniqueNetIdRepl>(PlayerState, UniqueIdOffset);
 
-		std::cout << "Members Size: " << Members->size() << '\n';
+		// std::cout << "Members Size: " << Members->size() << '\n';
 
 		Members->Add(MemberInfo);
 		FastTArray::MarkArrayDirty(GameMemberInfoArray);

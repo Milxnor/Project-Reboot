@@ -76,18 +76,14 @@ bool Helper::IsPlayerController(UObject* Object)
 
 void Helper::ExecuteConsoleCommand(FString& Command)
 {
-	struct {
-		UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
-		FString                                     Command;                                                  // (Parm, ZeroConstructor)
-		UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
-	} params{ Helper::GetWorld(), Command, nullptr };
+	struct { UObject* WorldContextObject; FString Command; UObject* SpecificPlayer; } params{ Helper::GetWorld(), Command, nullptr };
 
-	static auto KSLClass = FindObject(("/Script/Engine.Default__KismetSystemLibrary"));
+	static auto KSLClass = FindObject("/Script/Engine.Default__KismetSystemLibrary");
 
 	if (KSLClass)
 	{
 		// static auto ExecuteConsoleCommandFn = KSLClass->Function(("ExecuteConsoleCommand"));
-		static auto ExecuteConsoleCommandFn = FindObject<UFunction>(("/Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
+		static auto ExecuteConsoleCommandFn = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand");
 		KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
 	}
 	else
@@ -478,8 +474,13 @@ UObject* Helper::GetOwner(UObject* Actor)
 
 int Helper::GetMaxBullets(UObject* Definition)
 {
-	static auto IsGadgetClass = Definition->IsA(FindObject("Class /Script/FortniteGame.FortGadgetItemDefinition"));
-	if (!Definition || IsGadgetClass)
+	static auto FortWeaponItemDefinitionClass = FindObject("/Script/FortniteGame.FortWeaponItemDefinition");
+	auto IsFortWeaponItemDefinition = Definition->IsA(FortWeaponItemDefinitionClass);
+
+	static auto FortGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
+	auto IsFortGadgetItemDefinition = Definition->IsA(FortGadgetItemDefinitionClass);
+
+	if (!Definition || IsFortGadgetItemDefinition || !IsFortWeaponItemDefinition)
 		return 0;
 
 	struct FDataTableRowHandle { UObject* DataTable; FName RowName; };
@@ -670,6 +671,11 @@ UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, FVector Locati
 
 		if (!PickupEntry)
 			return nullptr;
+
+		static auto FortResourceItemDefinition = FindObject("/Script/FortniteGame.FortResourceItemDefinition");
+
+		if (Definition->IsA(FortResourceItemDefinition))
+			bMaxAmmo = false;
 
 		auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(PickupEntry);
 

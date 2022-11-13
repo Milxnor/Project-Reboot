@@ -2,6 +2,29 @@
 #include "helper.h"
 #include "datatables.h"
 
+UObject* Looting::GetLTD()
+{
+	auto ltd = FindObject("/Game/Items/Datatables/AthenaLootTierData_Client.AthenaLootTierData_Client");
+	return ltd;
+
+	auto Playlist = *Helper::GetPlaylist();
+
+	if (!Playlist)
+		return nullptr;
+
+	static auto LootTierDataOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootTierData");
+	auto LootTierDataSoft = Get<TSoftObjectPtr>(Playlist, LootTierDataOffset);
+
+	auto LootTierDataName = LootTierDataSoft->ObjectID.AssetPathName.ToString();
+
+	auto ClassToUse = (LootTierDataName.contains("Composite")) ?
+		FindObject("/Script/Engine.CompositeDataTable") : FindObject("/Script/Engine.DataTable");
+
+	std::cout << "LootTierDataName: " << LootTierDataName << '\n';
+
+	return StaticLoadObject(ClassToUse, nullptr, LootTierDataName);
+}
+
 UObject* Looting::GetLP()
 {
 	auto Playlist = *Helper::GetPlaylist();
@@ -9,23 +32,31 @@ UObject* Looting::GetLP()
 	if (!Playlist)
 		return nullptr;
 
-	static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
-	auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
+	static UObject* lastPlaylist = nullptr;
+	static UObject* lp = nullptr;
 
-	auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424 
-		? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
+	if (Playlist != lastPlaylist)
+	{
+		lastPlaylist = Playlist;
 
-	auto ClassToUse = (LootPackagesName.contains("Composite")) ?
-		FindObject("Class /Script/Engine.CompositeDataTable") : FindObject("Class /Script/Engine.DataTable");
+		static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
+		auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
 
-	std::cout << "LootPackagesName: " << LootPackagesName << '\n';
+		auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424
+			? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
-	return StaticLoadObject(ClassToUse, nullptr, LootPackagesName);
+		auto ClassToUse = (LootPackagesName.contains("Composite")) ?
+			FindObject("/Script/Engine.CompositeDataTable") : FindObject("/Script/Engine.DataTable");
+
+		lp = StaticLoadObject(ClassToUse, nullptr, LootPackagesName);
+	}
+
+	return lp;
 }
 
 void Looting::SpawnForagedItems()
 {
-
+	Defines::bShouldSpawnForagedItems = true;
 }
 
 void AddItemAndWeight(int Index, const DefinitionInRow& Item, float Weight)

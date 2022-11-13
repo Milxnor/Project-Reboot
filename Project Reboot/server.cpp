@@ -358,28 +358,40 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 				auto Location = Helper::GetCorrectLocation(AllActor);
 				auto Rotation = Helper::GetActorRotation(AllActor);
 
-				if (SpawnLootTierGroup == "Loot_ForagedItem_AthenaRift")
-				{
-					auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+				static auto BGACWID = FindObject("/Script/FortniteGame.BGAConsumableWrapperItemDefinition");
 
-					Helper::Easy::SpawnActor(riftportal, Location, Rotation);
+				/*
+
+				auto LootDrops = Looting::PickLootDrops(SpawnLootTierGroup);
+
+				// std::cout << "LootDrops: " << LootDrops.size() << '\n';
+
+				for (auto& LootDrop : LootDrops)
+				{
+					static auto bgafrift = FindObject("/Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+
+					UObject* ConsumableClass = nullptr;
+
+					if (LootDrop.first == bgafrift) // we love rifts
+					{
+						static auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+						ConsumableClass = riftportal;
+					}
+					else
+					{
+						static auto ConsumableClassOffset = LootDrop.first->GetOffset("ConsumableClass");
+						ConsumableClass = Get<TSoftObjectPtr>(LootDrop.first, ConsumableClassOffset)->Get(Helper::GetBGAClass());
+					}
+
+					if (ConsumableClass)
+					{
+						// std::cout << "found class!\n";
+
+						Helper::Easy::SpawnActor(ConsumableClass, Location, Rotation);
+					}
 				}
 
-				if (SpawnLootTierGroup == "Loot_ForagedItem_Grassland" || SpawnLootTierGroup == "Loot_ForagedItem_Arid")
-				{
-					auto apple = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/HealthSmall/CBGA_HealthSmall.CBGA_HealthSmall_C");
-
-					Helper::Easy::SpawnActor(apple, Location, Rotation);
-				}
-
-				continue;
-
-				if (SpawnLootTierGroup == "Loot_ForagedItem_SpookyMist") // Cube Consumable
-				{
-					auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/SpookyMist/CBGA_SpookyMist.CBGA_SpookyMist_C");
-
-					Helper::Easy::SpawnActor(riftportal, Location, Rotation);
-				}
+				*/
 			}
 		}
 	}
@@ -521,7 +533,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 			std::cout << "SpawnIsland_FloorLoot: " << SpawnIsland_FloorLoot << '\n';
 			std::cout << "BRIsland_FloorLoot: " << BRIsland_FloorLoot << '\n';
 
-			auto SpawnFloorLoot = [](UObject* Class) -> int
+			auto SpawnFloorLoot = [](UObject* Class, const std::string& TierGroup) -> int
 			{
 				auto ClassActors = Helper::GetAllActorsOfClass(Class);
 
@@ -535,6 +547,13 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 					{
 						auto CorrectLocation = Helper::GetActorLocation(ClassActor);
 						CorrectLocation.Z += 50;
+
+						/* auto LootDrops = Looting::PickLootDrops(TierGroup);
+
+						for (auto& LootDrop : LootDrops)
+						{
+							Helper::SummonPickup(nullptr, LootDrop.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, LootDrop.second, true);
+						} */
 
 						bool ShouldSpawn = RandomBoolWithWeight(0.3f);
 
@@ -594,11 +613,12 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 				return Num;
 			};
 
-			if (SpawnFloorLoot(SpawnIsland_FloorLoot) != 0)
+			if (SpawnFloorLoot(SpawnIsland_FloorLoot, "Loot_AthenaFloorLoot_Warmup") != 0)
 			{
-				if (SpawnFloorLoot(BRIsland_FloorLoot) != 0)
+				if (SpawnFloorLoot(BRIsland_FloorLoot, "Loot_AthenaFloorLoot") != 0)
 				{
 					Defines::bShouldSpawnFloorLoot = false;
+					std::cout << "Finished spawning floor loot!\n";
 				}
 			}
 		}
@@ -618,7 +638,7 @@ void Server::Hooks::KickPlayer(UObject* GameSession, UObject* Controller, FText 
 		if (Engine_Version >= 423)
 		{
 			static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
-			Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
+			// Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
 			std::cout << "wtf!\n";
 		}
 	}

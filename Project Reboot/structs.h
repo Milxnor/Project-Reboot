@@ -68,15 +68,30 @@ struct TArray
 		return vector;
 	}
 
-	bool RemoveAt(const int Index, int Size = sizeof(ElementType)) // NOT MINE
+	bool RemoveAt(const int Index/*, int Size = sizeof(ElementType)*/) // NOT MINE
 	{
-		if (Index < ArrayNum && Index != ArrayNum - 1)
+		if (Index < ArrayNum)
 		{
-			memcpy_s((void*)((uint8_t*)(Data)+ Index * Size), Size, (void*)((uint8_t*)(Data)+ ((ArrayNum--) * Size)), Size);
+			if (Index != ArrayNum - 1)
+			{
+				// memcpy_s((ElementType*)(__int64(Data) + (Index * Size)), Size, (ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
+				Data[Index] = Data[ArrayNum - 1];
+			}
+
+			--ArrayNum;
+
 			return true;
 		}
 
 		return false;
+
+		/* if (Index < ArrayNum && Index != ArrayNum - 1)
+		{
+			memcpy_s((void*)((uint8_t*)(Data)+ Index * Size), Size, (void*)((uint8_t*)(Data)+ ((ArrayNum--) * Size)), Size);
+			return true;
+		} 
+
+		return false; */
 	};
 
 	void Free()
@@ -246,8 +261,15 @@ static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& na
 	if (!StaticLoadObjectO)
 		return nullptr;
 
-	auto Name = std::wstring(name.begin(), name.end()).c_str();
-	return (T*)StaticLoadObjectO(Class, Outer, Name, nullptr, LoadFlags, nullptr, false, nullptr);
+	auto Object = FindObject<T>(name, Class);
+
+	if (!Object)
+	{
+		auto Name = std::wstring(name.begin(), name.end()).c_str();
+		Object = (T*)StaticLoadObjectO(Class, Outer, Name, nullptr, LoadFlags, nullptr, false, nullptr);
+	}
+
+	return Object;
 }
 
 struct FUObjectItem // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectArray.h#L26
@@ -590,9 +612,18 @@ class FSoftObjectPtr : public TPersistentObjectPtr<FSoftObjectPath>
 
 };
 
-class TSoftObjectPtr : public FSoftObjectPtr
+struct TSoftObjectPtr : public FSoftObjectPtr
 {
+	UObject* Get(UObject* Class, bool bFindObject = false)
+	{
+		if (!ObjectID.AssetPathName.ComparisonIndex)
+			return nullptr;
 
+		auto objectName = ObjectID.AssetPathName.ToString();
+		// std::cout << "objectName: " << objectName << '\n';
+
+		return bFindObject ? FindObject(objectName, Class) : StaticLoadObject(Class, nullptr, objectName);
+	}
 };
 
 struct FURL

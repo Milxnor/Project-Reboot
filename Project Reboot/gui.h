@@ -364,7 +364,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					if (bLoaded)
 					{
-						static std::string ConsoleCommand;
+						/* static std::string ConsoleCommand;
 
 						ImGui::InputText("Console command", &ConsoleCommand);
 
@@ -375,7 +375,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							FString cmd = wstr.c_str();
 
 							Helper::ExecuteConsoleCommand(cmd);
-						}
+						} */
 
 						auto GameState = Helper::GetGameState();
 
@@ -388,7 +388,20 @@ DWORD WINAPI GuiThread(LPVOID)
 						
 						ImGui::InputText("URL", &Defines::urlForPortal);
 
-						if (ImGui::Button("Dump OBjects"))
+						/* if (ImGui::Button("test looting"))
+						{
+							auto LootDrops = Looting::PickLootDrops("Loot_AthenaFloorLoot_Warmup");
+							std::cout << "LootDrops Num: " << LootDrops.size() << '\n';
+
+							for (int i = 0; i < LootDrops.size(); i++)
+							{
+								auto& LootDrop = LootDrops.at(i);
+
+								std::cout << std::format("[{}] {} {}\n", i, LootDrop.first->GetFullName(), LootDrop.second);
+							}
+						} */
+
+						if (ImGui::Button("Dump Objects"))
 						{
 							auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
 

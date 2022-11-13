@@ -380,6 +380,11 @@ static float GetRandomFloat(float Min, float Max) // bruh
 	return GetRandomDouble(Min, Max);
 }
 
+struct FDateTime
+{
+	__int64 Ticks;
+};
+
 static bool IsBadReadPtr(void* p)
 {
 	MEMORY_BASIC_INFORMATION mbi = { 0 };

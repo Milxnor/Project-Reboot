@@ -28,7 +28,31 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 		auto bAlreadySearchedBitfield = Get<PlaceholderBitfield>(BuildingContainer, bAlreadySearchedOffset);
 
-		if (ReceivingActorName.contains("Chest"))
+		if (Engine_Version >= 420 && Engine_Version <= 423)
+		{
+			if (bAlreadySearchedBitfield->Fourth)
+				return false;
+
+			bAlreadySearchedBitfield->Fourth = true;
+
+			static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
+			BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
+		}
+
+		static auto SearchLootTierGroupOffset = BuildingContainer->GetOffset("SearchLootTierGroup");
+		auto SearchLootTierGroup = Get<FName>(BuildingContainer, SearchLootTierGroupOffset);
+		
+		auto CorrectLocation = Helper::GetCorrectLocation(ReceivingActor);
+
+		/* auto LootTierGroupName = SearchLootTierGroup->ToString();
+
+		LootTierGroupName = LootTierGroupName == "Loot_Treasure" ? "Loot_AthenaTreasure" : LootTierGroupName;
+
+		std::cout << "LootTierGroupName: " << LootTierGroupName << '\n'; */
+
+		static auto ChestClass = FindObject("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C");
+		// if (ReceivingActorName.contains("Chest"))
+		if (ReceivingActor->IsA(ChestClass))
 		{
 			auto DefInRow = Looting::GetRandomItem(ItemType::Weapon);
 			{
@@ -39,47 +63,30 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 				auto Ammo = Helper::GetAmmoForDefinition(WeaponDef);
 
-				auto Location = Helper::GetCorrectLocation(BuildingContainer);
+				Helper::SummonPickup(nullptr, WeaponDef, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow.DropCount, true);
 
-				Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow.DropCount, true);
-
-				Helper::SummonPickup(nullptr, Ammo.first, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, Ammo.second);
+				Helper::SummonPickup(nullptr, Ammo.first, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, Ammo.second);
 
 				auto ConsumableInRow = RandomBoolWithWeight(5, 1, 100) ? Looting::GetRandomItem(ItemType::Trap) : Looting::GetRandomItem(ItemType::Consumable);
 
-				Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
+				Helper::SummonPickup(nullptr, ConsumableInRow.Definition, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
 
-				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+				static auto WoodItemData = FindObject("/Game/Items/ResourcePickups/WoodItemData.WoodItemData");
+				static auto StoneItemData = FindObject("/Game/Items/ResourcePickups/StoneItemData.StoneItemData");
+				static auto MetalItemData = FindObject("/Game/Items/ResourcePickups/MetalItemData.MetalItemData");
 
 				auto random = GetRandomFloat(1, 4);
 
 				int amountOfMaterialToDrop = 30; // Looting::GetRandomItem(ItemType::Resource, Looting::LootItems).DropCount;
 
 				if (random <= 1)
-					Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+					Helper::SummonPickup(nullptr, WoodItemData, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
 				else if (random == 2)
-					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+					Helper::SummonPickup(nullptr, StoneItemData, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
 				else
-					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
-
-				// BuildingContainer->ProcessEvent(FindObject<UFunction>("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C.OnSetSearched"));
-				// BuildingContainer->ProcessEvent(FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.BounceContainer"));
-				// BuildingContainer->ProcessEvent(FindObject<UFunction>("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C.OnLoot"));
+					Helper::SummonPickup(nullptr, MetalItemData, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
 
 			}
-		}
-
-		if (Engine_Version >= 420 && Engine_Version < 424)
-		{
-			if (bAlreadySearchedBitfield->Fourth)
-				return false;
-
-			bAlreadySearchedBitfield->Fourth = true;
-
-			static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
-			BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
 		}
 	}
 
@@ -204,9 +211,15 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 				LoopReplicatedEntries(Controller, ahah);
 			};
 
-			setCount(UFortItem::GetItemEntry(WoodInstance), Controller, *WoodCount - 50);
-			setCount(UFortItem::GetItemEntry(StoneInstance), Controller, *StoneCount - 50);
-			setCount(UFortItem::GetItemEntry(MetalInstance), Controller, *MetalCount - 50);
+			// setCount(UFortItem::GetItemEntry(WoodInstance), Controller, *WoodCount - 50);
+			// setCount(UFortItem::GetItemEntry(StoneInstance), Controller, *StoneCount - 50);
+			// setCount(UFortItem::GetItemEntry(MetalInstance), Controller, *MetalCount - 50);
+
+			Inventory::TakeItem(Controller, *UFortItem::GetGuid(WoodInstance), *WoodCount - 50);
+			Inventory::TakeItem(Controller, *UFortItem::GetGuid(StoneInstance), *StoneCount - 50);
+			Inventory::TakeItem(Controller, *UFortItem::GetGuid(MetalInstance), *MetalCount - 50);
+
+			Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(CurrentHeldWeapon), true);
 
 			Inventory::GiveItem(Controller, NewDefinition, EFortQuickBars::Max_None, 0);
 		}

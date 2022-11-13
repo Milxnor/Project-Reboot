@@ -9,7 +9,7 @@ static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, v
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters);
 bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Parameters);
 bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters);
-bool ClientOnPawnDied(UObject* DeadController, UFunction*, void* Parameters);
+bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters);
 bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters);
 bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters);
 bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters);

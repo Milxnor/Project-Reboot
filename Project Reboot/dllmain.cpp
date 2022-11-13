@@ -218,6 +218,56 @@ __int64 Unetdriver_getnetmodeDetour(__int64 a1)
 
 __int64 rettrue() { return 1; }
 
+void (__fastcall* CRASHMFO)(__int64 a1, char a2, __int64 a3, __int64 a4);
+
+void __fastcall CRASHMFDetour(__int64 a1, char a2, __int64 a3, __int64 a4)
+{
+    std::cout << "A1: " << a1 << '\n';
+
+    if (IsBadReadPtr((int*)a1))
+        return;
+
+    return CRASHMFO(a1, a2, a3, a4);
+}
+
+__int64* (__fastcall* sub_7FF7E26D3224)(__int64 a1, __int64* a2, __int64 a3, __int64 a4);
+
+__int64* __fastcall sub_7FF7E26D3224Detour(__int64 a1, __int64* a2, __int64 a3, __int64 a4)
+{
+    // std::cout << "A1: " << a1 << '\n';
+
+    if (IsBadReadPtr((int*)a1))
+        return 0;
+
+    return sub_7FF7E26D3224(a1, a2, a3, a4);
+}
+
+__int64 (__fastcall* sub_7FF7E2ABF424)(__int64 a1, __int64 a2);
+
+__int64 __fastcall intiailzieuifdeotur(__int64 a1, __int64 a2)
+{
+    std::cout << "initu io!\n";
+    return 0;
+}
+
+double __fastcall crashdet(__int64 a1)
+{
+    std::cout << "cresh!\n";
+    return 0;
+}
+
+__int64 __fastcall sub_7FF7E2ABF424Detour(__int64 a1, __int64 a2)
+{
+    std::cout << "A123: " << a1 << '\n';
+
+    return 0;
+
+    if (!a1 || IsBadReadPtr((int*)a1))
+        return 0;
+
+    return sub_7FF7E2ABF424(a1, a2);
+}
+
 DWORD WINAPI Initialize(LPVOID)
 {
     // if (FALSE && !TRUE)
@@ -236,6 +286,89 @@ DWORD WINAPI Initialize(LPVOID)
     {
         MessageBoxA(0, "MinHook failed to initialize", "Project Reboot V2", MB_ICONERROR);
         return 1;
+    }
+
+    std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
+
+    if (false)
+    {
+        bool bIsSettingGIsClient = true;
+        bool bSetGIsClientSuccessful = false;
+
+        if (bIsSettingGIsClient)
+        {
+            auto GIsClientAddr = Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
+
+            uintptr_t GIsServerAddr = 0;
+
+            // if (Fortnite_Version == 17.30)
+            GIsClientAddr = __int64(GetModuleHandleW(0)) + 0x973E49B;
+            GIsServerAddr = __int64(GetModuleHandleW(0)) + 0x973E499;
+
+            std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
+            std::cout << "GIsServerAddr: " << GIsServerAddr << '\n';
+
+            if (GIsClientAddr)
+            {
+                std::cout << "BefroreClient: " << *(bool*)(GIsClientAddr) << '\n';
+                *(bool*)(GIsClientAddr) = false;
+            }
+
+            if (GIsServerAddr)
+            {
+                std::cout << "BefroreServer: " << *(bool*)(GIsServerAddr) << '\n';
+                *(bool*)(GIsServerAddr) = true;
+            }
+
+            bSetGIsClientSuccessful = GIsClientAddr;
+
+            auto intiialzieui = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 55 41 56 48 8B EC 48 83 EC 60 45 33 E4 4C 8D 2D"); // __int64(GetModuleHandleW(0)) + 0x18AA0E0;
+
+            std::cout << "intiialzieui: " << intiialzieui << '\n';
+
+            MH_CreateHook((PVOID)intiialzieui, intiailzieuifdeotur, nullptr);
+            MH_EnableHook((PVOID)intiialzieui);
+
+            auto cresh = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B F1");
+
+            std::cout << "cresh: " << cresh << '\n';
+
+            MH_CreateHook((PVOID)cresh, crashdet, nullptr);
+            MH_EnableHook((PVOID)cresh);
+        }
+
+        if (!bSetGIsClientSuccessful)
+        {
+            // ?? 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74
+
+            auto Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 75 0A B8 ? ? ? ? 48 83 C4 28 C3 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB EB"); // 17.3
+
+            if (!Unetdriver_getnetmodesig)
+                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48 83 C4 28 C3 B8 ? ? ? ? 48 83 C4 28 C3"); // 7.4-10.4
+
+            if (!Unetdriver_getnetmodesig)
+                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 18.4
+
+            if (!Unetdriver_getnetmodesig)
+                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48"); // 14.6-16.4 idk
+
+            if (!Unetdriver_getnetmodesig)
+                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 17.5
+
+            std::cout << "aafunynetmodev2: " << Unetdriver_getnetmodesig << '\n';
+
+            MH_CreateHook((PVOID)Unetdriver_getnetmodesig, Unetdriver_getnetmodeDetour, (PVOID*)&Unetdriver_getnetmodeO);
+            MH_EnableHook((PVOID)Unetdriver_getnetmodesig);
+        }
+    }
+
+    while (true)
+    {
+        if (GetAsyncKeyState(VK_F1) & 1)
+        {
+            std::cout << "braeking!\n";
+            break;
+        }
     }
 
     if (!InitializePatterns())
@@ -269,57 +402,12 @@ DWORD WINAPI Initialize(LPVOID)
         std::cout << "NoMCPAddress: " << NoMCPAddress << '\n';
         std::cout << "WorldGetNetModeAddress: " << WorldGetNetModeAddress << '\n';
     }
-    
-    bool bIsSettingGIsClient = false;
-    bool bSetGIsClientSuccessful = false;
-
-    if (bIsSettingGIsClient)
-    {
-        auto GIsClientAddr = Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
-        std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
-        // GIsClientAddr = __int64(GetModuleHandleW(0)) + 0x9C0AF6B; // 18.40
-        // std::cout << "GIsClientSig off: " << GIsClientAddr << '\n';
-
-        if (GIsClientAddr)
-        {
-            std::cout << "Befrore: " << *(bool*)(GIsClientAddr) << '\n';
-            *(bool*)(GIsClientAddr) = false;
-        }
-
-        bSetGIsClientSuccessful = GIsClientAddr;
-    }
-
-    if (!bSetGIsClientSuccessful)
-    {
-        // ?? 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74
-
-        auto Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 75 0A B8 ? ? ? ? 48 83 C4 28 C3 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB EB"); // 17.3
-
-        if (!Unetdriver_getnetmodesig)
-            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48 83 C4 28 C3 B8 ? ? ? ? 48 83 C4 28 C3"); // 7.4-10.4
-
-        if (!Unetdriver_getnetmodesig)
-            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 18.4
-
-        if (!Unetdriver_getnetmodesig)
-            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48"); // 14.6-16.4 idk
-
-        if (!Unetdriver_getnetmodesig)
-            Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 17.5
-
-        std::cout << "aafunynetmodev2: " << Unetdriver_getnetmodesig << '\n';
-
-        MH_CreateHook((PVOID)Unetdriver_getnetmodesig, Unetdriver_getnetmodeDetour, (PVOID*)&Unetdriver_getnetmodeO);
-        MH_EnableHook((PVOID)Unetdriver_getnetmodesig);
-    }
-
 
     std::cout << "Initialized\n";
     // LOG(LogInit, All, L"Initialized");
     std::cout << "Fortnite_Season: " << Fortnite_Season << '\n';
     std::cout << "GiveAbilityS14ABOVE: " << Defines::GiveAbilityS14ABOVE << '\n';
     std::cout << "GiveAbilityAddress: " << GiveAbilityAddress << '\n';
-    std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
 
     FFortItemEntry::ItemEntryStruct = FindObjectSlow("ScriptStruct /Script/FortniteGame.FortItemEntry", false);
     FastTArray::FastArraySerializerStruct = FindObjectSlow("ScriptStruct /Script/Engine.FastArraySerializer", false);
@@ -374,7 +462,7 @@ DWORD WINAPI Initialize(LPVOID)
     
     AddHook("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
 
-    if (InternalTryActivateAbilityAddress && GiveAbilityAddress && Fortnite_Season < 17)
+    if (InternalTryActivateAbilityAddress && GiveAbilityAddress)
     {
         AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
         AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);

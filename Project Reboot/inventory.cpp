@@ -80,12 +80,13 @@ TArray<UObject*>* Inventory::GetItemInstances(UObject* Controller)
 	return Inventory ? (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset) : nullptr;
 }
 
-TArray<__int64>* Inventory::GetReplicatedEntries(UObject* Controller)
+template <typename EntryStruct>
+TArray<EntryStruct>* Inventory::GetReplicatedEntries(UObject* Controller)
 {
 	static auto ReplicatedEntriesOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemList", "ReplicatedEntries");
 	auto Inventory = GetInventory(Controller);
 
-	return (TArray<__int64>*)(__int64(Inventory) + ReplicatedEntriesOffset);
+	return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 }
 
 __int64* Inventory::GetEntryFromWeapon(UObject* Controller, UObject* Weapon)
@@ -226,36 +227,41 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 
 		std::vector<UObject*> InstancesOfItem;
 
-		for (int i = 0; i < ItemInstances->Num(); i++)
+		auto MaxStackCount = GetMaxStackSize(ItemDefinition);
+
+		std::cout << "MaxStackCount: " << MaxStackCount << '\n';
+
+		if (MaxStackCount > 1)
 		{
-			auto CurrentItemInstance = ItemInstances->At(i);
-
-			if (CurrentItemInstance && *UFortItem::GetDefinition(CurrentItemInstance) == ItemDefinition)
+			for (int i = 0; i < ItemInstances->Num(); i++)
 			{
-				InstancesOfItem.push_back(CurrentItemInstance);
-			}
-		}
+				auto CurrentItemInstance = ItemInstances->At(i);
 
-		if (InstancesOfItem.size() > 0)
-		{
-			auto MaxStackCount = GetMaxStackSize(ItemDefinition);
-
-			// We need this skunked thing because if they have 2 full stacks and half a stack then we want to find the lowest stack and stack to there.
-			for (auto InstanceOfItem : InstancesOfItem)
-			{
-				if (InstanceOfItem)
+				if (CurrentItemInstance && *UFortItem::GetDefinition(CurrentItemInstance) == ItemDefinition)
 				{
-					auto CurrentItemEntry = UFortItem::GetItemEntry(InstanceOfItem);
+					InstancesOfItem.push_back(CurrentItemInstance);
+				}
+			}
 
-					if (ItemEntry)
+			if (InstancesOfItem.size() > 0)
+			{
+				// We need this skunked thing because if they have 2 full stacks and half a stack then we want to find the lowest stack and stack to there.
+				for (auto InstanceOfItem : InstancesOfItem)
+				{
+					if (InstanceOfItem)
 					{
-						auto currentCount = FFortItemEntry::GetCount(ItemEntry);
+						auto CurrentItemEntry = UFortItem::GetItemEntry(InstanceOfItem);
 
-						if (currentCount && *currentCount < MaxStackCount)
+						if (ItemEntry)
 						{
-							StackingItemInstance = InstanceOfItem;
-							StackingItemEntry = CurrentItemEntry;
-							break;
+							auto currentCount = FFortItemEntry::GetCount(ItemEntry);
+
+							if (currentCount && *currentCount < MaxStackCount)
+							{
+								StackingItemInstance = InstanceOfItem;
+								StackingItemEntry = CurrentItemEntry;
+								break;
+							}
 						}
 					}
 				}
@@ -494,13 +500,38 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance, int Ammo
 
 EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
 {
-	static auto FortWeaponItemDefinitionClass = FindObject(("/Script/FortniteGame.FortWeaponItemDefinition"));
-	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
+	static auto FortWeaponItemDefinitionClass = FindObject("/Script/FortniteGame.FortWeaponItemDefinition");
+	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition"); // FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 
 	if (Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortDecoItemDefinitionClass))
 		return EFortQuickBars::Primary;
 	else
 		return EFortQuickBars::Secondary;
+}
+
+template <typename EntryStruct>
+bool RemoveGuidFromReplicatedEntries(UObject* Controller, const FGuid& Guid)
+{
+	auto ReplicatedEntries = Inventory::GetReplicatedEntries<EntryStruct>(Controller);
+
+	bool bSuccessful = false;
+
+	for (int x = 0; x < ReplicatedEntries->Num(); x++)
+	{
+		auto ItemEntry = ReplicatedEntries->At(x);
+
+		if (*FFortItemEntry::GetGuid((__int64*)&ItemEntry) == Guid)
+		{
+			ReplicatedEntries->RemoveAt(x);
+			bSuccessful = true;
+			break;
+		}
+	}
+
+	if (!bSuccessful)
+		std::cout << ("Failed to find ItemGuid in Inventory!\n");
+
+	return bSuccessful;
 }
 
 UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, bool bForceRemove)
@@ -525,17 +556,47 @@ UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, 
 	{
 		std::cout << "ugh!\n";
 
-		auto ReplicatedEntries = GetReplicatedEntries(Controller);
+		bool bSuccessful = false;
 
-		for (int x = 0; x < ReplicatedEntries->Num(); x++)
+		if (Fortnite_Season == 2)
 		{
-			static auto EntrySize = FFortItemEntry::GetStructSize();
-			auto itemEntry = (__int64*)(__int64(ReplicatedEntries) + (x * EntrySize));
-
-			if (*FFortItemEntry::GetGuid(itemEntry) == Guid)
-			{
-				ReplicatedEntries->RemoveAt(x, EntrySize);
-			}
+			struct ItemEntrySize { unsigned char Unk00[0xB8]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Fortnite_Season == 3)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Fortnite_Season > 3 && Fortnite_Version < 7.30)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Fortnite_Version >= 7.30 && Engine_Version <= 424)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x120]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Engine_Version == 425)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Engine_Version >= 426 && Fortnite_Version < 15) // idk if right
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x160]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Fortnite_Version >= 15 && Fortnite_Version < 18)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x190]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Fortnite_Version >= 18)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x1A0]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 
 		auto ItemInstances = Inventory::GetItemInstances(Controller);
@@ -633,7 +694,19 @@ bool Inventory::ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void
 
 	auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
 
-	// TakeItem(Controller, Params->ItemGuid, Params->Count);
+	auto Pawn = Helper::GetPawnFromController(Controller);
+
+	if (!Pawn)
+		return false;
+
+	auto Instance = Inventory::FindItemInInventory(Controller, Params->ItemGuid);
+
+	auto newDef = TakeItem(Controller, Params->ItemGuid, Params->Count);
+
+	Helper::SummonPickup(Pawn, newDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count, false, 
+		*FFortItemEntry::GetLoadedAmmo(UFortItem::GetItemEntry(Instance)));
+
+	// TODO: Remove from Pawn->CurrentWeaponList
 
 	return false;
 }
@@ -689,21 +762,27 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 		if (Inventory::WhatQuickBars(Definition) == EFortQuickBars::Primary)
 		{
 			PrimaryQuickBarSlotsFilled++;
-			bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5;
+			bShouldSwap = (PrimaryQuickBarSlotsFilled - 6) >= 5;
 
 			if (bShouldSwap)
 				break;
 		}
 	}
 
-	if (bShouldSwap)
-	{
-		std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
-		auto Def = Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(Helper::GetCurrentWeapon(Pawn)), -1, true);
-		Helper::SummonPickup(Pawn, Def, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset);
-	}
+	std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
 
 	int NextSlot = 1;
+
+	if (bShouldSwap)
+	{
+		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+		auto CurrentWeaponGuid = Inventory::GetWeaponGuid(CurrentWeapon);
+		auto CurrentWeaponInstance = Inventory::FindItemInInventory(Controller, Helper::GetWeaponData(CurrentWeapon)); // ugh
+
+		struct { FGuid ItemGuid; int Count; } drop_parms{ CurrentWeaponGuid, *UFortItem::GetCount(CurrentWeaponInstance) };
+
+		Inventory::ServerAttemptInventoryDrop(Controller, nullptr, &drop_parms);
+	}
 
 	auto Instance = GiveItem(Controller, *Definition, WhatQuickBars(*Definition), NextSlot, *Count);
 
@@ -723,7 +802,7 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 {
 	// std::cout << "pls help!\n";
 
-	Defines::HandleReloadCost(Weapon, AmountToRemove);
+	// Defines::HandleReloadCost(Weapon, AmountToRemove);
 
 	static auto AmmoCountOffset = Weapon->GetOffset("AmmoCount");
 
@@ -740,12 +819,16 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 	auto WeaponData = Helper::GetWeaponData(Weapon);
 	auto AmmoDef = Helper::GetAmmoForDefinition(WeaponData).first;
 
-	static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
+	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition");
 
-	std::cout << "WeaponData Name: " << WeaponData->GetFullName() << '\n';
+	// std::cout << "WeaponData Name: " << WeaponData->GetFullName() << '\n';
 
 	if (!AmmoDef || WeaponData->IsA(FortTrapItemDefinitionClass))
 		AmmoDef = WeaponData;
 
-	Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(AmmoDef), AmountToRemove);
+	// std::cout << "ammoDefName: " << AmmoDef->GetFullName() << '\n';
+
+	auto AmmoInstance = Inventory::FindItemInInventory(Controller, AmmoDef);
+
+	Inventory::TakeItem(Controller, *UFortItem::GetGuid(AmmoInstance), AmountToRemove);
 }

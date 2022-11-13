@@ -80,7 +80,9 @@ namespace Inventory
 	UObject* GetWorldInventory(UObject* Controller);
 	__int64* GetInventory(UObject* Controller);
 	TArray<UObject*>* GetItemInstances(UObject* Controller);
-	TArray<__int64>* GetReplicatedEntries(UObject* Controller);
+
+	template <typename EntryStruct = __int64>
+	TArray<EntryStruct>* GetReplicatedEntries(UObject* Controller);
 
 	static FGuid GetWeaponGuid(UObject* Weapon)
 	{

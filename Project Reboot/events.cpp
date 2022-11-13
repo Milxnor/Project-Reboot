@@ -110,6 +110,31 @@ void Events::LoadEvent()
 			bHasBeenLoaded = true;
 		}
 	}
+
+	else if (Fortnite_Version == 17.30)
+	{
+		auto Scripting = GetEventScripting();
+
+		if (Scripting)
+		{
+			auto initializelevelloader = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_Master_Scripting.BP_Buffet_Master_Scripting_C.InitializeLevelLoader");
+			Scripting->ProcessEvent(initializelevelloader);
+
+			static auto buffetcllaoder = FindObject("/Buffet/Gameplay/Blueprints/BP_Buffet_Level_Loader.BP_Buffet_Level_Loader_C");
+
+			auto newloader = Helper::Easy::SpawnActor(buffetcllaoder, FVector());
+
+			int PhasEindex = 0;
+
+			struct { bool CO; int PhaseIndex; } loadeparm{ true, 0 };
+
+			auto augfu8 = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_Level_Loader.BP_Buffet_Level_Loader_C.LoadBuffetLevel");
+			newloader->ProcessEvent(augfu8, &loadeparm);
+
+			static auto Buffet_LevelLoaderBPOffset = Scripting->GetOffset("Buffet_LevelLoaderBP");
+			*Get<UObject*>(Scripting, Buffet_LevelLoaderBPOffset) = newloader;
+		}
+	}
 }
 
 void Events::StartEvent()
@@ -178,9 +203,48 @@ void Events::StartEvent()
 			// Scripting->ProcessEvent(LoadNextBuffetLevel, &ccparms);
 			Scripting->ProcessEvent(BB, &bbparms);
 			static auto skidder = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_PhaseScripting_Phase0.BP_Buffet_PhaseScripting_Phase0_C.OnReady_9397C2DA49D638685F20BF8BBAC112AD");
-			// FindObject("/Buffet/Levels/Buffet_Part_0.Buffet_Part_0:PersistentLevel.BP_Buffet_PhaseScripting_Phase0_2")->ProcessEvent(skidder, &bbparms);
+
+			static auto afi2 = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_PhaseScripting_Paint.BP_Buffet_PhaseScripting_Paint_C.OnReady_4E0ADA484A9A29A99CA6DD97BE645F09");
+
+			static auto beasfwq9 = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/Buffet_SpecialEventScript.Buffet_SpecialEventScript_C.OnReady_D357CD7841974BE4734824A7031B6C50");
 
 			// Scripting->ProcessEvent(GetSequenceAndPlay, &SecondsSinceEventBegan); // idk does a lot of stuff for client
+
+			static auto BP_OnScriptReady = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/Buffet_SpecialEventScript.Buffet_SpecialEventScript_C.BP_OnScriptReady");
+			static auto StartEventAtIndex = FindObject<UFunction>("/Script/SpecialEventGameplayRuntime.SpecialEventScript.StartEventAtIndex");
+
+			static auto wufg289 = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/Buffet_SpecialEventScript.Buffet_SpecialEventScript_C.OnReady_9CE4B3D844C02EE607CEE79E5E8FB819");
+
+			auto GameState = Helper::GetGameState();
+			auto FortTimeOfDayManagerOffset = GameState->GetOffset("FortTimeOfDayManager");
+
+			auto FortTimeOfDayManager = *Get<UObject*>(GameState, FortTimeOfDayManagerOffset);
+
+			auto SpecialEventScripting = FindObject("/Buffet/Levels/Buffet_P.Buffet_P.PersistentLevel.Buffet_SpecialEventScript_2");
+			SpecialEventScripting->ProcessEvent(beasfwq9);
+			SpecialEventScripting->ProcessEvent(wufg289, &FortTimeOfDayManager);
+
+			std::cout << "SpecialEventScripting: " << SpecialEventScripting << '\n';
+
+			static auto Buffet_LevelLoaderBPOffset = Scripting->GetOffset("Buffet_LevelLoaderBP");
+			std::cout << "Buffet_LevelLoaderBP: " << *Get<UObject*>(Scripting, Buffet_LevelLoaderBPOffset) << '\n';
+
+			SpecialEventScripting->ProcessEvent(BP_OnScriptReady);
+
+			static auto MeshRootStartEvent = FindObject<UFunction>("/Script/SpecialEventGameplayRuntime.SpecialEventScriptMeshActor.MeshRootStartEvent");
+			auto MeshScriptActor = FindObject("/Game/Athena/Apollo/Maps/Apollo_Terrain.Apollo_Terrain.PersistentLevel.MeshScriptActorBP_2");
+
+			/* static auto RootStartTimeOffset = MeshScriptActor->GetOffset("RootStartTime");
+			Get<FDateTime>(MeshScriptActor, RootStartTimeOffset)->Ticks = 99; // FDateTime.Now()
+
+			static auto OnRep_RootStartTime = FindObject<UFunction>("/Script/SpecialEventGameplayRuntime.SpecialEventScriptMeshActor.OnRep_RootStartTime");
+			MeshScriptActor->ProcessEvent(OnRep_RootStartTime); */
+
+			// SpecialEventScripting->ProcessEvent(StartEventAtIndex, &SecondsSinceEventBegan);
+			
+			std::cout << "Buffet_LevelLoaderBPAfter: " << *Get<UObject*>(Scripting, Buffet_LevelLoaderBPOffset) << '\n';
+
+			// FindObject("/Buffet/Levels/Buffet_Part_0.Buffet_Part_0.PersistentLevel.BP_Buffet_PhaseScripting_Phase0_2")->ProcessEvent(skidder, &bbparms); // start evebnt somehow
 
 			Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
 
@@ -212,11 +276,17 @@ void Events::StartEvent()
 
 			auto eventscript = FindObject("/Kiwi/Levels/Kiwi_P.Kiwi_P:PersistentLevel.Kiwi_EventScript_2");
 			static auto CC = FindObject<UFunction>("/Kiwi/Gameplay/Kiwi_EventScript.Kiwi_EventScript_C.OnReady_F51BF8E143832CE6C552938B26BEFA93");
+			static auto DD = FindObject<UFunction>("/Kiwi/Gameplay/Kiwi_EventScript.Kiwi_EventScript_C.LoadKiwiAssets");
+			static auto StartEventAtIndex = FindObject<UFunction>("/Script/SpecialEventGameplayRuntime.SpecialEventScript.StartEventAtIndex");
+			static auto BP_OnScriptReady = FindObject<UFunction>("/Kiwi/Gameplay/Kiwi_EventScript.Kiwi_EventScript_C.BP_OnScriptReady");
 
-			eventscript->ProcessEvent(CC, &bbparms);
+			eventscript->ProcessEvent(DD, &bbparms);
+			eventscript->ProcessEvent(BP_OnScriptReady, &bbparms);
+			eventscript->ProcessEvent(StartEventAtIndex, &SecondsSinceEventBegan);
+			// eventscript->ProcessEvent(CC, &bbparms);
 
 			static auto StartEvent = FindObject<UFunction>("/Kiwi/Gameplay/BP_Kiwi_Master_Scripting.BP_Kiwi_Master_Scripting_C.startevent");
-			Scripting->ProcessEvent(StartEvent, &SecondsSinceEventBegan);
+			// Scripting->ProcessEvent(StartEvent, &SecondsSinceEventBegan);
 		}
 	}
 
@@ -299,8 +369,8 @@ void Events::StartEvent()
 
 					Loader->ProcessEvent(CC, &bbparms);
 					Scripting->ProcessEvent(BB, &bbparms);
+					Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
-					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 				}
 			}
 		}

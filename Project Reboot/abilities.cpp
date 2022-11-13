@@ -154,7 +154,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
             *inad = (*inad & ~1) | (false ? 1 : 0);
         }
 
-        FastTArray::MarkItemDirty(GetActivatableAbilities(ASC), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper again
+        FastTArray::MarkItemDirty(GetActivatableAbilities(ASC), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper func again
     }
 }
 
@@ -262,7 +262,12 @@ bool Abilities::ServerTryActivateAbility(UObject* AbilitySystemComponent, UFunct
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbility_Params*)Parameters;
 
-    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, &Params->PredictionKey, nullptr);
+    static auto AbilityToActivateOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", "AbilityToActivate", true, true);
+    static auto PredictionKeyOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", "PredictionKey", true, true);
+    static auto InputPressedOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", "InputPressed", true, true);
+
+    InternalServerTryActivateAbility(AbilitySystemComponent, *(FGameplayAbilitySpecHandle*)(__int64(Parameters) + AbilityToActivateOffset),
+        *(bool*)(__int64(Params) + InputPressedOffset), (void*)(__int64(Parameters) + PredictionKeyOffset), nullptr);
 
     return false;
 }

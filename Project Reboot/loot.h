@@ -60,13 +60,13 @@ namespace Looting
 	inline int LlamaItems = 2;
 	inline int FactionLootItems = 3;
 
-	static UObject* GetLTD() { return FindObject("/Game/Items/Datatables/AthenaLootTierData_Client.AthenaLootTierData_Client"); }
+	UObject* GetLTD();
 	UObject* GetLP();
 	// { return FindObject("/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client"); }
 
 	void Initialize();
 	void SpawnForagedItems();
-	std::vector<std::pair<UObject*, int>> PickLootDrops(const std::string& TierGroupName, int WorldLevel = 1, int ForcedLootTier = 1); // Definition, DropCount
+	// std::vector<std::pair<UObject*, int>> PickLootDrops(const std::string& TierGroupName, int WorldLevel = 1, int ForcedLootTier = 1); // Definition, DropCount
 
 	static const DefinitionInRow GetRandomItem(ItemType Type, int LootType = LootItems)
 	{

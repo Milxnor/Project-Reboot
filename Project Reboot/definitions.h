@@ -12,7 +12,7 @@ namespace Defines
 	inline bool bRandomSkin = true;
 	inline bool bRandomPickaxe = true;
 	inline bool bIsCreative = false;
-	inline bool bIsGoingToPlayMainEvent = true;
+	inline bool bIsGoingToPlayMainEvent = false;
 	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
 
 	// DON'T CHANGE HERE
@@ -44,6 +44,10 @@ namespace Defines
 
 	inline bool (*InternalTryActivateAbility)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex18 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 	inline bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex10 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
+	// inline bool (*InternalTryActivateAbilityTest)(UObject* comp, FGameplayAbilitySpecHandle Handle, void* InPredictionKey,
+		// UObject** OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData);
+
+	inline bool (*InternalTryActivateAbilityTest)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex18 InPredictionKey, ...);
 
 	inline FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexC8 inSpec); // 4.20-4.25 etc.
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS14ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE0 inSpec);
