@@ -33,9 +33,11 @@ UObject* GetEventScripting()
 {
 	UObject* Scripting = nullptr;
 	
-	if (Fortnite_Version == 10.40)
+	if (Fortnite_Version == 8.51)
+		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
+	else if (Fortnite_Version == 10.40)
 		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2");
-	if (Fortnite_Version == 11.30)
+	else if (Fortnite_Version == 11.30)
 		Scripting = FindObject("/Game/Athena/Prototype/Blueprints/Galileo/Galileo_scripting.Galileo_scripting.PersistentLevel.BP_Galileo_Script2_2");
 	else if (Fortnite_Version == 12.41)
 		Scripting = FindObject("/CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2");
@@ -58,6 +60,32 @@ UObject* GetEventScripting()
 void Events::LoadEvent()
 {
 	__int64 Condition = true;
+
+	if (Fortnite_Version == 6.21)
+	{
+		UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
+
+		if (BF)
+		{
+			static auto loadfun = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Island/BP_Butterfly.BP_Butterfly_C.LoadButterflySublevel");
+			BF->ProcessEvent(loadfun);
+
+			bHasBeenLoaded = true;
+		}
+
+	}
+	if (Fortnite_Version == 8.51) // needed idk
+	{
+		auto Scripting = GetEventScripting();
+
+		if (Scripting)
+		{
+			static auto LoadSnowLevel = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.LoadSnowLevel");
+			Scripting->ProcessEvent(LoadSnowLevel);
+
+			bHasBeenLoaded = true;
+		}
+	}
 
 	if (Fortnite_Version == 10.40)
 	{
@@ -146,11 +174,19 @@ void Events::StartEvent()
 	struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ Helper::GetGameState(), *Helper::GetPlaylist(),
 		FGameplayTagContainer() };
 
-	if (Fortnite_Version == 6.21)
+	if (Fortnite_Version == 5.41) // Impact lake with cube
 	{
-		UObject* BF = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
-		UFunction* Func = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Island/BP_Butterfly.BP_Butterfly_C.ButterflySequence");
-		BF->ProcessEvent(Func);
+		auto cube = FindObject("/Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2");
+
+		auto cubedest = FindObject("/Temp/Game/Athena/Maps/POI/Athena_POI_Lake_001_53fd26f4.Athena_POI_Lake_001.PersistentLevel.Cube_Dest_Scripting_2");
+
+		std::cout << "cubedest: " << cubedest << '\n';
+
+		// static auto setuplake = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.SetupLake");
+		// cube->ProcessEvent(setuplake); // this kinda does the same thing as impact lake
+
+		static auto impactlake = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.ImpactLake");
+		cube->ProcessEvent(impactlake);
 	}
 
 	else if (Fortnite_Season == 16)
@@ -315,7 +351,37 @@ void Events::StartEvent()
 
 	if (bHasBeenLoaded) // These versions require manual loading stuff
 	{
-		if (Fortnite_Version == 10.40)
+		if (Fortnite_Version == 6.21)
+		{
+			UObject* BF = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
+			UFunction* Func = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Island/BP_Butterfly.BP_Butterfly_C.ButterflySequence");
+			BF->ProcessEvent(Func);
+		}
+
+		else if (Fortnite_Version == 8.51)
+		{
+			auto Scripting = GetEventScripting();
+
+			if (Scripting)
+			{
+				static auto bb = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.OnReady_3281D978468AC0749E26BA9A32FA5FDC");
+				Scripting->ProcessEvent(bb, &bbparms);
+
+				static auto cc = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.OnReady_C97C252C4EFA0CBBAD2A7D8BFA4F01D6");
+				Scripting->ProcessEvent(cc, &bbparms);
+
+				static auto dd = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.OnReady_F1878E954C5364B45E9D7987F26E0369");
+				Scripting->ProcessEvent(dd, &bbparms);
+
+				static auto ee = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.OnReady_4E9C34F84F10C94BEACF96AB6972B0E2");
+				Scripting->ProcessEvent(ee, &bbparms);
+
+				static auto FinalSequence = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.FinalSequence");
+				Scripting->ProcessEvent(FinalSequence);
+			}
+		}
+
+		else if (Fortnite_Version == 10.40)
 		{
 			auto Scripting = GetEventScripting();
 
@@ -421,5 +487,36 @@ void Events::StartNewYears()
 				newyeartimer->ProcessEvent(startnye);
 			}
 		}
+	}
+}
+
+void Events::Unvault(FName ItemToUnvault)
+{
+	if (Fortnite_Version != 8.51)
+	{
+		std::cout << "Attempted to unvault item not on 8.51!\n";
+		return;
+	}
+
+	if (!Defines::bIsGoingToPlayMainEvent)
+	{
+		std::cout << "Attempted to unvault item not on main event!\n";
+		return;
+	}
+
+	auto Scripting = GetEventScripting();
+
+	if (Scripting)
+	{
+		static auto UnvaultedItemNameOffset = Scripting->GetOffset("UnvaultedItemName");
+		*Get<FName>(Scripting, UnvaultedItemNameOffset) = ItemToUnvault;
+
+		static auto onrep = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.OnRep_UnvaultedItemName");
+		Scripting->ProcessEvent(onrep);
+
+		static auto PillarsConcluded = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.PillarsConcluded");
+		Scripting->ProcessEvent(PillarsConcluded, &ItemToUnvault);
+
+		// PillarsCompletedUTCTime <= PRETTY Sure this is how we're supposed to do it
 	}
 }

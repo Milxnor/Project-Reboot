@@ -96,6 +96,17 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 				std::cout << "wtf!\n";
 			}
 		}
+
+		if (Fortnite_Version == 5.41)
+		{
+			auto cube = FindObject("/Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2");
+
+			if (cube)
+			{
+				static auto spawncube = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.SpawnCube");
+				cube->ProcessEvent(spawncube);
+			}
+		}
 	}
 
 	UObject* PlayerController = *(UObject**)Parameters;
@@ -183,7 +194,10 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		// return false;
 	}
 
-	bool bSpawnIsland = !Defines::bIsGoingToPlayMainEvent || *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) <= EAthenaGamePhase::Warmup; // skunk
+	bool bSpawnIsland = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) <= EAthenaGamePhase::Warmup; // skunk
+
+	if (Defines::bIsGoingToPlayMainEvent)
+		bSpawnIsland = false;
 
 	auto SpawnLocation = !PlayerStart || !bSpawnIsland ? FVector{ 1250, 1818, 3284 } : Helper::GetActorLocation(PlayerStart);
 
@@ -531,6 +545,11 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 				static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
 				GameState->ProcessEvent(OnRep_CurrentPlaylistInfo);
 			}
+			else
+			{
+				static auto OnRep_CurrentPlaylistData = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistData");
+				GameState->ProcessEvent(OnRep_CurrentPlaylistData);
+			}
 		}
 
 		if (!Server::BeaconHost)
@@ -572,8 +591,10 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		if (Defines::bIsCreative)
 			LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // scuffed
 
-		static auto DefaultGliderRedeployCanRedeployOffset = GameState->GetOffset("DefaultGliderRedeployCanRedeploy");
-		*Get<bool>(GameState, DefaultGliderRedeployCanRedeployOffset) = Defines::bIsPlayground;
+		static auto DefaultGliderRedeployCanRedeployOffset = GameState->GetOffset("DefaultGliderRedeployCanRedeploy", false, false, false);
+
+		if (DefaultGliderRedeployCanRedeployOffset != 0)
+			*Get<bool>(GameState, DefaultGliderRedeployCanRedeployOffset) = Defines::bIsPlayground;
 	}
 
 	return false;

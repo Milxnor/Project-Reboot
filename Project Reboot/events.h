@@ -17,4 +17,6 @@ namespace Events
 	// std::string GetEventCodename();
 
 	// Stuff for specific events
+
+	void Unvault(FName ItemToUnvault);
 }

@@ -224,8 +224,19 @@ bool Server::Listen(int Port)
 		*Get<UObject*>(World, World_NetDriverOffset) = NetDriver;
 
 	std::cout << "Listening on port: " << Port << '\n';
+	
+	bool bVersionSupportsNoPrejoin = Engine_Version >= 423;
+	
+	if (bVersionSupportsNoPrejoin)
+	{
+		CreateThread(0, 0, PauseThread, 0, 0, 0);
+	}
+	else
+	{
+		Server::PauseBeaconRequests(false);
 
-	CreateThread(0, 0, PauseThread, 0, 0, 0);
+		std::cout << "Players may join now!\n";
+	}
 
 	return true;
 }

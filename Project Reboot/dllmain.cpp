@@ -311,6 +311,16 @@ DWORD WINAPI Initialize(LPVOID)
         MH_EnableHook((PVOID)PreLoginAddr);
     }
 
+    if (Engine_Version <= 422)
+    {
+        uintptr_t NetDebugAddr = Memory::FindPattern("40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01"); // 5.41
+
+        std::cout << "NetDebugAddr: " << NetDebugAddr << '\n';
+
+        MH_CreateHook((PVOID)NetDebugAddr, rettrue, nullptr);
+        MH_EnableHook((PVOID)NetDebugAddr);
+    }
+
     // if (false)
     {
         bool bIsSettingGIsClient = true;
@@ -321,7 +331,13 @@ DWORD WINAPI Initialize(LPVOID)
             uintptr_t GIsClientAddr = 0; // Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
             uintptr_t GIsServerAddr = 0;
 
-            if (Engine_Version == 423)
+            if (Engine_Version == 421) // got on 5.41
+            {
+                GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 74 17 48 8D 15 ? ? ? ? 48", true, 2);
+                GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 40 80 3D ? ? ? ? ? 48 8D 05", true, 2);
+            }
+
+            else if (Engine_Version == 423)
             {
                 GIsClientAddr = Memory::FindPattern("C6 05 ? ? ? ? ? 44 88 64 24 ? C6 05", true, 2);
                 GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
@@ -357,30 +373,6 @@ DWORD WINAPI Initialize(LPVOID)
 
             MH_CreateHook((PVOID)cresh, crashdet, nullptr);
             MH_EnableHook((PVOID)cresh); */
-        }
-
-        if (!bSetGIsClientSuccessful)
-        {
-            // ?? 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74
-
-            auto Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 75 0A B8 ? ? ? ? 48 83 C4 28 C3 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB EB"); // 17.3
-
-            if (!Unetdriver_getnetmodesig)
-                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48 83 C4 28 C3 B8 ? ? ? ? 48 83 C4 28 C3"); // 7.4-10.4
-
-            if (!Unetdriver_getnetmodesig)
-                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 18.4
-
-            if (!Unetdriver_getnetmodesig)
-                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 12 33 C0 38 05 ? ? ? ? 0F 95 C0 FF C0 48"); // 14.6-16.4 idk
-
-            if (!Unetdriver_getnetmodesig)
-                Unetdriver_getnetmodesig = Memory::FindPattern("48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0 74 10 8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8 ? ? ? ? 48 83 C4 28 C3"); // 17.5
-
-            std::cout << "aafunynetmodev2: " << Unetdriver_getnetmodesig << '\n';
-
-            MH_CreateHook((PVOID)Unetdriver_getnetmodesig, Unetdriver_getnetmodeDetour, (PVOID*)&Unetdriver_getnetmodeO);
-            MH_EnableHook((PVOID)Unetdriver_getnetmodesig);
         }
     }
 

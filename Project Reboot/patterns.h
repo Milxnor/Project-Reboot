@@ -218,6 +218,8 @@ static bool InitializePatterns()
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 		HandleReloadCostPattern = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
 		ActorGetNetModePattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 33 C0 48 C7";
+		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3"; // 5.41
+		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE"; // 5.41
 
 		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";

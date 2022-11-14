@@ -652,6 +652,23 @@ DWORD WINAPI GuiThread(LPVOID)
 
 						loader->ProcessEvent(fnc, &bbparms);
 					}
+
+					if (Fortnite_Version == 8.51)
+					{
+						std::string unvaultedItemName;
+
+						ImGui::InputText("Unvaulted Item", &unvaultedItemName);
+
+						if (ImGui::Button("Unvault"))
+						{
+							std::wstring unvaultedItemNameWStr = std::wstring(unvaultedItemName.begin(), unvaultedItemName.end());
+							const wchar_t* unvaultedItemNameCWStr = unvaultedItemNameWStr.c_str();
+							FString unvaultedItemNameFStr = unvaultedItemNameCWStr;
+							FName unvaultedItemNameFName = Helper::Conversion::StringToName(unvaultedItemNameFStr);
+
+							Events::Unvault(unvaultedItemNameFName);
+						}
+					}
 				}
 			}
 
