@@ -58,6 +58,60 @@ void Server::SetWorld(UObject* World)
 	}
 }
 
+DWORD WINAPI PauseThread(LPVOID)
+{
+	Sleep(4000);
+
+	auto World = Helper::GetWorld();
+
+	static auto StreamingLevelsOffset = World->GetOffset("StreamingLevels");
+	auto StreamingLevels = Get<TArray<UObject*>>(World, StreamingLevelsOffset);
+
+	std::cout << "StreamingLevels->Num(): " << StreamingLevels->Num() << '\n';
+
+	bool bAllLevelsLoaded = false;
+
+	while (!bAllLevelsLoaded)
+	{
+		for (int i = 0; i < StreamingLevels->Num(); i++)
+		{
+			auto StreamingLevel = StreamingLevels->At(i);
+
+			if (IsBadReadPtr(StreamingLevel))
+				continue;
+
+			static auto LoadedLevelOffset = StreamingLevel->GetOffset("LoadedLevel");
+			auto LoadedLevel = *Get<UObject*>(StreamingLevel, LoadedLevelOffset);
+
+			bool bShouldBeLoaded = false;
+
+			static auto ShouldBeLoadedFn = FindObject<UFunction>("/Script/Engine.LevelStreaming.ShouldBeLoaded");
+			StreamingLevel->ProcessEvent(ShouldBeLoadedFn, &bShouldBeLoaded);
+
+			std::cout << std::format("[{}] {} {:x}\n", i, bShouldBeLoaded, __int64(LoadedLevel));
+
+			if (!LoadedLevel)
+			{
+				Sleep(1000);
+
+				if (bShouldBeLoaded)
+				{
+					bAllLevelsLoaded = false;
+					break; // restart loop
+				}
+			}
+
+			bAllLevelsLoaded = true;
+		}
+	}
+
+	Server::PauseBeaconRequests(false);
+
+	std::cout << "Players may join now!\n";
+
+	return 0;
+}
+
 bool Server::Listen(int Port)
 {
 	if (bUseBeacons)
@@ -94,7 +148,7 @@ bool Server::Listen(int Port)
 	}
 	else
 	{
-
+		std::cout << "Not using beacons isn't supported yet!\n";
 	}
 
 	if (!NetDriver)
@@ -116,10 +170,10 @@ bool Server::Listen(int Port)
 	FString NetDriverNameFStr = L"GameNetDriver"; // to free
 	*Get<FName>(NetDriver, NetDriverNameOffset) = Helper::Conversion::StringToName(NetDriverNameFStr);
 
-	static auto ReplicationDriverClassOffset = NetDriver->GetOffset("ReplicationDriverClass");
-	static auto FortReplicationGraphClass = FindObject("/Script/FortniteGame.FortReplicationGraph");
+	// static auto ReplicationDriverClassOffset = NetDriver->GetOffset("ReplicationDriverClass");
+	// static auto FortReplicationGraphClass = FindObject("/Script/FortniteGame.FortReplicationGraph");
 
-	*Get<UObject*>(NetDriver, ReplicationDriverClassOffset) = FortReplicationGraphClass;
+	// *Get<UObject*>(NetDriver, ReplicationDriverClassOffset) = FortReplicationGraphClass;
 
 	auto InitListenResult = Defines::InitListen(NetDriver, World, InURL, false, Error);
 
@@ -149,8 +203,6 @@ bool Server::Listen(int Port)
 
 	std::cout << "aa!\n";
 
-	PauseBeaconRequests(false);
-
 	std::cout << "bb!\n";
 
 	if (Fortnite_Version >= 3.3)
@@ -172,6 +224,8 @@ bool Server::Listen(int Port)
 		*Get<UObject*>(World, World_NetDriverOffset) = NetDriver;
 
 	std::cout << "Listening on port: " << Port << '\n';
+
+	CreateThread(0, 0, PauseThread, 0, 0, 0);
 
 	return true;
 }
@@ -629,20 +683,6 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 void Server::Hooks::KickPlayer(UObject* GameSession, UObject* Controller, FText a3)
 {
-	static bool bbb = false;
-
-	if (!bbb)
-	{
-		bbb = true;
-
-		if (Engine_Version >= 423)
-		{
-			static auto OnRep_CurrentPlaylistInfo = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo");
-			// Helper::GetGameState()->ProcessEvent(OnRep_CurrentPlaylistInfo);
-			std::cout << "wtf!\n";
-		}
-	}
-
 	std::cout << "KickPlayer!\n";
 	return;
 }

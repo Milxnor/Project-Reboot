@@ -51,7 +51,7 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		std::cout << "LootTierGroupName: " << LootTierGroupName << '\n'; */
 
 		static auto ChestClass = FindObject("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C");
-		// if (ReceivingActorName.contains("Chest"))
+
 		if (ReceivingActor->IsA(ChestClass))
 		{
 			auto DefInRow = Looting::GetRandomItem(ItemType::Weapon);
@@ -75,7 +75,7 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 				static auto StoneItemData = FindObject("/Game/Items/ResourcePickups/StoneItemData.StoneItemData");
 				static auto MetalItemData = FindObject("/Game/Items/ResourcePickups/MetalItemData.MetalItemData");
 
-				auto random = GetRandomFloat(1, 4);
+				auto random = GetRandomInt(1, 3);
 
 				int amountOfMaterialToDrop = 30; // Looting::GetRandomItem(ItemType::Resource, Looting::LootItems).DropCount;
 
@@ -86,6 +86,28 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 				else
 					Helper::SummonPickup(nullptr, MetalItemData, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
 
+				// Helper::InitializeBuildingActor(Controller, BuildingContainer);
+
+				/* static auto fn1 = FindObject<UFunction>("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C.OnLoot");
+				static auto fn2 = FindObject<UFunction>("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C.OnSetSearched");
+
+				BuildingContainer->ProcessEvent(fn2);
+				BuildingContainer->ProcessEvent(fn1);
+
+				static auto fn3 = FindObject<UFunction>("/Script/Engine.ActorComponent.Activate");
+
+				static auto Loot_EffectOffset = BuildingContainer->GetOffset("Loot_Effect");
+				static auto fn4 = FindObject<UFunction>("/Script/Engine.ActorComponent.SetIsReplicated");
+
+				bool bShouldReplicate = true;
+
+				auto Loot_Effect = *Get<UObject*>(BuildingContainer, Loot_EffectOffset);
+				std::cout << "Loot_Effect: " << Loot_Effect << '\n';
+
+				Loot_Effect->ProcessEvent(fn4, &bShouldReplicate);
+
+				bool bReset = true;
+				Loot_Effect->ProcessEvent(fn3, &bReset); */
 			}
 		}
 	}

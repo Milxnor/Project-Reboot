@@ -51,7 +51,9 @@ bool Teams::AssignTeam(UObject* Controller)
 	*TeamIndexPtr = NextTeamIndex;
 
 	static auto OnRep_TeamIndex = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamIndex");
-	PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIndex);
+
+	if (OnRep_TeamIndex)
+		PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIndex);
 
 	*SquadIdPtr = NextSquadId;
 

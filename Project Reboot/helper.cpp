@@ -312,6 +312,9 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 		}
 	}
 
+	static auto ClientOnPawnSpawned = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnSpawned");
+	Controller->ProcessEvent(ClientOnPawnSpawned);
+
 	return Pawn;
 }
 
@@ -583,6 +586,17 @@ void Helper::LoopConnections(std::function<void(UObject* Controller)> fn, bool b
 			}
 		}
 	}
+}
+
+UObject* Helper::GetGameData()
+{
+	auto Engine = GetEngine();
+
+	static auto AssetManagerOffset = Engine->GetOffset("AssetManager");
+	UObject* AssetManager = *Get<UObject*>(Engine, AssetManagerOffset);
+
+	static auto GameDataOffset = AssetManager->GetOffset("GameData");
+	return *Get<UObject*>(AssetManager, GameDataOffset);
 }
 
 FVector Helper::GetActorForwardVector(UObject* Actor)

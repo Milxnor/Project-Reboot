@@ -19,6 +19,73 @@ struct DVector // lmao
 	double Z;
 };
 
+struct FColor
+{
+	uint8_t B;
+	uint8_t G;
+	uint8_t R;
+	uint8_t A;
+};
+
+template< class T >
+constexpr FORCEINLINE T Clamp(const T X, const T Min, const T Max)
+{
+	return (X < Min) ? Min : (X < Max) ? X : Max;
+}
+
+struct FLinearColor
+{
+public:
+	float                                        R;                                                 // 0x0(0x4)(Edit, BlueprintVisible, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        G;                                                 // 0x4(0x4)(Edit, BlueprintVisible, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        B;                                                 // 0x8(0x4)(Edit, BlueprintVisible, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        A;                                                 // 0xC(0x4)(Edit, BlueprintVisible, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+
+	FColor ToFColor(bool sRGB) // https://github.com/FabianFG/CUE4Parse/blob/cc744cfb54e219d7f5d9440d30c4cd55b56afb3c/CUE4Parse/UE4/Objects/Core/Math/FLinearColor.cs#L20
+	{
+		float floatR = Clamp(R, 0.0f, 1.0f);
+		float floatG = Clamp(G, 0.0f, 1.0f);
+		float floatB = Clamp(B, 0.0f, 1.0f);
+		float floatA = Clamp(A, 0.0f, 1.0f);
+
+		if (sRGB)
+		{
+			floatR = floatR <= 0.0031308f ? floatR * 12.92f : pow(floatR, 1.0f / 2.4f) * 1.055f - 0.055f;
+			floatG = floatG <= 0.0031308f ? floatG * 12.92f : pow(floatG, 1.0f / 2.4f) * 1.055f - 0.055f;
+			floatB = floatB <= 0.0031308f ? floatB * 12.92f : pow(floatB, 1.0f / 2.4f) * 1.055f - 0.055f;
+		}
+
+		int intA = std::floor(floatA * 255.999f);
+		int intR = std::floor(floatR * 255.999f);
+		int intG = std::floor(floatG * 255.999f);
+		int intB = std::floor(floatB * 255.999f);
+
+		return FColor((uint8_t)intR, (uint8_t)intG, (uint8_t)intB, (uint8_t)intA);
+	}
+
+	std::string Describe()
+	{
+		return std::format("{} {} {} {}", std::to_string(R), std::to_string(G), std::to_string(B), std::to_string(A));
+	}
+};
+
+enum class EFortItemTier : uint8_t
+{
+	No_Tier = 0,
+	I = 1,
+	II = 2,
+	III = 3,
+	IV = 4,
+	V = 5,
+	VI = 6,
+	VII = 7,
+	VIII = 8,
+	IX = 9,
+	X = 10,
+	NumItemTierValues = 11,
+	EFortItemTier_MAX = 12,
+};
+
 struct FVector
 {
 	float X;
@@ -378,6 +445,16 @@ static double GetRandomDouble(float Min, float Max)
 static float GetRandomFloat(float Min, float Max) // bruh
 {
 	return GetRandomDouble(Min, Max);
+}
+
+static int GetRandomInt(int Min, int Max)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	std::uniform_int<> distr(Min, Max);
+
+	return distr(gen);
 }
 
 struct FDateTime

@@ -12,6 +12,16 @@ enum class ItemType
 	Trap
 };
 
+enum class ERarity
+{
+	None,
+	Common,
+	Uncommon,
+	Rare,
+	Epic,
+	Legendary
+};
+
 static std::string ItemTypeToString(ItemType type)
 {
 	switch (type)
@@ -68,7 +78,7 @@ namespace Looting
 	void SpawnForagedItems();
 	// std::vector<std::pair<UObject*, int>> PickLootDrops(const std::string& TierGroupName, int WorldLevel = 1, int ForcedLootTier = 1); // Definition, DropCount
 
-	static const DefinitionInRow GetRandomItem(ItemType Type, int LootType = LootItems)
+	static const DefinitionInRow GetRandomItem(ItemType Type, int LootType = LootItems, ERarity Rarity = ERarity::None)
 	{
 		if (LootType <= Items.size() && Items.size() >= 1 ? Items[LootType].empty() : true)
 		{
@@ -83,9 +93,30 @@ namespace Looting
 		while (current < 5000) // it shouldnt even be this much
 		{
 			auto& Item = TableToUse[rand() % (TableToUse.size())];
+			auto ItemDef = Item.Definition;
 
-			if (Item.Type == Type && Item.Definition)
-				return Item;
+			if (ItemDef)
+			{
+				if (Item.Type == Type)
+				{
+					bool bPassedRarityCheck = Rarity == ERarity::None;
+
+					if (Rarity != ERarity::None)
+					{
+						// static auto TierOffset = ItemDef->GetOffset("Tier");
+						static auto TierOffset = FindOffsetStruct2("Class /Script/FortniteGame.FortItemDefinition", "Tier");
+						auto Tier = *Get<uint8_t>(ItemDef, TierOffset);
+
+						// std::cout << "Tier: " << (int)Tier << '\n';
+
+						if ((int)Rarity == (int)Tier)
+							bPassedRarityCheck = true;
+					}
+
+					if (bPassedRarityCheck)
+						return Item;
+				}
+			}
 
 			current++;
 		}

@@ -290,20 +290,42 @@ DWORD WINAPI Initialize(LPVOID)
 
     std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
 
-    if (false)
+    if (!InitializePatterns())
+    {
+        MessageBoxA(0, "Failed to setup patterns", "Project Reboot V2", MB_ICONERROR);
+        return 1;
+    }
+
+    constexpr bool bHookPreLogin = false;
+
+    if constexpr (bHookPreLogin)
+    {
+        uintptr_t PreLoginAddr = 0;
+
+        if (Engine_Version == 423)
+            PreLoginAddr = Memory::FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B 9C 24 ? ? ? ? 33 FF");
+
+        std::cout << "PreLoginAddr: " << PreLoginAddr << '\n';
+
+        MH_CreateHook((PVOID)PreLoginAddr, rettrue, nullptr);
+        MH_EnableHook((PVOID)PreLoginAddr);
+    }
+
+    // if (false)
     {
         bool bIsSettingGIsClient = true;
         bool bSetGIsClientSuccessful = false;
 
         if (bIsSettingGIsClient)
         {
-            auto GIsClientAddr = Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
-
+            uintptr_t GIsClientAddr = 0; // Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
             uintptr_t GIsServerAddr = 0;
 
-            // if (Fortnite_Version == 17.30)
-            GIsClientAddr = __int64(GetModuleHandleW(0)) + 0x973E49B;
-            GIsServerAddr = __int64(GetModuleHandleW(0)) + 0x973E499;
+            if (Engine_Version == 423)
+            {
+                GIsClientAddr = Memory::FindPattern("C6 05 ? ? ? ? ? 44 88 64 24 ? C6 05", true, 2);
+                GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
+            }
 
             std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
             std::cout << "GIsServerAddr: " << GIsServerAddr << '\n';
@@ -322,7 +344,7 @@ DWORD WINAPI Initialize(LPVOID)
 
             bSetGIsClientSuccessful = GIsClientAddr;
 
-            auto intiialzieui = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 55 41 56 48 8B EC 48 83 EC 60 45 33 E4 4C 8D 2D"); // __int64(GetModuleHandleW(0)) + 0x18AA0E0;
+            /* auto intiialzieui = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 55 41 56 48 8B EC 48 83 EC 60 45 33 E4 4C 8D 2D"); // __int64(GetModuleHandleW(0)) + 0x18AA0E0;
 
             std::cout << "intiialzieui: " << intiialzieui << '\n';
 
@@ -334,7 +356,7 @@ DWORD WINAPI Initialize(LPVOID)
             std::cout << "cresh: " << cresh << '\n';
 
             MH_CreateHook((PVOID)cresh, crashdet, nullptr);
-            MH_EnableHook((PVOID)cresh);
+            MH_EnableHook((PVOID)cresh); */
         }
 
         if (!bSetGIsClientSuccessful)
@@ -360,21 +382,6 @@ DWORD WINAPI Initialize(LPVOID)
             MH_CreateHook((PVOID)Unetdriver_getnetmodesig, Unetdriver_getnetmodeDetour, (PVOID*)&Unetdriver_getnetmodeO);
             MH_EnableHook((PVOID)Unetdriver_getnetmodesig);
         }
-    }
-
-    while (true)
-    {
-        if (GetAsyncKeyState(VK_F1) & 1)
-        {
-            std::cout << "braeking!\n";
-            break;
-        }
-    }
-
-    if (!InitializePatterns())
-    {
-        MessageBoxA(0, "Failed to setup patterns", "Project Reboot V2", MB_ICONERROR);
-        return 1;
     }
 
     CreateThread(0, 0, GuiThread, 0, 0, 0);
@@ -431,9 +438,11 @@ DWORD WINAPI Initialize(LPVOID)
     
     CreateThread(0, 0, Input, 0, 0, 0);
 
+    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
     AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
     AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
     AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerReadyToStartMatch", ServerReadyToStartMatch);
 
     AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerGiveCreativeItem", ServerGiveCreativeItem);
 

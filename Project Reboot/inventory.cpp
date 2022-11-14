@@ -195,15 +195,52 @@ bool DecreaseItemCount(UObject* Controller, UObject* Instance, int DecreaseBy)
 	return IncreaseItemCount(Controller, Instance, DecreaseBy, true);
 }
 
+UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
+{
+	if (!Definition || !Controller)
+		return nullptr;
+
+	if (Fortnite_Season < 19)
+	{
+		struct {
+			int count;
+			int level;
+			UObject* instance;
+		} Params{ Count, 1 };
+
+		static auto CTIIFn = FindObject<UFunction>("/Script/FortniteGame.FortItemDefinition.CreateTemporaryItemInstanceBP");
+		Definition->ProcessEvent(CTIIFn, &Params);
+
+		UObject* itemInstance = Params.instance;
+
+		if (itemInstance)
+		{
+			static auto SOCFTIFn = FindObject<UFunction>("/Script/FortniteGame.FortItem.SetOwningControllerForTemporaryItem");
+
+			itemInstance->ProcessEvent(SOCFTIFn, &Controller);
+
+			return itemInstance;
+		}
+	}
+	else
+	{
+		static auto FortWorldItemClass = FindObjectSlow("Class /Script/FortniteGame.FortWorldItem", false);
+		static auto SizeOfItemEntryStruct = Helper::GetSizeOfClass(FFortItemEntry::ItemEntryStruct);
+
+		return Helper::Easy::SpawnObject(FortWorldItemClass, Helper::GetTransientPackage());
+	}
+
+	return nullptr;
+}
+
 UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count, bool bUpdate)
 {
 	if (!ItemDefinition)
 		return nullptr;
 
-	static auto FortWorldItemClass = FindObjectSlow("Class /Script/FortniteGame.FortWorldItem", false);
 	static auto SizeOfItemEntryStruct = Helper::GetSizeOfClass(FFortItemEntry::ItemEntryStruct);
 
-	auto ItemInstance = Helper::Easy::SpawnObject(FortWorldItemClass, Helper::GetTransientPackage());
+	auto ItemInstance = CreateItemInstance(Controller, ItemDefinition, Count);
 
 	if (ItemInstance)
 	{
@@ -744,6 +781,9 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	auto Controller = Helper::GetControllerFromPawn(Pawn);
 
+	auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+	auto CurrentWeaponDef = Helper::GetWeaponData(CurrentWeapon);
+
 	int PrimaryQuickBarSlotsFilled = 0;
 
 	auto ItemInstances = GetItemInstances(Controller);
@@ -769,15 +809,45 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 		}
 	}
 
+	if (CurrentWeaponDef == Helper::GetPickaxeDef(Controller) && bShouldSwap)
+		return false;
+
 	std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
 
 	int NextSlot = 1;
 
+	struct FFortPickupLocationData
+	{
+		UObject* PickupTarget;                                             // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData)
+		UObject* CombineTarget;  // AFortPickup                                           // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData)
+		UObject* ItemOwner;   // APawn                                              // 0x0010(0x0008) (ZeroConstructor, IsPlainOldData)
+		FVector                      LootInitialPosition;                                      // 0x0018(0x000C)
+		FVector                      LootFinalPosition;                                        // 0x0024(0x000C)
+		float                                              FlyTime;                                                  // 0x0030(0x0004) (ZeroConstructor, IsPlainOldData)
+		FVector                   StartDirection;                                           // 0x0034(0x000C)
+		FVector FinalTossRestLocation;                                    // 0x0040(0x000C)
+		uint8_t                               TossState;    // EFortPickupTossState                                             // 0x004C(0x0001) (ZeroConstructor, IsPlainOldData)
+		bool                                               bPlayPickupSound;                                         // 0x004D(0x0001) (ZeroConstructor, IsPlainOldData)
+		unsigned char                                      UnknownData00[0x2];                                       // 0x004E(0x0002) MISSED OFFSET
+		struct FGuid                                       PickupGuid;                                               // 0x0050(0x0010) (IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+	};
+
+	static auto PickupLocationDataOffset = Pickup->GetOffset("PickupLocationData");
+	auto PickupLocationData = (FFortPickupLocationData*)(__int64(Pickup) + PickupLocationDataOffset);
+
+	PickupLocationData->PickupTarget = Pawn;
+	PickupLocationData->ItemOwner = Pawn;
+	// PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
+	PickupLocationData->FlyTime = 0.40f;
+	// PickupLocationData->StartDirection = StartDirection;
+
+	static auto OnRep_PickupLocationData = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_PickupLocationData");
+	Pickup->ProcessEvent(OnRep_PickupLocationData);
+
 	if (bShouldSwap)
 	{
-		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
 		auto CurrentWeaponGuid = Inventory::GetWeaponGuid(CurrentWeapon);
-		auto CurrentWeaponInstance = Inventory::FindItemInInventory(Controller, Helper::GetWeaponData(CurrentWeapon)); // ugh
+		auto CurrentWeaponInstance = Inventory::FindItemInInventory(Controller, CurrentWeaponDef); // ugh
 
 		struct { FGuid ItemGuid; int Count; } drop_parms{ CurrentWeaponGuid, *UFortItem::GetCount(CurrentWeaponInstance) };
 
@@ -793,9 +863,9 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	FFortItemEntry::SetLoadedAmmo(NewEntry, Controller, PickupLoadedAmmo);
 
-	Helper::DestroyActor(Pickup);
+	// Helper::DestroyActor(Pickup);
 
-	return true;
+	return false;
 }
 
 void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)

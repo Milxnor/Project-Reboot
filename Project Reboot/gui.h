@@ -386,7 +386,125 @@ DWORD WINAPI GuiThread(LPVOID)
 
 						ImGui::Checkbox("Playground", &Defines::bIsPlayground);
 						
-						ImGui::InputText("URL", &Defines::urlForPortal);
+						if (Defines::bIsCreative)
+							ImGui::InputText("URL", &Defines::urlForPortal);
+
+						if (ImGui::Button("Fill all vending machines"))
+						{
+							static auto BuildingItemCollectorClass = FindObject("/Script/FortniteGame.BuildingItemCollectorActor");
+
+							std::cout << "BuildingItemCollectorClass: " << BuildingItemCollectorClass << '\n';
+
+							auto BuildingItemCollectorActorActors = Helper::GetAllActorsOfClass(BuildingItemCollectorClass);
+
+							std::cout << "Skid: " << BuildingItemCollectorActorActors.size() << '\n';
+
+							// for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
+							for (int i = 0; i < BuildingItemCollectorActorActors.size(); i++)
+							{
+								auto BuildingItemCollectorActor = BuildingItemCollectorActorActors.At(i);
+
+								std::cout << "A!\n";
+
+								static auto CollectorUnitInfoClassName = FindObject("/Script/FortniteGame.CollectorUnitInfo") ? "/Script/FortniteGame.CollectorUnitInfo" :
+									"/Script/FortniteGame.ColletorUnitInfo";
+
+								static auto CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName);
+
+								static auto CollectorUnitInfoClassSize = Helper::GetSizeOfClass(CollectorUnitInfoClass);
+
+								static auto ItemCollectionsOffset = BuildingItemCollectorActor->GetOffset("ItemCollections");
+
+								TArray<__int64>* ItemCollections = Get<TArray<__int64>>(BuildingItemCollectorActor, ItemCollectionsOffset); // CollectorUnitInfo
+
+								static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem", false, true);
+
+								std::cout << "OutputItemOffset: " << OutputItemOffset << '\n';
+
+								int rand = GetRandomInt(3, 5);
+
+								ERarity Rarity = (ERarity)rand;
+
+								std::cout << "Rarity: " << (int)Rarity << '\n';
+
+								auto Def0 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
+								auto Def1 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
+								auto Def2 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
+
+								std::cout << "Def0: " << Def0 << '\n';
+								std::cout << "Def1: " << Def1 << '\n';
+								std::cout << "Def2: " << Def2 << '\n';
+
+								static auto SetRarityColors = FindObject<UFunction>("/Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C.SetRarityColors");
+
+								auto GameData = Helper::GetGameData();
+
+								struct FFortRarityItemData
+								{
+									char Name[0x18];
+									FLinearColor                          Color1;                                            // 0x18(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+									FLinearColor                          Color2;                                            // 0x28(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+									FLinearColor                          Color3;                                            // 0x38(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+									FLinearColor                          Color4;                                            // 0x48(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+									FLinearColor                          Color5;
+								};
+
+								FLinearColor Color{};
+
+								constexpr bool bGetColorFromRarityData = false;
+
+								if (bGetColorFromRarityData)
+								{
+									bool bIsSoftObjectPtr = Engine_Version > 420; // Idk when
+
+									auto RarityDataOffset = GameData->GetOffset("RarityData");
+									auto RarityData = bIsSoftObjectPtr ? Get<TSoftObjectPtr>(GameData, RarityDataOffset)->Get(nullptr, true) : *Get<UObject*>(GameData, RarityDataOffset);
+
+									// std::cout << "RarityData: " << RarityData << '\n';
+
+									static auto RarityCollectionOffset = RarityData->GetOffset("RarityCollection");
+									// FFortRarityItemData* RarityCollections[0x8] = Get<FFortRarityItemData[0x8]>(RarityData, RarityCollectionOffset); // 0x8-0xA
+
+									FFortRarityItemData* aa = *Get<FFortRarityItemData*>(RarityData, RarityCollectionOffset); // [(int)Rarity - 1] ;// RarityCollections[(int)Rarity - 1];
+
+									static auto SizeOfFFortRarityItemData = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortRarityItemData"));
+									FFortRarityItemData RarityCollection = *(FFortRarityItemData*)(__int64(aa) + (SizeOfFFortRarityItemData * ((int)Rarity - 1)));
+
+									// FLinearColor Color = Rarity == ERarity::Rare ? RarityCollection->Color3 : 
+										// Rarity == ERarity::Epic ? RarityCollection->Color4 : RarityCollection->Color5;
+
+									FLinearColor Color = RarityCollection.Color1;
+
+									std::cout << "Color Before: " << Color.Describe() << '\n';
+
+									/* static auto GetRarityData = FindObject<UFunction>("/Script/FortniteGame.FortRarityData.BPGetRarityData");
+									struct { UObject* ItemDef; FFortRarityItemData RarityItemData; } GetRarityDataparms{Def0};
+									RarityData->ProcessEvent(GetRarityData, &GetRarityDataparms);
+
+									Color = GetRarityDataparms.RarityItemData.Color1; */
+								}
+								else
+								{
+									// got from 3.5 raritydata
+
+									// Color = Rarity == ERarity::Rare ? FLinearColor(0, 255, 245.99493, 255) :
+										// Rarity == ERarity::Epic ? FLinearColor(213.350085, 5.1, 255, 255) : FLinearColor(245.995185, 138.98724, 31.979295, 255);
+
+									Color = Rarity == ERarity::Rare ? FLinearColor(0, 1, 0.964686, 1) :
+										Rarity == ERarity::Epic ? FLinearColor(0.836667, 0.02, 1, 1) : FLinearColor(0.964687, 0.545048, 0.125409, 1);
+								}
+
+								std::cout << "Color After: " << Color.Describe() << '\n';
+
+								*Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def0;
+								*Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def1;
+								*Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def2;
+
+								BuildingItemCollectorActor->ProcessEvent(SetRarityColors, &Color);
+							}
+
+							BuildingItemCollectorActorActors.Free();
+						}
 
 						/* if (ImGui::Button("test looting"))
 						{
@@ -418,7 +536,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							}
 						}
 
-						if (ImGui::Button("Apply"))
+						if (Defines::bIsCreative && ImGui::Button("Apply"))
 						{
 							auto aa = std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end());
 							const wchar_t* url = aa.c_str();
@@ -433,7 +551,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							Defines::Portal->ProcessEvent(OnRep_ImageURLChanged);
 						}
 
-						if (ImGui::Button("show funny flying aircfaft"))
+						if (Fortnite_Version == 14.60 && ImGui::Button("show funny flying aircfaft"))
 						{
 							auto foundation = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Lobby_Foundation3");
 							std::cout << "foundation: " << foundation << '\n';

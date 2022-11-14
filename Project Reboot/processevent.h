@@ -8,6 +8,7 @@ static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, v
 
 bool ServerAcknowledgePossession(UObject* Object, UFunction* Function, void* Parameters);
 bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Parameters);
+bool ServerReadyToStartMatch(UObject* Controller, UFunction* Function, void* Parameters);
 bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters);
 bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters);
 bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters);
@@ -17,6 +18,7 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Parameters);
 bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* Parameters);
 bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Parameters);
+bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 static bool ClientForceWorldInventoryUpdate(UObject* Controller, UFunction*, void* Parameters) { return true; }
 

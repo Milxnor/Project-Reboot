@@ -52,6 +52,7 @@ namespace Helper
 	UObject* GetPickaxeDef(UObject* Controller);
 	int* GetPlayersLeft();
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
+	UObject* GetGameData();
 
 	FVector GetActorForwardVector(UObject* Actor);
 	FVector GetActorRightVector(UObject* Actor);
