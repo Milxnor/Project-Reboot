@@ -19,9 +19,11 @@ UObject* GetEventLoader()
 
 	if (Fortnite_Version == 11.30)
 		Loader = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_GalileoLoader_2");
-	if (Fortnite_Version == 12.41)
+	else if (Fortnite_Version == 12.41)
 		Loader = FindObject("/CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2");
-	if (Fortnite_Version == 14.60)
+	else if (Fortnite_Version == 12.61)
+		Loader = FindObject("/Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0");
+	else if (Fortnite_Version == 14.60)
 		Loader = FindObject("/Junior/Levels/JuniorLoaderLevel.JuniorLoaderLevel.PersistentLevel.BP_Junior_Loader_2");
 
 	std::cout << "Loader: " << Loader << '\n';
@@ -33,7 +35,9 @@ UObject* GetEventScripting()
 {
 	UObject* Scripting = nullptr;
 	
-	if (Fortnite_Version == 8.51)
+	if (Fortnite_Version == 7.30)
+		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations:PersistentLevel.BP_FestivusManager");
+	else if (Fortnite_Version == 8.51)
 		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 	else if (Fortnite_Version == 10.40)
 		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2");
@@ -41,6 +45,8 @@ UObject* GetEventScripting()
 		Scripting = FindObject("/Game/Athena/Prototype/Blueprints/Galileo/Galileo_scripting.Galileo_scripting.PersistentLevel.BP_Galileo_Script2_2");
 	else if (Fortnite_Version == 12.41)
 		Scripting = FindObject("/CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2");
+	else if (Fortnite_Version == 12.61)
+		Scripting = FindObject("/Fritter/Level/FritterSequenceLevel.FritterSequenceLevel.PersistentLevel.BP_Fritter_Script_2");
 	else if (Fortnite_Version == 14.60)
 		Scripting = FindObject("/Junior/Levels/Junior_Map.Junior_Map.PersistentLevel.BP_Junior_Scripting_Child_2");
 	else if (Fortnite_Season == 16)
@@ -67,27 +73,28 @@ void Events::LoadEvent()
 
 		if (BF)
 		{
-			static auto loadfun = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Island/BP_Butterfly.BP_Butterfly_C.LoadButterflySublevel");
+			auto loadfun = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Island/BP_Butterfly.BP_Butterfly_C.LoadButterflySublevel");
 			BF->ProcessEvent(loadfun);
 
 			bHasBeenLoaded = true;
 		}
 
 	}
-	if (Fortnite_Version == 8.51) // needed idk
+
+	else if (Fortnite_Version == 8.51) // needed idk
 	{
 		auto Scripting = GetEventScripting();
 
 		if (Scripting)
 		{
-			static auto LoadSnowLevel = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.LoadSnowLevel");
+			auto LoadSnowLevel = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.LoadSnowLevel");
 			Scripting->ProcessEvent(LoadSnowLevel);
 
 			bHasBeenLoaded = true;
 		}
 	}
 
-	if (Fortnite_Version == 10.40)
+	else if (Fortnite_Version == 10.40)
 	{
 		auto Scripting = GetEventScripting();
 
@@ -126,6 +133,19 @@ void Events::LoadEvent()
 		}
 	}
 
+	else if (Fortnite_Version == 12.61)
+	{
+		auto Loader = GetEventLoader();
+
+		if (Loader)
+		{
+			auto LoadFritterLevel = FindObject<UFunction>("/Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.LoadFritterLevel");
+			Loader->ProcessEvent(LoadFritterLevel, &Condition);
+
+			bHasBeenLoaded = true;
+		}
+	}
+
 	else if (Fortnite_Version == 14.60)
 	{
 		auto Loader = GetEventLoader();
@@ -148,7 +168,7 @@ void Events::LoadEvent()
 			auto initializelevelloader = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_Master_Scripting.BP_Buffet_Master_Scripting_C.InitializeLevelLoader");
 			Scripting->ProcessEvent(initializelevelloader);
 
-			static auto buffetcllaoder = FindObject("/Buffet/Gameplay/Blueprints/BP_Buffet_Level_Loader.BP_Buffet_Level_Loader_C");
+			auto buffetcllaoder = FindObject("/Buffet/Gameplay/Blueprints/BP_Buffet_Level_Loader.BP_Buffet_Level_Loader_C");
 
 			auto newloader = Helper::Easy::SpawnActor(buffetcllaoder, FVector());
 
@@ -159,8 +179,10 @@ void Events::LoadEvent()
 			auto augfu8 = FindObject<UFunction>("/Buffet/Gameplay/Blueprints/BP_Buffet_Level_Loader.BP_Buffet_Level_Loader_C.LoadBuffetLevel");
 			newloader->ProcessEvent(augfu8, &loadeparm);
 
-			static auto Buffet_LevelLoaderBPOffset = Scripting->GetOffset("Buffet_LevelLoaderBP");
+			auto Buffet_LevelLoaderBPOffset = Scripting->GetOffset("Buffet_LevelLoaderBP");
 			*Get<UObject*>(Scripting, Buffet_LevelLoaderBPOffset) = newloader;
+
+			bHasBeenLoaded = true;
 		}
 	}
 }
@@ -168,6 +190,15 @@ void Events::LoadEvent()
 void Events::StartEvent()
 {
 	Events::LoadEvent();
+
+	static bool bFirst = bHasBeenLoaded;
+
+	if (bFirst)
+	{
+		bFirst = false;
+
+		Sleep(500);
+	}
 
 	float SecondsSinceEventBegan = 0;
 
@@ -185,9 +216,25 @@ void Events::StartEvent()
 		// static auto setuplake = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.SetupLake");
 		// cube->ProcessEvent(setuplake); // this kinda does the same thing as impact lake
 
-		static auto impactlake = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.ImpactLake");
+		auto impactlake = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.ImpactLake");
 		cube->ProcessEvent(impactlake);
 	}
+
+	else if (Fortnite_Version == 7.30)
+	{
+		auto FestivusManager = GetEventScripting();
+
+		if (FestivusManager)
+		{
+			auto BB = FindObject<UFunction>("/Game/Athena/Environments/Festivus/Blueprints/BP_FestivusManager.BP_FestivusManager_C.OnReady_EE7676604ADFD92D7B2972AC0ABD4BB8");
+			FestivusManager->ProcessEvent(BB, &bbparms);
+
+			auto PlayConcert = FindObject<UFunction>("/Game/Athena/Environments/Festivus/Blueprints/BP_FestivusManager.BP_FestivusManager_C.PlayConcert");
+			FestivusManager->ProcessEvent(PlayConcert);
+		}
+	}
+
+	// S16+ they changed events kinda
 
 	else if (Fortnite_Season == 16)
 	{
@@ -195,22 +242,22 @@ void Events::StartEvent()
 
 		if (Scripting)
 		{
-			static auto cc = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.PlayBPTrailer");
+			auto cc = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.PlayBPTrailer");
 			Scripting->ProcessEvent(cc);
 
-			static auto bb = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.OnReady_F6E6B09F4E6AA115465FAABCD4B97504");
+			auto bb = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.OnReady_F6E6B09F4E6AA115465FAABCD4B97504");
 			Scripting->ProcessEvent(bb, &bbparms);
 
 			if (true)
 			{
 				// SecondsSinceEventBegan = 1; // LocalEventPhase
 
-				static auto startvent = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.startevent");
+				auto startvent = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.startevent");
 				Scripting->ProcessEvent(startvent, &SecondsSinceEventBegan); // very weird afeiugfq24ug2487 3q5hiu8e jheroig rewi ug9 uh35u bg35iy hu35 vgiuy53we	gh bewr5ti9ou	HG 
 			}
 			else
 			{
-				static auto playermaste = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.PlayMasterAtFrame");
+				auto playermaste = FindObject<UFunction>("/Yogurt/Blueprints/BP_Yogurt_Scripting.BP_Yogurt_Scripting_C.PlayMasterAtFrame");
 				Scripting->ProcessEvent(playermaste, &SecondsSinceEventBegan); // idk
 			}
 		}
@@ -438,6 +485,20 @@ void Events::StartEvent()
 					Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
 				}
+			}
+		}
+
+		else if (Fortnite_Version == 12.61)
+		{
+			auto Scripting = GetEventScripting();
+
+			if (Scripting)
+			{
+				auto bb = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.OnReady_ACE66C28499BF8A59B3D88A981DDEF41");
+				Scripting->ProcessEvent(bb, &bbparms);
+
+				auto startevent = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.startevent");
+				Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
 			}
 		}
 

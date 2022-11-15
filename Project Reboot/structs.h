@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "enums.h"
+#include "mem.h"
 
 template <typename T>
 T* Get(void* addr, uint64_t off) { return (T*)(__int64(addr) + off); }
@@ -841,6 +842,19 @@ struct FCurveTableRowHandle
 {
 	UObject* CurveTable;
 	FName RowName;
+
+	bool Eval(float* OutVal, FString ContextString)
+	{
+		// EvaluateCurveTableRow
+
+		return false;
+
+		__int64 (__fastcall* evalO)(FCurveTableRowHandle* CurveTableRowHandle, __int64 Unused, float* YValue, FString ContextString) = nullptr;
+
+		evalO = decltype(evalO)(Memory::FindPattern("4C 8B DC 53 48 83 EC 70 49 8B D8 0F 29 74 24 ? 45 33 C0 48 8D 05 ? ? ? ? 44 38 05 ? ? ? ? 4C"));
+
+		return evalO(this, 0, OutVal, ContextString);
+	}
 };
 
 

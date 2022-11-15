@@ -431,6 +431,12 @@ struct PlaceholderBitfield
 	uint8_t Eighth : 1;
 };
 
+struct BITaa
+{
+	uint8_t                                        bConditionalFoundation : 1;                        // Mask : 0x1 0xC68(0x1)(Edit, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
+	uint8_t                                        bServerStreamedInLevel : 1;
+};
+
 // i dont think it can ever actually be max
 static double GetRandomDouble(float Min, float Max)
 {

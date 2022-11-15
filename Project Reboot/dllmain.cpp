@@ -217,6 +217,7 @@ __int64 Unetdriver_getnetmodeDetour(__int64 a1)
 }
 
 __int64 rettrue() { return 1; }
+__int64 retfalse() { return 0; }
 
 void (__fastcall* CRASHMFO)(__int64 a1, char a2, __int64 a3, __int64 a4);
 
@@ -313,12 +314,21 @@ DWORD WINAPI Initialize(LPVOID)
 
     if (Engine_Version <= 422)
     {
-        uintptr_t NetDebugAddr = Memory::FindPattern("40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01"); // 5.41
+        // aStatNetdebugwi
+        uintptr_t NetDebugAddr = Memory::FindPattern("40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01"); // 5.41 // tested on 7.3
 
         std::cout << "NetDebugAddr: " << NetDebugAddr << '\n';
 
         MH_CreateHook((PVOID)NetDebugAddr, rettrue, nullptr);
         MH_EnableHook((PVOID)NetDebugAddr);
+    }
+
+    if (Fortnite_Version == 7.30)
+    {
+        static auto hookthisaddr = Memory::FindPattern("48 89 5C 24 ? 57 48 83 EC 30 48 8B 01 48 8B F9 FF 90 ? ? ? ? 48 8B D8 48 85 C0 0F 84 ? ? ? ? 48 83 78 ? ?");
+
+        MH_CreateHook((PVOID)hookthisaddr, retfalse, nullptr);
+        MH_EnableHook((PVOID)hookthisaddr);
     }
 
     // if (false)
@@ -331,7 +341,7 @@ DWORD WINAPI Initialize(LPVOID)
             uintptr_t GIsClientAddr = 0; // Memory::FindPattern("8A 05 ? ? ? ? F6 D8 1B C0 F7 D8 FF C0 EB 05 B8", true, 2); // 18.40
             uintptr_t GIsServerAddr = 0;
 
-            if (Engine_Version == 421) // got on 5.41
+            if (Engine_Version == 421 || Engine_Version == 422) // got on 5.41
             {
                 GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 74 17 48 8D 15 ? ? ? ? 48", true, 2);
                 GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 40 80 3D ? ? ? ? ? 48 8D 05", true, 2);
@@ -340,6 +350,12 @@ DWORD WINAPI Initialize(LPVOID)
             else if (Engine_Version == 423)
             {
                 GIsClientAddr = Memory::FindPattern("C6 05 ? ? ? ? ? 44 88 64 24 ? C6 05", true, 2);
+                GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
+            }
+
+            else if (Engine_Version == 425)
+            {
+                GIsClientAddr = Memory::FindPattern("0 3D ? ? ? ? ? 41 0F B6 E9 41 0F B6 F8", true, 2);
                 GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
             }
 

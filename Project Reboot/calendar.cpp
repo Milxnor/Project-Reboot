@@ -30,14 +30,18 @@ void Calendar::FixLocations()
 		{
 			if (Fortnite_Version == 7.30)
 			{
+				auto PleasantParkIdk = FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
+				ShowFoundation(PleasantParkIdk);
 
+				auto PleasantParkGround = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkDefault");
+				ShowFoundation(PleasantParkGround);
 			}
 
 			auto PolarPeak = FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"));
 			ShowFoundation(PolarPeak);
 
 			auto tiltedtower = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
-			ShowFoundation(tiltedtower);
+			ShowFoundation(tiltedtower); // 7.40 specific?
 		}
 
 		else if (Fortnite_Season == 8)
@@ -59,22 +63,22 @@ void Calendar::FixLocations()
 		{
 			if (Fortnite_Version == 12.41)
 			{
-				auto JS03 = FindObject(("LF_Athena_POI_19x19_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_Athena_POI_19x19_2"));
+				auto JS03 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_Athena_POI_19x19_2"));
 				ShowFoundation(JS03);
 
-				auto JH00 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head6_18"));
+				auto JH00 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head6_18"));
 				ShowFoundation(JH00);
 
-				auto JH01 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head5_14"));
+				auto JH01 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head5_14"));
 				ShowFoundation(JH01);
 
-				auto JH02 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head3_8"));
+				auto JH02 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head3_8"));
 				ShowFoundation(JH02);
 
-				auto JH03 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head_2"));
+				auto JH03 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head_2"));
 				ShowFoundation(JH03);
 
-				auto JH04 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head4_11"));
+				auto JH04 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head4_11"));
 				ShowFoundation(JH04);
 			}
 		}

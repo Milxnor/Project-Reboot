@@ -509,6 +509,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 				Playlist = FindObject("/Yogurt/Playlist/Playlist_Yogurt.Playlist_Yogurt");
 			else if (Fortnite_Version == 14.60)
 				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
+			else if (Fortnite_Version == 12.61)
+				Playlist = FindObject("/Game/Athena/Playlists/Fritter/Playlist_Fritter_High.Playlist_Fritter_High");
 			else if (Fortnite_Version <= 12.41)
 				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
 		}
@@ -564,8 +566,6 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto MaxPlayersOffset = GameSession->GetOffset("MaxPlayers");
 		*Get<int>(GameSession, MaxPlayersOffset) = 100; // We would get from playlist but playground max is 4 people..
 
-		Calendar::FixLocations();
-
 		if (Fortnite_Season < 16)
 			Looting::Initialize();
 		else
@@ -585,6 +585,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			*PlayersLeft = 0;
 
 		std::cout << "Ready to start match!\n";
+
+		Calendar::FixLocations();
 
 		Events::LoadEvent();
 

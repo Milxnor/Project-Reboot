@@ -219,7 +219,7 @@ static bool InitializePatterns()
 		HandleReloadCostPattern = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
 		ActorGetNetModePattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 33 C0 48 C7";
 		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3"; // 5.41
-		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE"; // 5.41
+		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE"; // 5.41	
 
 		/* WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?";
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
@@ -255,6 +255,8 @@ static bool InitializePatterns()
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 		HandleReloadCostPattern = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85"; // got on 7.10
 		CanActivateAbilityPattern = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
+		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4"; // got on 7.3
+		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
 
 		if (Fortnite_Version == 7.10)
 		{
@@ -262,8 +264,11 @@ static bool InitializePatterns()
 			SetWorldPattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B";
 		}
 
-		// WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B";
-		// NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
+		if (Fortnite_Version == 7.30)
+		{
+			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 49 89 7B E8 48 8B";
+			SetWorldPattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48";
+		}
 	}
 
 	if (Engine_Version == 423)
@@ -335,6 +340,10 @@ static bool InitializePatterns()
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		ReplaceBuildingActorPattern = "4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ? 49";
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
+		HandleReloadCostPattern = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80";
+		CanActivateAbilityPattern = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49";
+		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3"; // 12.61
+		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 C1";
 	}
 
 	if (Engine_Version == 426)
@@ -476,6 +485,9 @@ static bool InitializePatterns()
 		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 8B FA 4D 8B E0 33 D2 4C 8B F1";
 	}
 
+	// todo test tickflush: E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?
+	// todo test setworld: E8 ? ? ? ? 4C 89 65 AF 48 8D 57 28
+
 	if (Engine_Version == 420)
 		ServerReplicateActorsOffset = 0x53;
 	else if (Engine_Version == 421)
@@ -528,7 +540,7 @@ static bool InitializePatterns()
 	CantBuildAddress = Memory::FindPattern(CantBuildPattern);
 	ReplaceBuildingActorAddress = Memory::FindPattern(ReplaceBuildingActorPattern);
 	WorldGetNetModeAddress = Memory::FindPattern(WorldGetNetModePattern);
-	NoMCPAddress = Engine_Version < 424 ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
+	NoMCPAddress = Engine_Version < 426 ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
 	FreeAddress = Memory::FindPattern(FreePattern);
 	HandleReloadCostAddress = Memory::FindPattern(HandleReloadCostPattern);
 	CanActivateAbilityAddress = Memory::FindPattern(CanActivateAbilityPattern);
