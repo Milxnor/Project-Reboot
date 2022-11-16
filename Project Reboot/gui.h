@@ -388,6 +388,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							*WarmupCountdownEndTime = TimeSeconds + 40;
 
 						ImGui::Checkbox("Playground", &Defines::bIsPlayground);
+						ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
 						
 						if (Defines::bIsCreative)
 							ImGui::InputText("URL", &Defines::urlForPortal);

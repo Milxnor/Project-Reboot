@@ -51,8 +51,9 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		std::cout << "LootTierGroupName: " << LootTierGroupName << '\n'; */
 
 		static auto ChestClass = FindObject("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C");
+		static auto ChestClass2 = FindObject("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_6_Parent.Tiered_Chest_6_Parent_C");
 
-		if (ReceivingActor->IsA(ChestClass))
+		if (ReceivingActor->IsA(ChestClass) || ReceivingActor->IsA(ChestClass2))
 		{
 			auto DefInRow = Looting::GetRandomItem(ItemType::Weapon);
 			{

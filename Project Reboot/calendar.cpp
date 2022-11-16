@@ -18,7 +18,7 @@ void Calendar::FixLocations()
 			ShowFoundation(Lake);
 		}
 
-		auto FloatingIsland = Fortnite_Version == 6.10f ? FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13")) :
+		auto FloatingIsland = Fortnite_Version == 6.10 ? FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13")) :
 			FindObject(("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
 
 		ShowFoundation(FloatingIsland);
