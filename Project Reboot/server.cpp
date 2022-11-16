@@ -80,7 +80,7 @@ DWORD WINAPI PauseThread(LPVOID)
 			if (IsBadReadPtr(StreamingLevel))
 				continue;
 
-			static auto LoadedLevelOffset = StreamingLevel->GetOffset("LoadedLevel");
+			static auto LoadedLevelOffset = StreamingLevel->GetOffsetSlow("LoadedLevel");
 			auto LoadedLevel = *Get<UObject*>(StreamingLevel, LoadedLevelOffset);
 
 			bool bShouldBeLoaded = false;

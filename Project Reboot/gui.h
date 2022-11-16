@@ -284,14 +284,14 @@ DWORD WINAPI GuiThread(LPVOID)
 
 				// if (serverStatus == EServerStatus::Up)
 				{
-					if (ImGui::BeginTabItem(ICON_FA_PEOPLE_CARRY " Players"))
+					if (false && ImGui::BeginTabItem(ICON_FA_PEOPLE_CARRY " Players"))
 					{
 						Tab = PLAYERS_TAB;
 						ImGui::EndTabItem();
 					}
 				}
 
-				if (ImGui::BeginTabItem(("Gamemode")))
+				if (false && ImGui::BeginTabItem(("Gamemode")))
 				{
 					Tab = GAMEMODE_TAB;
 					PlayerTab = -1;
@@ -299,7 +299,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (std::floor(Fortnite_Version) == 8 || Engine_Version >= 424 || Fortnite_Version == 4.1)
+				if (false && (std::floor(Fortnite_Version) == 8 || Engine_Version >= 424 || Fortnite_Version == 4.1))
 				{
 					if (ImGui::BeginTabItem(("Thanos")))
 					{
@@ -321,7 +321,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (Defines::bIsLateGame && ImGui::BeginTabItem(("Lategame")))
+				if (false && Defines::bIsLateGame && ImGui::BeginTabItem(("Lategame")))
 				{
 					Tab = LATEGAME_TAB;
 					PlayerTab = -1;
@@ -329,7 +329,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem("Dump"))
+				if (false && ImGui::BeginTabItem("Dump"))
 				{
 					Tab = DUMP_TAB;
 					PlayerTab = -1;
@@ -337,7 +337,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(("Settings")))
+				if (false && ImGui::BeginTabItem(("Settings")))
 				{
 					Tab = SETTINGS_TAB;
 					PlayerTab = -1;
@@ -347,7 +347,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 				// maybe a Replication Stats for >3.3?
 
-				if (ImGui::BeginTabItem(("Credits")))
+				if (false && ImGui::BeginTabItem(("Credits")))
 				{
 					Tab = CREDITS_TAB;
 					PlayerTab = -1;
@@ -383,6 +383,9 @@ DWORD WINAPI GuiThread(LPVOID)
 						auto WarmupCountdownEndTime = Get<float>(GameState, WarmupCountdownEndTimeOffset);
 
 						auto TimeSeconds = Helper::GetTimeSeconds();
+
+						if (*WarmupCountdownEndTime - 40 > TimeSeconds && *WarmupCountdownEndTime != -1) // IDK
+							*WarmupCountdownEndTime = TimeSeconds + 40;
 
 						ImGui::Checkbox("Playground", &Defines::bIsPlayground);
 						
