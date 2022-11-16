@@ -252,6 +252,8 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	static UObject* Def5 = FindObject("/HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
 	auto Def5Instance = Inventory::GiveItem(PlayerController, Def5, EFortQuickBars::Primary, 5); */
+	
+	/*
 
 	static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
 	std::cout << "Def1: " << Def1 << '\n';
@@ -260,22 +262,21 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
 	auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
 
+	*/
+
 	/* static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
 	auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
 
 	static UObject* Def2 = FindObject("/Game/Items/Traps/WIP/TID_Rail_Turret.TID_Rail_Turret");
 	auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0); */
 
-	if (Defines::bIsGoingToPlayMainEvent)
+	if (Defines::bIsGoingToPlayMainEvent && Fortnite_Season == 16)
 	{
 		static auto PortalDeviceDef = FindObject("/Yogurt/Blueprints/WID_Yogurt_PortalDevice.WID_Yogurt_PortalDevice");
 		Inventory::GiveItem(PlayerController, PortalDeviceDef, EFortQuickBars::Primary, 1);
 	}
 
 	//
-
-	static auto WoodItemData = FindObject(("/Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-	Inventory::GiveItem(PlayerController, WoodItemData, EFortQuickBars::Secondary, 0, 999);
 
 	UObject* Pawn = Helper::SpawnPawn(PlayerController, SpawnLocation, true);
 
@@ -742,7 +743,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	}
 	else
 	{
-		static auto LastFallDistanceOffset = DeadPawn->GetOffset("LastFallDistance");
+		static auto LastFallDistanceOffset = DeadPawn->GetOffsetSlow("LastFallDistance");
 
 		if (LastFallDistanceOffset != -1)
 			*(float*)(__int64(DeathInfo) + DistanceOffset) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
@@ -769,6 +770,21 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 			static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
 
 			UObject* FinishingWeaponDefinition = nullptr;
+
+			static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
+
+			auto DamageCauser = *(UObject**)(__int64(DeathReport) + DamageCauserOffset);
+
+			if (DamageCauser)
+			{
+				static auto ProjectileClass = FindObject("Class /Script/FortniteGame.FortProjectileBase");
+				static auto FortWeaponClass = FindObject("Class /Script/FortniteGame.FortWeapon");
+
+				if (DamageCauser->IsA(ProjectileClass))
+					FinishingWeaponDefinition = Helper::GetWeaponData(Helper::GetOwner(DamageCauser));
+				else if (DamageCauser->IsA(FortWeaponClass))
+					FinishingWeaponDefinition = Helper::GetWeaponData(DamageCauser);
+			}
 
 			struct
 			{
@@ -828,26 +844,34 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	static auto PlaceOffset = DeadPlayerState->GetOffsetSlow("Place");
 	auto Place = Get<int>(DeadPlayerState, PlaceOffset);
 
-	*Place = *PlayersLeftPtr; // SKUNKED for teams
+	*Place = PlayersLeftPtr ? *PlayersLeftPtr + 1 : 0; // SKUNKED for teams
 
 	static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
 	DeadPlayerState->ProcessEvent(OnRep_Place);
 
 	static auto TeamScoreOffset = DeadPlayerState->GetOffsetSlow("TeamScore");
-	auto TeamScore = Get<int>(DeadPlayerState, TeamScoreOffset);
 
-	*TeamScore = *PlayersLeftPtr; // IDK
+	if (TeamScoreOffset != 0)
+	{
+		auto TeamScore = Get<int>(DeadPlayerState, TeamScoreOffset);
 
-	static auto OnRep_TeamScore = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScore");
-	DeadPlayerState->ProcessEvent(OnRep_TeamScore);
+		*TeamScore = *PlayersLeftPtr ? *PlayersLeftPtr + 1 : 0; // IDK
+
+		static auto OnRep_TeamScore = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScore");
+		DeadPlayerState->ProcessEvent(OnRep_TeamScore);
+	}
 
 	static auto TeamScorePlacementOffset = DeadPlayerState->GetOffsetSlow("TeamScorePlacement");
-	auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
 
-	*TeamScorePlacement = *PlayersLeftPtr; // IDK
+	if (TeamScorePlacementOffset != 0)
+	{
+		auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
 
-	static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
-	DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
+		*TeamScorePlacement = *PlayersLeftPtr ? *PlayersLeftPtr + 1 : 0; // IDK
+
+		static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
+		DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
+	}
 
 	static auto bMarkedAliveOffset = DeadController->GetOffset("bMarkedAlive");
 	*Get<bool>(DeadController, bMarkedAliveOffset) = false;

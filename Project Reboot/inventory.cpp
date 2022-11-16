@@ -774,6 +774,17 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	if (!Pickup)
 		return false;
 
+	static auto bPickedUpOffset = Pickup->GetOffset("bPickedUp");
+	auto bPickedUp = Get<bool>(Pickup, bPickedUpOffset);
+
+	if (*bPickedUp)
+		return false;
+
+	*bPickedUp = false;
+
+	static auto OnRep_bPickedUp = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_bPickedUp");
+	Pickup->ProcessEvent(OnRep_bPickedUp);
+
 	auto PickupEntry = Helper::GetEntryFromPickup(Pickup);
 
 	auto Definition = FFortItemEntry::GetItemDefinition(PickupEntry);
