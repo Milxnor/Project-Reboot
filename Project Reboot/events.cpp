@@ -475,14 +475,14 @@ void Events::StartEvent()
 
 				if (Scripting)
 				{
-					static auto scripting_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.startevent");
-					static auto loader_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.startevent");
-					static auto BB = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.OnReady_093B6E664C060611B28F79B5E7052A39");
-					static auto CC = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.OnReady_7FE9744D479411040654F5886C078D08");
+					auto scripting_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.startevent");
+					auto loader_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.startevent");
+					auto BB = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.OnReady_093B6E664C060611B28F79B5E7052A39");
+					auto CC = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.OnReady_7FE9744D479411040654F5886C078D08");
 
-					Loader->ProcessEvent(CC, &bbparms);
+					// Loader->ProcessEvent(CC, &bbparms);
 					Scripting->ProcessEvent(BB, &bbparms);
-					Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
+					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
 				}
 			}
@@ -490,15 +490,31 @@ void Events::StartEvent()
 
 		else if (Fortnite_Version == 12.61)
 		{
-			auto Scripting = GetEventScripting();
-
-			if (Scripting)
+			if (false)
 			{
-				auto bb = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.OnReady_ACE66C28499BF8A59B3D88A981DDEF41");
-				Scripting->ProcessEvent(bb, &bbparms);
+				auto Scripting = GetEventScripting();
 
-				auto startevent = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.startevent");
-				Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
+				if (Scripting)
+				{
+					auto bb = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.OnReady_ACE66C28499BF8A59B3D88A981DDEF41");
+					Scripting->ProcessEvent(bb, &bbparms);
+
+					auto startevent = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.startevent");
+					Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
+				}
+			}
+			else
+			{
+				auto Loader = GetEventLoader();
+
+				if (Loader)
+				{
+					auto bb = FindObject<UFunction>("/Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.OnReady_1216203B4B63E3DFA03042A62380A674");
+					Loader->ProcessEvent(bb, &bbparms);
+
+					auto startevent = FindObject<UFunction>("/Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.startevent");
+					Loader->ProcessEvent(startevent, &SecondsSinceEventBegan);
+				}
 			}
 		}
 

@@ -518,8 +518,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		if (!Playlist || !Defines::bIsGoingToPlayMainEvent)
 		{
 			Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
-				// FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
-				FindObject("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
+				FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+				// FindObject("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
 				// FindObject("/Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad");
 				// FindObject("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground");
 		}
@@ -1314,6 +1314,11 @@ bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Paramet
 
 	static auto RespawnDataOffset = PlayerState->GetOffset("RespawnData");
 	auto RespawnData = Get<FFortRespawnData>(PlayerState, RespawnDataOffset);
+
+	std::cout << "bServerIsReady: " << RespawnData->bServerIsReady << '\n';
+
+	// if (!RespawnData->bServerIsReady) // UNTESTED
+		// return false;
 
 	RespawnData->bClientIsReady = true;
 

@@ -79,6 +79,10 @@ namespace Build
 
 				if (MatCount && *MatCount >= 10 && MatInstance) // && Helper::IsStructurallySupported(BuildingActor)
 				{
+					// __int64 (__fastcall* SomeBuildCollisionThing)(UObject* Build) = decltype(SomeBuildCollisionThing)(Memory::FindPattern("40 55 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B E9 0F 85 ? ? ? ?"));
+
+					// SomeBuildCollisionThing(BuildingActor); // 10.4
+
 					Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 
 					bShouldDestroy = false;
