@@ -2,6 +2,25 @@
 #include "helper.h"
 #include "inventory.h"
 
+void SetBuildingActorTeam(UObject* BuildingActor, int NewTeamIndex)
+{
+	static auto TeamOffset = BuildingActor->GetOffsetSlow("Team");
+
+	if (TeamOffset != 0)
+	{
+		auto Team = (TEnumAsByte<uint8_t>*)(__int64(BuildingActor) + TeamOffset);
+		*Team = NewTeamIndex; // ??
+	}
+
+	static auto Building_TeamIndexOffset = BuildingActor->GetOffsetSlow("TeamIndex");
+
+	if (Building_TeamIndexOffset != 0)
+	{
+		auto TeamIndex = (uint8_t*)(__int64(BuildingActor) + Building_TeamIndexOffset);
+		*TeamIndex = NewTeamIndex;
+	}
+}
+
 namespace Build
 {
 	bool ServerCreateBuildingActor(UObject* Controller, UFunction* Function, void* Parameters)
@@ -9,9 +28,9 @@ namespace Build
 		if (!Parameters)
 			return false;
 
-		static auto WoodItemData = FindObject(("/Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-		static auto StoneItemData = FindObject(("/Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-		static auto MetalItemData = FindObject(("/Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+		static auto WoodItemData = FindObject("/Game/Items/ResourcePickups/WoodItemData.WoodItemData");
+		static auto StoneItemData = FindObject("/Game/Items/ResourcePickups/StoneItemData.StoneItemData");
+		static auto MetalItemData = FindObject("/Game/Items/ResourcePickups/MetalItemData.MetalItemData");
 
 		UObject* MatDefinition = nullptr;
 		UObject* MatInstance = nullptr;
@@ -82,6 +101,8 @@ namespace Build
 					// __int64 (__fastcall* SomeBuildCollisionThing)(UObject* Build) = decltype(SomeBuildCollisionThing)(Memory::FindPattern("40 55 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B E9 0F 85 ? ? ? ?"));
 
 					// SomeBuildCollisionThing(BuildingActor); // 10.4
+
+					SetBuildingActorTeam(BuildingActor, *Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
 
 					Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 
@@ -163,6 +184,8 @@ namespace Build
 		static auto TrapLevelOffset = NewTrap->GetOffset("TrapLevel");
 		auto TrapLevel = (int*)(__int64(NewTrap) + TrapLevelOffset);
 		// *TrapLevel = 1; // ??
+
+		SetBuildingActorTeam(NewTrap, *Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
 
 		Helper::InitializeBuildingActor(Controller, NewTrap);
 

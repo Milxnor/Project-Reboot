@@ -309,6 +309,11 @@ void MainUI()
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
 
+				if (Fortnite_Version == 14.60 && ImGui::Button("Summon Vehicles"))
+				{
+					Defines::bShouldSpawnVehicles = true;
+				}
+
 				if (ImGui::Button("Fill all vending machines"))
 				{
 					static auto BuildingItemCollectorClass = FindObject("/Script/FortniteGame.BuildingItemCollectorActor");
@@ -641,17 +646,20 @@ void MainUI()
 
 				if (ImGui::Button("Give Item"))
 				{
-					std::string cpywid;
+					if (!WID.empty())
+					{
+						std::string cpywid;
 
-					if (WID.find(".") == std::string::npos)
-						cpywid = std::format("{}.{}", WID, WID);
+						if (WID.find(".") == std::string::npos)
+							cpywid = std::format("{}.{}", WID, WID);
 
-					auto wid = FindObjectSlow(cpywid);
+						auto wid = FindObjectSlow(cpywid);
 
-					if (wid)
-						Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
-					else
-						std::cout << "Unable to find WID!\n";
+						if (wid)
+							Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
+						else
+							std::cout << "Unable to find WID!\n";
+					}
 				}
 
 				ImGui::InputText("Kick Reason", &KickReason);

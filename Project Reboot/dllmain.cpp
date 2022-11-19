@@ -107,12 +107,13 @@ DWORD WINAPI Initialize(LPVOID)
 
             else if (Engine_Version == 425)
             {
-                GIsClientAddr = Memory::FindPattern("0 3D ? ? ? ? ? 41 0F B6 E9 41 0F B6 F8", true, 2);
+                GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 41 0F B6 E9 41 0F B6 F8", true, 2);
                 GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
             }
 
             std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
             std::cout << "GIsServerAddr: " << GIsServerAddr << '\n';
+            // std::cout << "aFTER: " << GIsClientAddr << '\n';
 
             if (GIsClientAddr)
             {
@@ -238,7 +239,9 @@ DWORD WINAPI Initialize(LPVOID)
 
     Defines::bTraveled = true;
 
-    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+    if (Fortnite_Version <= 11.30) // todo test this
+        AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+
     AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
     AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
     AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);

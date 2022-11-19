@@ -496,6 +496,9 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto OnRep_GamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 		GameState->ProcessEvent(OnRep_GamePhase, &OldGamePhase);
 
+		if (Defines::Playlist == "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground" && Fortnite_Version > 11.30)
+			Defines::Playlist = "/Game/Athena/Playlists/BattleLab/Playlist_BattleLab.Playlist_BattleLab";
+
 		UObject* Playlist = FindObject(Defines::Playlist);
 
 		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
@@ -958,7 +961,67 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 			std::cout << "bef: " << *ProjectileMovement << '\n';
 			*ProjectileMovement = Helper::Easy::SpawnObject(ProjectileMovementComponentClass, Chip);
 		}
+	}
 
+	if (!Defines::bIsPlayground)
+	{
+		auto ItemInstances = Inventory::GetItemInstances(DeadController);
+
+		if (!IsBadReadPtr(ItemInstances))
+		{
+			auto NumItemInstances = ItemInstances->Num();
+
+			for (int i = 6; i < NumItemInstances; i++) // dont ask
+			{
+				std::cout << std::format("{}/{}\n", i, NumItemInstances);
+
+				auto ItemInstance = ItemInstances->At(i);
+
+				if (IsBadReadPtr(ItemInstance))
+					continue;
+
+				// bDropOnDeath
+
+				auto ItemEntry = UFortItem::GetItemEntry(ItemInstance);
+
+				if (IsBadReadPtr(ItemEntry))
+					continue;
+
+				auto ItemGuidPtr = UFortItem::GetGuid(ItemInstance);
+				auto CountPtr = UFortItem::GetCount(ItemInstance);
+				auto ItemDefinitionPtr = UFortItem::GetDefinition(ItemInstance);
+				auto LoadedAmmoPtr = FFortItemEntry::GetLoadedAmmo(UFortItem::GetItemEntry(ItemInstance));
+
+				if (IsBadReadPtr(ItemGuidPtr) || IsBadReadPtr(CountPtr) || IsBadReadPtr(ItemDefinitionPtr) || IsBadReadPtr(LoadedAmmoPtr))
+					continue;
+
+				auto ItemGuid = *ItemGuidPtr;
+				auto Count = *CountPtr;
+				auto ItemDefinition = *ItemDefinitionPtr;
+				auto LoadedAmmo = *LoadedAmmoPtr;
+
+				if (IsBadReadPtr(ItemDefinition))
+					continue;
+
+				struct { FGuid ItemGuid; int Count; } drop_parms{ ItemGuid, Count };
+				// Inventory::ServerAttemptInventoryDrop(DeadController, nullptr, &drop_parms);
+
+				Inventory::TakeItem(DeadController, ItemGuid, Count, true);
+				Helper::SummonPickup(DeadPawn, ItemDefinition, DeathLocation, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::PlayerElimination, Count, false, LoadedAmmo);
+			}
+		}
+	}
+	else
+	{
+		if (Fortnite_Version > 11.30) // todo test without this
+		{
+			auto RespawnedPawn = Helper::SpawnPawn(DeadController, DeathLocation);
+
+			static auto TeleportToSkyDive = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawnAthena.TeleportToSkyDive");
+			float HeightAboveGround = 15000;
+
+			RespawnedPawn->ProcessEvent(TeleportToSkyDive, &HeightAboveGround);
+		}
 	}
 
 	return true;
@@ -1448,7 +1511,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "WaitForPawn") &&
 			!strstr(FunctionName.c_str(), "FragmentMovement__UpdateFunc") &&
 			!strstr(FunctionName.c_str(), "TrySetup") &&
-			!strstr(FunctionName.c_str(), "Fade Doused Smoke__UpdateFunc"))
+			!strstr(FunctionName.c_str(), "Fade Doused Smoke__UpdateFunc") &&
+			!strstr(FunctionName.c_str(), "SetPlayerToSkydive"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

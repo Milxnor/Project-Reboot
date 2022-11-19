@@ -832,27 +832,30 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	bool bShouldSwap = false;
 
-	for (int i = 0; i < ItemInstances->Num(); i++)
+	if (Inventory::WhatQuickBars(*Definition) == EFortQuickBars::Primary)
 	{
-		auto ItemInstance = ItemInstances->At(i);
-
-		if (!ItemInstance)
-			break;
-
-		auto Definition = *UFortItem::GetDefinition(ItemInstance);
-
-		if (Inventory::WhatQuickBars(Definition) == EFortQuickBars::Primary)
+		for (int i = 0; i < ItemInstances->Num(); i++)
 		{
-			PrimaryQuickBarSlotsFilled++;
-			bShouldSwap = (PrimaryQuickBarSlotsFilled - 6) >= 5;
+			auto ItemInstance = ItemInstances->At(i);
 
-			if (bShouldSwap)
+			if (!ItemInstance)
 				break;
-		}
-	}
 
-	if (CurrentWeaponDef == Helper::GetPickaxeDef(Controller) && bShouldSwap)
-		return false;
+			auto Definition = *UFortItem::GetDefinition(ItemInstance);
+
+			if (Inventory::WhatQuickBars(Definition) == EFortQuickBars::Primary)
+			{
+				PrimaryQuickBarSlotsFilled++;
+				bShouldSwap = (PrimaryQuickBarSlotsFilled - 6) >= 5;
+
+				if (bShouldSwap)
+					break;
+			}
+		}
+
+		if (CurrentWeaponDef == Helper::GetPickaxeDef(Controller) && bShouldSwap)
+			return false;
+	}
 
 	std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
 
