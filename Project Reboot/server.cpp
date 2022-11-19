@@ -314,25 +314,18 @@ void Server::Hooks::Initialize()
 		std::cout << MH_StatusToString(MH_EnableHook((PVOID)NoReserveAddress)) << '\n';
 	}
 
-	/*
+	// Maybe: 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0
 
-	MH_CreateHook((PVOID)ActorGetNetModeAddress, rettruae, nullptr);
-	MH_EnableHook((PVOID)ActorGetNetModeAddress);
-
+	if (false)
 	{
 		auto sig = Memory::FindPattern("40 57 48 83 EC 20 48 8B B9 ? ? ? ? 48 85 FF 74 53");
 
-		std::cout << "ugh: " << sig << '\n';
+		std::cout << "GetViewTarget: " << sig << '\n';
 
 		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::GetViewTarget, nullptr)) << '\n';
 		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 	}
-	
-	*/
-
-	// Maybe: 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0
-
-	if (Fortnite_Version < 17.50)
+	else if (Fortnite_Version < 17.50)
 	{
 		auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
 

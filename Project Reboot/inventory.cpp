@@ -659,6 +659,37 @@ UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, 
 	return Def;
 }
 
+void Inventory::WipeInventory(UObject* Controller, bool bTakePickaxe)
+{
+	auto PickaxeDef = Helper::GetPickaxeDef(Controller);
+
+	auto ItemInstances = Inventory::GetItemInstances(Controller);
+
+	if (ItemInstances)
+	{
+		auto NumItemInstances = ItemInstances->Num();
+		std::cout << "ItemInstances->Num(): " << NumItemInstances << '\n';
+
+		int Start = bTakePickaxe ? 5 : 6; // 0
+		int loopedThrough = Start;
+
+		for (int i = loopedThrough; i < NumItemInstances; i++)
+		{
+			auto CurrentItemInstance = ItemInstances->At(i);
+
+			if (!CurrentItemInstance)
+				continue;
+
+			auto CurrentItemDefinition = *UFortItem::GetDefinition(CurrentItemInstance);
+
+			if (!CurrentItemDefinition)
+				continue;
+
+			Inventory::TakeItem(Controller, *UFortItem::GetGuid(CurrentItemInstance), 1, true);
+		}
+	}
+}
+
 UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
 {
 	auto ItemInstances = GetItemInstances(Controller);

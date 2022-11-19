@@ -101,6 +101,7 @@ namespace Inventory
 	UObject* EquipWeapon(UObject* Controller, UObject* Instance, int Ammo = 0);
 	EFortQuickBars WhatQuickBars(UObject* Definition); // returns the quickbar the item should go in
 	UObject* TakeItem(UObject* Controller, const FGuid& Guid, int Count, bool bForceRemove = false);
+	void WipeInventory(UObject* Controller, bool bTakePickaxe = true);
 
 	// FINDERS
 

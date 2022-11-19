@@ -14,6 +14,7 @@ namespace Events
 	void LoadEvent();
 	void StartEvent();
 	void StartNewYears();
+	std::string GetEventPlaylistName();
 	// std::string GetEventCodename();
 
 	// Stuff for specific events

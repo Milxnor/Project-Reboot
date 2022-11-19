@@ -172,61 +172,7 @@ DWORD WINAPI Initialize(LPVOID)
     std::cout << "SizeOfGameplayAbilitySpec: " << SizeOfGameplayAbilitySpec << '\n';
     std::cout << "SizeOfPredictionKey: " << Helper::GetSizeOfClass(FindObjectSlow("ScriptStruct /Script/GameplayAbilities.PredictionKey", false)) << '\n';
     std::cout << "SizeOfItemEntryStruct: " << Helper::GetSizeOfClass(FFortItemEntry::ItemEntryStruct) << '\n';
-
-    auto PC = Helper::GetLocalPlayerController();
-
-    std::cout << "PC: " << PC << '\n';
-
-    static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
-
-    FString Level = Defines::GetMapName();
-
-    PC->ProcessEvent(SwitchLevel, &Level);
     
-    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
-    AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
-    AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
-    AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
-    AddHook("/Script/FortniteGame.FortPlayerController.ServerReadyToStartMatch", ServerReadyToStartMatch);
-
-    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerGiveCreativeItem", ServerGiveCreativeItem);
-
-    AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
-    AddHook(Engine_Version >= 420 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"
-        : "/Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop", Inventory::ServerAttemptInventoryDrop);
-    AddHook(Fortnite_Season < 13 ? "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"
-        : "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", Inventory::ServerHandlePickup);
-
-    AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon", Inventory::ServerExecuteInventoryWeapon);
-
-    AddHook("/Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
-    AddHook("/Script/FortniteGame.FortDecoTool.ServerSpawnDeco", Build::ServerSpawnDeco);
-
-    AddHook(Engine_Version < 423 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInteract" :
-        "/Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract", Interaction::ServerAttemptInteract);
-
-    AddHook("/Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped", ServerLoadingScreenDropped);
-
-    // if (false)
-    {
-        AddHook("/Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
-        AddHook("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
-        AddHook("/Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
-    }
-    
-    AddHook("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
-
-    if (InternalTryActivateAbilityAddress && GiveAbilityAddress)
-    {
-        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
-        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
-        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
-    }
-
-    AddHook(Fortnite_Version < 9 ? "/Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"
-        : (Engine_Version < 424 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump" 
-            : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
-
     // Level.Free();
 
     auto matchmaking = Memory::FindPattern("83 BD ? ? ? ? 01 7F 18 49 8D 4D D8 48 8B D6 E8 ? ? ? ? 48");
@@ -270,6 +216,71 @@ DWORD WINAPI Initialize(LPVOID)
 
         *before = 0x74;
     }
+
+    while (Defines::SecondsUntilTravel > 0)
+    {
+        Defines::SecondsUntilTravel -= 1;
+
+        Sleep(1000);
+    }
+
+    // Sleep(Defines::SecondsUntilTravel * 1000);
+
+    auto PC = Helper::GetLocalPlayerController();
+
+    std::cout << "PC: " << PC << '\n';
+
+    static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
+
+    FString Level = Defines::GetMapName();
+
+    PC->ProcessEvent(SwitchLevel, &Level);
+
+    Defines::bTraveled = true;
+
+    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+    AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
+    AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
+    AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerReadyToStartMatch", ServerReadyToStartMatch);
+
+    AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerGiveCreativeItem", ServerGiveCreativeItem);
+
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
+    AddHook(Engine_Version >= 420 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"
+        : "/Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop", Inventory::ServerAttemptInventoryDrop);
+    AddHook(Fortnite_Season < 13 ? "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"
+        : "/Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", Inventory::ServerHandlePickup);
+
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon", Inventory::ServerExecuteInventoryWeapon);
+
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
+    AddHook("/Script/FortniteGame.FortDecoTool.ServerSpawnDeco", Build::ServerSpawnDeco);
+
+    AddHook(Engine_Version < 423 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInteract" :
+        "/Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract", Interaction::ServerAttemptInteract);
+
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped", ServerLoadingScreenDropped);
+
+    // if (false)
+    {
+        AddHook("/Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor", Editing::ServerBeginEditingBuildingActorHook);
+        AddHook("/Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", Editing::ServerEditBuildingActorHook);
+        AddHook("/Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor", Editing::ServerEndEditingBuildingActorHook);
+    }
+
+    AddHook("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied", ClientOnPawnDied);
+
+    if (InternalTryActivateAbilityAddress && GiveAbilityAddress)
+    {
+        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility", Abilities::ServerTryActivateAbility);
+        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", Abilities::ServerAbilityRPCBatch);
+        AddHook("/Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData", Abilities::ServerTryActivateAbilityWithEventData);
+    }
+
+    AddHook(Fortnite_Version < 9 ? "/Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"
+        : (Engine_Version < 424 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"
+            : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     return 0;
 }

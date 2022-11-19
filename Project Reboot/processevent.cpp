@@ -208,7 +208,7 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		static UObject* HeroTypeToUse = FindObject("/Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER");
 
 		static auto HeroTypeOffset = PlayerState->GetOffset("HeroType");
-		*(UObject**)(__int64(PlayerState) + HeroTypeOffset) = HeroTypeToUse;
+		*Get<UObject*>(PlayerState, HeroTypeOffset) = HeroTypeToUse;
 	}
 
 	bool bUpdate = false;
@@ -496,34 +496,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto OnRep_GamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 		GameState->ProcessEvent(OnRep_GamePhase, &OldGamePhase);
 
-		UObject* Playlist = nullptr;
-
-		if (Defines::bIsGoingToPlayMainEvent)
-		{
-			if (Fortnite_Version == 18.40)
-				Playlist = FindObject("/GuavaPlaylist/Playlist/Playlist_Guava.Playlist_Guava");
-			else if (Fortnite_Version == 17.50)
-				Playlist = FindObject("/KiwiPlaylist/Playlists/Playlist_Kiwi.Playlist_Kiwi");
-			else if (Fortnite_Version == 17.30)
-				Playlist = FindObject("/BuffetPlaylist/Playlist/Playlist_Buffet.Playlist_Buffet");
-			else if (Fortnite_Season == 16)
-				Playlist = FindObject("/Yogurt/Playlist/Playlist_Yogurt.Playlist_Yogurt");
-			else if (Fortnite_Version == 14.60)
-				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
-			else if (Fortnite_Version == 12.61)
-				Playlist = FindObject("/Game/Athena/Playlists/Fritter/Playlist_Fritter_High.Playlist_Fritter_High");
-			else if (Fortnite_Version <= 12.41)
-				Playlist = FindObject("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
-		}
-		
-		if (!Playlist || !Defines::bIsGoingToPlayMainEvent)
-		{
-			Playlist = Defines::bIsCreative ? FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
-				FindObject("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
-				// FindObject("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
-				// FindObject("/Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad");
-				// FindObject("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground");
-		}
+		UObject* Playlist = FindObject(Defines::Playlist);
 
 		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
 
@@ -1029,6 +1002,9 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 		return false;
 
 	auto ExitLocation = Helper::GetActorLocation(Aircraft);
+
+	if (Defines::bWipeInventoryOnAircraft)
+		Inventory::WipeInventory(Controller, false);
 
 	auto Pawn = Helper::SpawnPawn(Controller, ExitLocation, false);
 

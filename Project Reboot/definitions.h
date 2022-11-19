@@ -13,9 +13,18 @@ namespace Defines
 	inline bool bRandomPickaxe = true;
 	inline bool bIsCreative = false;
 	inline bool bIsGoingToPlayMainEvent = false;
+	inline bool bTraveled = false;
+	inline bool bWipeInventoryOnAircraft = bIsPlayground;
+
+	inline int SecondsUntilTravel = 5;
+
+	inline std::string Playlist = Defines::bIsCreative ? ("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
+		Defines::bIsPlayground ? ("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground") :
+			("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+
 	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
 
-	// DON'T CHANGE HERE
+	// DON'T CHANGE BELOW THIS
 
 	inline bool bMatchmakingSupported = false;
 	inline bool bShouldSpawnFloorLoot = false;
@@ -24,8 +33,6 @@ namespace Defines
 	inline UObject* Portal = nullptr;
 
 	inline int AmountOfRestarts = 0;
-
-	// TO HERE
 
 	inline std::vector<std::pair<UObject*, std::string>> ObjectsToLoad;
 
