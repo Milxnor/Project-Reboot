@@ -324,6 +324,7 @@ static bool InitializePatterns()
 	if (Engine_Version == 425)
 	{
 		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 10 4C 8D 05";
+		// StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC ? 80 3D ? ? ? ? ? 45 0F B6";
 		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6";
 		StaticLoadObjectPattern = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 68 45 33 F6 48 8D 05";
 		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6";
@@ -345,6 +346,11 @@ static bool InitializePatterns()
 		CanActivateAbilityPattern = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49";
 		WorldGetNetModePattern = "40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3"; // 12.61
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 C1";
+
+		if (Fortnite_Version == 12.00)
+		{
+			SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97";
+		}
 	}
 
 	if (Engine_Version == 426)
@@ -554,6 +560,12 @@ static bool InitializePatterns()
 
 	std::cout << "MCP REL: " << Memory::FindPattern(NoMCPPattern, true, 1) << '\n';
 	std::cout << "MCP NOTREL: " << Memory::FindPattern(NoMCPPattern) << '\n';
+
+	if (!TickFlushAddress)
+	{
+		std::cout << "No tickflush! Testing pattern!\n";
+		TickFlushAddress = Memory::FindPattern("E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?", true, 1);
+	}
 
 	std::cout << std::format("SpawnActorAddress: 0x{:x}\n", (uintptr_t)SpawnActorAddr - Base);
 	std::cout << std::format("InitHostAddress: 0x{:x}\n", (uintptr_t)InitHostAddress - Base);

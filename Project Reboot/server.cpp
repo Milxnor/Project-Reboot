@@ -225,7 +225,7 @@ bool Server::Listen(int Port)
 
 	std::cout << "Listening on port: " << Port << '\n';
 	
-	bool bVersionSupportsNoPrejoin = Engine_Version >= 423;
+	bool bVersionSupportsNoPrejoin = Engine_Version >= 422;
 	
 	if (bVersionSupportsNoPrejoin)
 	{
@@ -249,13 +249,15 @@ __int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a
 	return 0;
 }
 
+__int64 (__fastcall* NetViewerConstructorO)(__int64 NetViewer, UObject* Connection);
+
 __int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection)
 {
 	// dude 17.50 Connection != UNetConnection or something
-
-	static auto Connection_ViewTargetOffset = Connection->GetOffset("ViewTarget");
-	static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
-	static auto Connection_OwningActorOffset = Connection->GetOffset("OwningActor");
+	
+	static auto Connection_ViewTargetOffset = FindOffsetStruct("Class /Script/Engine.NetConnection", "ViewTarget");
+	static auto Connection_PlayerControllerOffset = FindOffsetStruct("Class /Script/Engine.Player", "PlayerController");
+	static auto Connection_OwningActorOffset = FindOffsetStruct("Class /Script/Engine.NetConnection", "OwningActor");
 
 	auto Connection_ViewTarget = *(UObject**)(__int64(Connection) + Connection_ViewTargetOffset);
 	auto Connection_PlayerController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
@@ -325,14 +327,19 @@ void Server::Hooks::Initialize()
 		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::GetViewTarget, nullptr)) << '\n';
 		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 	}
-	else if (Fortnite_Version < 17.50)
+	else // if (Fortnite_Version < 17.50)
 	{
 		auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
 
 		if (!sig)
 			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
 
-		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, nullptr)) << '\n';
+		if (Fortnite_Version == 17.50)
+			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 45");
+
+		std::cout << "sig: " << sig << '\n';
+
+		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';
 		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 	}
 }

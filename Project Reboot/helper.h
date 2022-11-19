@@ -54,6 +54,11 @@ namespace Helper
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 	UObject* GetGameData();
 
+	void SetHealth(UObject* Pawn, float Health);
+	void SetMaxHealth(UObject* Pawn, float MaxHealth);
+	void SetShield(UObject* Pawn, float Shield);
+	void SetMaxShield(UObject* Pawn, float MaxShield);
+
 	FVector GetActorForwardVector(UObject* Actor);
 	FVector GetActorRightVector(UObject* Actor);
 	FVector GetCorrectLocation(UObject* Actor);

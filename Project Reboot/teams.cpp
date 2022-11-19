@@ -25,7 +25,7 @@ bool Teams::AssignTeam(UObject* Controller)
 
 	static auto MaxSquadSizeOffset = Playlist->GetOffset("MaxSquadSize");
 
-	static int MaxPlayersPerTeam = *Get<int>(Playlist, MaxSquadSizeOffset);
+	static int MaxPlayersPerTeam = Defines::bIsPlayground ? 1 : *Get<int>(Playlist, MaxSquadSizeOffset);
 
 	std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 

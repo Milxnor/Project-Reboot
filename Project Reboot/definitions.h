@@ -14,7 +14,7 @@ namespace Defines
 	inline bool bIsCreative = false;
 	inline bool bIsGoingToPlayMainEvent = false;
 	inline bool bTraveled = false;
-	inline bool bWipeInventoryOnAircraft = bIsPlayground;
+	inline bool bWipeInventoryOnAircraft = true;
 
 	inline int SecondsUntilTravel = 5;
 

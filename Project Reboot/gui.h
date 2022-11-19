@@ -717,6 +717,33 @@ void MainUI()
 	}
 }
 
+void PregameUI()
+{
+	ImGui::Text(std::format("You will only be able to set these for around {} more second{}!", Defines::SecondsUntilTravel + 6, Defines::SecondsUntilTravel + 6 <= 1 ? "" : "s").c_str());
+
+	ImGui::NewLine();
+
+	if (!Defines::bTraveled)
+		ImGui::SliderInt("Seconds until load into game", &Defines::SecondsUntilTravel, 1, 30);
+
+	if (!Defines::bIsPlayground && !Defines::bIsGoingToPlayMainEvent)
+		ImGui::InputText("Playlist", &Defines::Playlist);
+
+	if (ImGui::Checkbox("Going to play event", &Defines::bIsGoingToPlayMainEvent))
+	{
+		Defines::Playlist = Defines::bIsGoingToPlayMainEvent ? Events::GetEventPlaylistName() :
+			Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
+			: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+	}
+
+	if (ImGui::Checkbox("Playground", &Defines::bIsPlayground))
+	{
+		// Defines::bWipeInventoryOnAircraft = Defines::bIsPlayground; // even if its playground it still clears
+		Defines::Playlist = Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
+			: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+	}
+}
+
 DWORD WINAPI GuiThread(LPVOID)
 {
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"RebootClass", NULL };
@@ -802,47 +829,11 @@ DWORD WINAPI GuiThread(LPVOID)
 			ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Always);
 		}
 
-		static int Tab = 1;
-		static int PlayerTab = -1;
-		static bool bIsEditingInventory = false;
-		static bool bInformationTab = false;
-
-		auto bLoaded = Server::BeaconHost; // Looting::bInitialized
-
 		if (!ImGui::IsWindowCollapsed())
 		{
 			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 
-			if (!Defines::bReadyForStartMatch)
-			{
-				MainUI();
-			}
-			else
-			{
-				ImGui::Text(std::format("You will only be able to set these for around {} more second{}!", Defines::SecondsUntilTravel + 6, Defines::SecondsUntilTravel + 6 <= 1 ? "" : "s").c_str());
-
-				ImGui::NewLine();
-
-				if (!Defines::bTraveled)
-					ImGui::InputInt("Seconds until load into game", &Defines::SecondsUntilTravel);
-
-				if (!Defines::bIsPlayground && !Defines::bIsGoingToPlayMainEvent)
-					ImGui::InputText("Playlist", &Defines::Playlist);
-
-				if (ImGui::Checkbox("Going to play event", &Defines::bIsGoingToPlayMainEvent))
-				{
-					Defines::Playlist = Defines::bIsGoingToPlayMainEvent ? Events::GetEventPlaylistName() :
-						Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
-							: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
-				}
-
-				if (ImGui::Checkbox("Playground", &Defines::bIsPlayground))
-				{
-					// Defines::bWipeInventoryOnAircraft = Defines::bIsPlayground; // even if its playground it still clears
-					Defines::Playlist = Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground" 
-						: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
-				}
-			}
+			!Defines::bReadyForStartMatch ? MainUI() : PregameUI();
 
 			ImGui::End();
 		}

@@ -154,7 +154,7 @@ static float GetMaxStackSize(UObject* ItemDefinition)
 		*(int*)(__int64(ItemDefinition) + MaxStackSizeOffset);
 }
 
-bool IncreaseItemCount(UObject* Controller, UObject* Instance, int IncreaseBy, bool bDecrease = false)
+bool ModifyItemCount(UObject* Controller, UObject* Instance, int IncreaseBy, bool bDecrease = false)
 {
 	if (Controller && Instance)
 	{
@@ -192,7 +192,7 @@ bool IncreaseItemCount(UObject* Controller, UObject* Instance, int IncreaseBy, b
 
 bool DecreaseItemCount(UObject* Controller, UObject* Instance, int DecreaseBy)
 {
-	return IncreaseItemCount(Controller, Instance, DecreaseBy, true);
+	return ModifyItemCount(Controller, Instance, DecreaseBy, true);
 }
 
 UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
@@ -317,7 +317,7 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 				// checks if it is going to overstack, if it is then we subtract the incoming count by the overstack, but its not then we just use the incoming count.
 				int AmountToStack = OverStack > 0 ? Count - OverStack : Count;
 
-				IncreaseItemCount(Controller, StackingItemInstance, AmountToStack);
+				ModifyItemCount(Controller, StackingItemInstance, AmountToStack);
 
 				if (OverStack <= 0) // there is no overstack, we can now return peacefully.
 					return StackingItemInstance;
@@ -704,7 +704,7 @@ UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
 			{
 				auto ItemGuid = UFortItem::GetGuid(ItemInstance);
 
-				if (*ItemGuid == Guid)
+				if (!IsBadReadPtr(ItemGuid) && *ItemGuid == Guid)
 					return ItemInstance;
 			}
 		}
@@ -907,7 +907,7 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	if (!Instance)
 		return false;
 
-	*bPickedUp = false;
+	*bPickedUp = true;
 
 	static auto OnRep_bPickedUp = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_bPickedUp");
 	Pickup->ProcessEvent(OnRep_bPickedUp);

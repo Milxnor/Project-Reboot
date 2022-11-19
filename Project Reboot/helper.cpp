@@ -314,7 +314,18 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 	}
 
 	static auto ClientOnPawnSpawned = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnSpawned");
-	Controller->ProcessEvent(ClientOnPawnSpawned);
+
+	if (ClientOnPawnSpawned)
+		Controller->ProcessEvent(ClientOnPawnSpawned); // IDK
+
+	// SetHealth(Pawn, 100);
+	// SetShield(Pawn, 0);
+
+	if (Engine_Version <= 420)
+	{
+		SetMaxHealth(Pawn, 100);
+		SetMaxShield(Pawn, 100);
+	}
 
 	return Pawn;
 }
@@ -602,6 +613,140 @@ UObject* Helper::GetGameData()
 
 	static auto GameDataOffset = AssetManager->GetOffset("GameData");
 	return GameDataOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataOffset);
+}
+
+UObject* GetHealthSet(UObject* Pawn)
+{
+	static auto HealthSetOffset = FindOffsetStruct2("Class /Script/FortniteGame.FortPawn", "HealthSet");
+
+	std::cout << "HealthSetOffset: " << HealthSetOffset << '\n';
+
+	auto HealthSet = *Get<UObject*>(Pawn, HealthSetOffset);
+
+	return HealthSet;
+}
+
+void Helper::SetHealth(UObject* Pawn, float Health)
+{
+	auto HealthSet = GetHealthSet(Pawn);
+
+	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+	static auto HealthOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "Health");
+
+	if (HealthOffset != 0)
+	{
+		auto HealthData = (__int64*)(__int64(HealthSet) + HealthOffset);
+
+		*(float*)(__int64(HealthData) + CurrentValueOffset) = Health;
+	}
+
+	static UFunction* OnRep_Health = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Health");
+
+	if (OnRep_Health)
+		HealthSet->ProcessEvent(OnRep_Health);
+}
+
+void Helper::SetMaxHealth(UObject* Pawn, float MaxHealth)
+{
+	static auto MaximumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Maximum");
+
+	auto HealthSet = GetHealthSet(Pawn);
+
+	static auto MaxHealthOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "MaxHealth");
+
+	if (MaxHealthOffset != 0)
+	{
+		auto MaxHealthData = (__int64*)(__int64(HealthSet) + MaxHealthOffset);
+
+		*(float*)(__int64(MaxHealthData) + MaximumOffset) = MaxHealth;
+	}
+
+	static UFunction* OnRep_MaxHealth = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_MaxHealth");
+
+	if (OnRep_MaxHealth)
+		HealthSet->ProcessEvent(OnRep_MaxHealth);
+}
+
+void Helper::SetShield(UObject* Pawn, float Shield)
+{
+	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+	static auto PS_CurrentShieldOffset = PlayerState->GetOffset("CurrentShield", false, false, false);
+
+	if (PS_CurrentShieldOffset != 0)
+		*(float*)(__int64(PlayerState) + PS_CurrentShieldOffset) = Shield;
+
+	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+	static auto BaseValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "BaseValue");
+
+	auto HealthSet = GetHealthSet(Pawn);
+
+	static auto ShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "Shield");
+	static auto CurrentShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "CurrentShield");
+
+	if (ShieldOffset != 0)
+	{
+		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+		*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
+		*(float*)(__int64(ShieldData) + BaseValueOffset) = Shield;
+	}
+
+	if (CurrentShieldOffset != 0)
+	{
+		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
+		*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
+		*(float*)(__int64(CurrentShieldData) + BaseValueOffset) = Shield;
+	}
+
+	static UFunction* OnRep_Shield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Shield");
+
+	if (OnRep_Shield)
+		HealthSet->ProcessEvent(OnRep_Shield);
+
+	static UFunction* OnRep_CurrentShield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_CurrentShield");
+
+	if (OnRep_CurrentShield)
+		HealthSet->ProcessEvent(OnRep_CurrentShield);
+}
+
+void Helper::SetMaxShield(UObject* Pawn, float MaxShield)
+{
+	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+	static auto MaxShieldOffset = PlayerState->GetOffset("MaxShield", false, false, false);
+
+	if (MaxShieldOffset != 0)
+		*(float*)(__int64(PlayerState) + MaxShieldOffset) = MaxShield;
+
+	static auto MaximumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Maximum");
+
+	auto HealthSet = GetHealthSet(Pawn);
+
+	static auto ShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "Shield");
+	static auto CurrentShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "CurrentShield");
+
+	if (ShieldOffset != 0)
+	{
+		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+		*(float*)(__int64(ShieldData) + MaximumOffset) = MaxShield;
+	}
+
+	if (CurrentShieldOffset != 0)
+	{
+		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+		*(float*)(__int64(CurrentShieldData) + MaximumOffset) = MaxShield;
+	}
+
+	static UFunction* OnRep_Shield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Shield");
+
+	if (OnRep_Shield)
+		HealthSet->ProcessEvent(OnRep_Shield);
+
+	static UFunction* OnRep_CurrentShield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_CurrentShield");
+
+	if (OnRep_CurrentShield)
+		HealthSet->ProcessEvent(OnRep_CurrentShield);
 }
 
 FVector Helper::GetActorForwardVector(UObject* Actor)
