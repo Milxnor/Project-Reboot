@@ -1,6 +1,7 @@
 #include "helper.h"
 #include "inventory.h"
 #include <format>
+#include "server.h"
 
 UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rotation, UObject* Owner)
 {
@@ -549,12 +550,16 @@ int* Helper::GetPlayersLeft()
 
 void Helper::LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn)
 {
+	if (!Server::BeaconHost)
+		return;
+
 	auto World = Helper::GetWorld();
 
 	if (World)
 	{
 		static auto NetDriverOffset = World->GetOffset("NetDriver");
 		auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
+
 		if (NetDriver)
 		{
 			static auto ClientConnectionsOffset = NetDriver->GetOffset("ClientConnections");
@@ -596,7 +601,7 @@ UObject* Helper::GetGameData()
 	UObject* AssetManager = *Get<UObject*>(Engine, AssetManagerOffset);
 
 	static auto GameDataOffset = AssetManager->GetOffset("GameData");
-	return *Get<UObject*>(AssetManager, GameDataOffset);
+	return GameDataOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataOffset);
 }
 
 FVector Helper::GetActorForwardVector(UObject* Actor)
@@ -754,4 +759,19 @@ FName Helper::Conversion::StringToName(FString& String)
 	Default__KismetStringLibrary->ProcessEvent(Conv_StringToName, &Conv_StringToName_Params);
 
 	return Conv_StringToName_Params.ReturnValue;
+}
+
+FString Helper::Conversion::TextToString(FText Text)
+{
+	static auto KTL = FindObject(("/Script/Engine.Default__KismetTextLibrary"));
+
+	FString String;
+
+	static auto fn = FindObject<UFunction>("/Script/Engine.KismetTextLibrary.Conv_TextToString");
+
+	struct { FText InText; FString ReturnValue; } params{ Text };
+
+	KTL->ProcessEvent(fn, &params);
+
+	return params.ReturnValue;
 }

@@ -45,6 +45,8 @@ UObject* Looting::GetLP()
 		auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424
 			? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
+		std::cout << "LootPackagesName: " << LootPackagesName << '\n';
+
 		auto ClassToUse = (LootPackagesName.contains("Composite")) ?
 			FindObject("/Script/Engine.CompositeDataTable") : FindObject("/Script/Engine.DataTable");
 

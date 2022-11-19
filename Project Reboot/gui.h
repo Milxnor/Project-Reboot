@@ -264,6 +264,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 		static int Tab = 1;
 		static int PlayerTab = -1;
+		static bool bIsEditingInventory = false;
 		static bool bInformationTab = false;
 
 		auto bLoaded = Server::BeaconHost; // Looting::bInitialized;
@@ -284,7 +285,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 				// if (serverStatus == EServerStatus::Up)
 				{
-					if (false && ImGui::BeginTabItem(ICON_FA_PEOPLE_CARRY " Players"))
+					if (ImGui::BeginTabItem(ICON_FA_PEOPLE_CARRY " Players"))
 					{
 						Tab = PLAYERS_TAB;
 						ImGui::EndTabItem();
@@ -358,6 +359,8 @@ DWORD WINAPI GuiThread(LPVOID)
 				ImGui::EndTabBar();
 			}
 
+			std::vector<UObject*> AllControllers;
+
 			if (PlayerTab == -1)
 			{
 				if (Tab == GAME_TAB)
@@ -384,7 +387,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 						auto TimeSeconds = Helper::GetTimeSeconds();
 
-						if (*WarmupCountdownEndTime - 40 > TimeSeconds && *WarmupCountdownEndTime != -1) // IDK
+						if (*WarmupCountdownEndTime - 10 >= TimeSeconds && *WarmupCountdownEndTime != -1) // IDK
 							*WarmupCountdownEndTime = TimeSeconds + 40;
 
 						ImGui::Checkbox("Playground", &Defines::bIsPlayground);
@@ -403,109 +406,112 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							std::cout << "Skid: " << BuildingItemCollectorActorActors.size() << '\n';
 
-							// for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
-							for (int i = 0; i < BuildingItemCollectorActorActors.size(); i++)
+							auto GameData = Helper::GetGameData();
+
+							if (GameData)
 							{
-								auto BuildingItemCollectorActor = BuildingItemCollectorActorActors.At(i);
-
-								std::cout << "A!\n";
-
-								static auto CollectorUnitInfoClassName = FindObject("/Script/FortniteGame.CollectorUnitInfo") ? "/Script/FortniteGame.CollectorUnitInfo" :
-									"/Script/FortniteGame.ColletorUnitInfo";
-
-								static auto CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName);
-
-								static auto CollectorUnitInfoClassSize = Helper::GetSizeOfClass(CollectorUnitInfoClass);
-
-								static auto ItemCollectionsOffset = BuildingItemCollectorActor->GetOffset("ItemCollections");
-
-								TArray<__int64>* ItemCollections = Get<TArray<__int64>>(BuildingItemCollectorActor, ItemCollectionsOffset); // CollectorUnitInfo
-
-								static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem", false, true);
-
-								std::cout << "OutputItemOffset: " << OutputItemOffset << '\n';
-
-								int rand = GetRandomInt(3, 5);
-
-								ERarity Rarity = (ERarity)rand;
-
-								std::cout << "Rarity: " << (int)Rarity << '\n';
-
-								auto Def0 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
-								auto Def1 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
-								auto Def2 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
-
-								std::cout << "Def0: " << Def0 << '\n';
-								std::cout << "Def1: " << Def1 << '\n';
-								std::cout << "Def2: " << Def2 << '\n';
-
-								static auto SetRarityColors = FindObject<UFunction>("/Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C.SetRarityColors");
-
-								auto GameData = Helper::GetGameData();
-
-								struct FFortRarityItemData
+								// for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
+								for (int i = 0; i < BuildingItemCollectorActorActors.size(); i++)
 								{
-									char Name[0x18];
-									FLinearColor                          Color1;                                            // 0x18(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-									FLinearColor                          Color2;                                            // 0x28(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-									FLinearColor                          Color3;                                            // 0x38(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-									FLinearColor                          Color4;                                            // 0x48(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-									FLinearColor                          Color5;
-								};
+									auto BuildingItemCollectorActor = BuildingItemCollectorActorActors.At(i);
 
-								FLinearColor Color{};
+									std::cout << "A!\n";
 
-								constexpr bool bGetColorFromRarityData = false;
+									static auto CollectorUnitInfoClassName = FindObject("/Script/FortniteGame.CollectorUnitInfo") ? "/Script/FortniteGame.CollectorUnitInfo" :
+										"/Script/FortniteGame.ColletorUnitInfo";
 
-								if (bGetColorFromRarityData)
-								{
-									bool bIsSoftObjectPtr = Engine_Version > 420; // Idk when
+									static auto CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName);
 
-									auto RarityDataOffset = GameData->GetOffset("RarityData");
-									auto RarityData = bIsSoftObjectPtr ? Get<TSoftObjectPtr>(GameData, RarityDataOffset)->Get(nullptr, true) : *Get<UObject*>(GameData, RarityDataOffset);
+									static auto CollectorUnitInfoClassSize = Helper::GetSizeOfClass(CollectorUnitInfoClass);
 
-									// std::cout << "RarityData: " << RarityData << '\n';
+									static auto ItemCollectionsOffset = BuildingItemCollectorActor->GetOffset("ItemCollections");
 
-									static auto RarityCollectionOffset = RarityData->GetOffset("RarityCollection");
-									// FFortRarityItemData* RarityCollections[0x8] = Get<FFortRarityItemData[0x8]>(RarityData, RarityCollectionOffset); // 0x8-0xA
+									TArray<__int64>* ItemCollections = Get<TArray<__int64>>(BuildingItemCollectorActor, ItemCollectionsOffset); // CollectorUnitInfo
 
-									FFortRarityItemData* aa = *Get<FFortRarityItemData*>(RarityData, RarityCollectionOffset); // [(int)Rarity - 1] ;// RarityCollections[(int)Rarity - 1];
+									static auto OutputItemOffset = FindOffsetStruct2(CollectorUnitInfoClassName, "OutputItem", false, true);
 
-									static auto SizeOfFFortRarityItemData = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortRarityItemData"));
-									FFortRarityItemData RarityCollection = *(FFortRarityItemData*)(__int64(aa) + (SizeOfFFortRarityItemData * ((int)Rarity - 1)));
+									std::cout << "OutputItemOffset: " << OutputItemOffset << '\n';
 
-									// FLinearColor Color = Rarity == ERarity::Rare ? RarityCollection->Color3 : 
-										// Rarity == ERarity::Epic ? RarityCollection->Color4 : RarityCollection->Color5;
+									int rand = GetRandomInt(3, 5);
 
-									FLinearColor Color = RarityCollection.Color1;
+									ERarity Rarity = (ERarity)rand;
 
-									std::cout << "Color Before: " << Color.Describe() << '\n';
+									std::cout << "Rarity: " << (int)Rarity << '\n';
 
-									/* static auto GetRarityData = FindObject<UFunction>("/Script/FortniteGame.FortRarityData.BPGetRarityData");
-									struct { UObject* ItemDef; FFortRarityItemData RarityItemData; } GetRarityDataparms{Def0};
-									RarityData->ProcessEvent(GetRarityData, &GetRarityDataparms);
+									auto Def0 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
+									auto Def1 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
+									auto Def2 = Looting::GetRandomItem(ItemType::Weapon, Looting::LootItems, Rarity).Definition;
 
-									Color = GetRarityDataparms.RarityItemData.Color1; */
+									std::cout << "Def0: " << Def0 << '\n';
+									std::cout << "Def1: " << Def1 << '\n';
+									std::cout << "Def2: " << Def2 << '\n';
+
+									static auto SetRarityColors = FindObject<UFunction>("/Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C.SetRarityColors");
+
+									struct FFortRarityItemData
+									{
+										char Name[0x18];
+										FLinearColor                          Color1;                                            // 0x18(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+										FLinearColor                          Color2;                                            // 0x28(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+										FLinearColor                          Color3;                                            // 0x38(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+										FLinearColor                          Color4;                                            // 0x48(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+										FLinearColor                          Color5;
+									};
+
+									FLinearColor Color{};
+
+									constexpr bool bGetColorFromRarityData = false;
+
+									if (bGetColorFromRarityData)
+									{
+										bool bIsSoftObjectPtr = Engine_Version > 420; // Idk when
+
+										auto RarityDataOffset = GameData->GetOffset("RarityData");
+										auto RarityData = bIsSoftObjectPtr ? Get<TSoftObjectPtr>(GameData, RarityDataOffset)->Get(nullptr, true) : *Get<UObject*>(GameData, RarityDataOffset);
+
+										// std::cout << "RarityData: " << RarityData << '\n';
+
+										static auto RarityCollectionOffset = RarityData->GetOffset("RarityCollection");
+										// FFortRarityItemData* RarityCollections[0x8] = Get<FFortRarityItemData[0x8]>(RarityData, RarityCollectionOffset); // 0x8-0xA
+
+										FFortRarityItemData* aa = *Get<FFortRarityItemData*>(RarityData, RarityCollectionOffset); // [(int)Rarity - 1] ;// RarityCollections[(int)Rarity - 1];
+
+										static auto SizeOfFFortRarityItemData = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortRarityItemData"));
+										FFortRarityItemData RarityCollection = *(FFortRarityItemData*)(__int64(aa) + (SizeOfFFortRarityItemData * ((int)Rarity - 1)));
+
+										// FLinearColor Color = Rarity == ERarity::Rare ? RarityCollection->Color3 : 
+											// Rarity == ERarity::Epic ? RarityCollection->Color4 : RarityCollection->Color5;
+
+										FLinearColor Color = RarityCollection.Color1;
+
+										std::cout << "Color Before: " << Color.Describe() << '\n';
+
+										/* static auto GetRarityData = FindObject<UFunction>("/Script/FortniteGame.FortRarityData.BPGetRarityData");
+										struct { UObject* ItemDef; FFortRarityItemData RarityItemData; } GetRarityDataparms{Def0};
+										RarityData->ProcessEvent(GetRarityData, &GetRarityDataparms);
+
+										Color = GetRarityDataparms.RarityItemData.Color1; */
+									}
+									else
+									{
+										// got from 3.5 raritydata
+
+										// Color = Rarity == ERarity::Rare ? FLinearColor(0, 255, 245.99493, 255) :
+											// Rarity == ERarity::Epic ? FLinearColor(213.350085, 5.1, 255, 255) : FLinearColor(245.995185, 138.98724, 31.979295, 255);
+
+										Color = Rarity == ERarity::Rare ? FLinearColor(0, 1, 0.964686, 1) :
+											Rarity == ERarity::Epic ? FLinearColor(0.836667, 0.02, 1, 1) : FLinearColor(0.964687, 0.545048, 0.125409, 1);
+									}
+
+									std::cout << "Color After: " << Color.Describe() << '\n';
+
+									*Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def0;
+									*Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def1;
+									*Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def2;
+
+									BuildingItemCollectorActor->ProcessEvent(SetRarityColors, &Color);
 								}
-								else
-								{
-									// got from 3.5 raritydata
-
-									// Color = Rarity == ERarity::Rare ? FLinearColor(0, 255, 245.99493, 255) :
-										// Rarity == ERarity::Epic ? FLinearColor(213.350085, 5.1, 255, 255) : FLinearColor(245.995185, 138.98724, 31.979295, 255);
-
-									Color = Rarity == ERarity::Rare ? FLinearColor(0, 1, 0.964686, 1) :
-										Rarity == ERarity::Epic ? FLinearColor(0.836667, 0.02, 1, 1) : FLinearColor(0.964687, 0.545048, 0.125409, 1);
-								}
-
-								std::cout << "Color After: " << Color.Describe() << '\n';
-
-								*Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def0;
-								*Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def1;
-								*Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def2;
-
-								BuildingItemCollectorActor->ProcessEvent(SetRarityColors, &Color);
-							}
+							}			
 
 							BuildingItemCollectorActorActors.Free();
 						}
@@ -564,64 +570,65 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 
 						ImGui::Text(("Game has been going on for " + std::to_string(TimeSeconds)).c_str());
-						ImGui::SliderFloat("Warmup end", WarmupCountdownEndTime, TimeSeconds + 10, TimeSeconds + 1000);
+						ImGui::SliderFloat("Warmup end", WarmupCountdownEndTime, TimeSeconds + 9, TimeSeconds + 1000);
 					}
 				}
 
-				else if (false && Tab == PLAYERS_TAB)
+				else if (Tab == PLAYERS_TAB)
 				{
 					if (bLoaded)
 					{
-						std::vector<UObject*> AllControllers;
+						auto World = Helper::GetWorld();
 
-						auto labmada = [&AllControllers](UObject* Controller) {
-							AllControllers.push_back(Controller);
-						};
-
-						Helper::LoopConnections(labmada);
-
-						if (PlayerTab != -1)
+						if (World)
 						{
-							for (int i = 0; i < AllControllers.size(); i++)
+							static auto NetDriverOffset = World->GetOffset("NetDriver");
+							auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
+
+							if (NetDriver)
 							{
-								auto CurrentController = AllControllers.at(i);
+								static auto ClientConnectionsOffset = NetDriver->GetOffset("ClientConnections");
+								auto ClientConnections = (TArray<UObject*>*)(__int64(NetDriver) + ClientConnectionsOffset);
 
-								auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
-
-								/* FString NameFStr;
-
-								static auto GetPlayerName = FindObject<UFunction>("/Script/Engine.PlayerState.GetPlayerName");
-								CurrentPlayerState->ProcessEvent(GetPlayerName, &NameFStr);
-
-								const wchar_t* NameWCStr = NameFStr.Data.Data;
-								std::wstring NameWStr = std::wstring(NameWCStr);
-								std::string Name = std::string(NameWStr.begin(), NameWStr.end());
-
-								auto NameCStr = Name.c_str();
-
-								if (ImGui::Button(NameCStr))
+								if (ClientConnections)
 								{
-									PlayerTab = i;
-								} */
-							}
-						}
-						else
-						{
-							auto CurrentController = AllControllers.at(PlayerTab);
-							static std::string WID;
-							ImGui::InputText("WID To Give", &WID);
+									for (int i = 0; i < ClientConnections->Num(); i++)
+									{
+										auto Connection = ClientConnections->At(i);
 
-							if (ImGui::Button("Give Item"))
-							{
-								if (WID.find(".") == std::string::npos)
-									WID = std::format("{}.{}", WID, WID);
+										if (!Connection)
+											continue;
 
-								auto wid = FindObjectSlow(WID);
+										static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
+										auto CurrentController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
 
-								if (wid)
-									Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
-								else
-									std::cout << "Unable to find WID!\n";
+										if (CurrentController)
+										{
+											AllControllers.push_back(CurrentController);
+
+											auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
+
+											if (!CurrentPlayerState)
+												continue;
+
+											FString NameFStr;
+
+											static auto GetPlayerName = FindObject<UFunction>("/Script/Engine.PlayerState.GetPlayerName");
+											CurrentPlayerState->ProcessEvent(GetPlayerName, &NameFStr);
+
+											const wchar_t* NameWCStr = NameFStr.Data.Data;
+											std::wstring NameWStr = std::wstring(NameWCStr);
+											std::string Name = std::string(NameWStr.begin(), NameWStr.end());
+
+											auto NameCStr = Name.c_str();
+
+											if (ImGui::Button(NameCStr))
+											{
+												PlayerTab = i;
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -671,6 +678,128 @@ DWORD WINAPI GuiThread(LPVOID)
 							FName unvaultedItemNameFName = Helper::Conversion::StringToName(unvaultedItemNameFStr);
 
 							Events::Unvault(unvaultedItemNameFName);
+						}
+					}
+				}
+			}
+			else if (PlayerTab != 1 && bLoaded)
+			{
+				auto World = Helper::GetWorld();
+
+				if (World) // Ima die
+				{
+					static auto NetDriverOffset = World->GetOffset("NetDriver");
+					auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
+
+					if (NetDriver)
+					{
+						static auto ClientConnectionsOffset = NetDriver->GetOffset("ClientConnections");
+						auto ClientConnections = (TArray<UObject*>*)(__int64(NetDriver) + ClientConnectionsOffset);
+
+						if (ClientConnections)
+						{
+							for (int i = 0; i < ClientConnections->Num(); i++)
+							{
+								auto Connection = ClientConnections->At(i);
+
+								if (!Connection)
+									continue;
+
+								static auto Connection_PlayerControllerOffset = Connection->GetOffset("PlayerController");
+								auto CurrentController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+
+								if (CurrentController)
+								{
+									AllControllers.push_back(CurrentController);
+								}
+							}
+						}
+					}
+				}
+
+				if (PlayerTab < AllControllers.size())
+				{
+					auto CurrentController = AllControllers.at(PlayerTab);
+
+					if (!bIsEditingInventory)
+					{
+						static std::string WID;
+						static std::string KickReason = "You have been kicked!";
+
+						ImGui::InputText("WID To Give", &WID);
+
+						if (ImGui::Button("Give Item"))
+						{
+							std::string cpywid;
+
+							if (WID.find(".") == std::string::npos)
+								cpywid = std::format("{}.{}", WID, WID);
+
+							auto wid = FindObjectSlow(cpywid);
+
+							if (wid)
+								Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
+							else
+								std::cout << "Unable to find WID!\n";
+						}
+
+						ImGui::InputText("Kick Reason", &KickReason);
+
+						if (ImGui::Button("Kick"))
+						{
+							std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
+							FString Reason;
+							Reason.Set(wstr.c_str());
+
+							static auto ClientReturnToMainMenu = FindObject<UFunction>("/Script/Engine.PlayerController.ClientReturnToMainMenu");
+							CurrentController->ProcessEvent(ClientReturnToMainMenu, &Reason);
+						}
+
+						if (ImGui::Button("Edit Inventory"))
+						{
+							bIsEditingInventory = true;
+						}
+					}
+					else
+					{
+						if (false)
+						{
+							std::vector<UObject*> PrimaryQuickbarInstances;
+
+							auto ItemInstances = Inventory::GetItemInstances(CurrentController);
+
+							for (int i = 0; i < ItemInstances->Num(); i++)
+							{
+								auto ItemInstance = ItemInstances->At(i);
+
+								if (!ItemInstance)
+									continue;
+
+								auto Def = *UFortItem::GetDefinition(ItemInstance);
+
+								if (Def && Inventory::WhatQuickBars(Def) == EFortQuickBars::Primary)
+								{
+									PrimaryQuickbarInstances.push_back(ItemInstance);
+
+									static auto DisplayNameOffset = Def->GetOffset("DisplayName");
+									auto DisplayNameFText = Get<FText>(Def, DisplayNameOffset);
+									auto DisplayNameFStr = Helper::Conversion::TextToString(*DisplayNameFText);
+
+									if (!DisplayNameFStr.Data.Data)
+										continue;
+
+									auto DisplayNameStr = DisplayNameFStr.ToString();
+
+									auto Count = *UFortItem::GetCount(ItemInstance);
+
+									TextCentered(std::format("{} {}", Count, DisplayNameStr));
+								}
+							}
+						}
+
+						if (ImGui::Button("Back"))
+						{
+							bIsEditingInventory = false;
 						}
 					}
 				}

@@ -247,7 +247,7 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 		bool bDontCreateNewStack = false;
 		bool bShouldStack = false;
 
-		static auto FortResourceItemDefinition = FindObject(("/Script/FortniteGame.FortResourceItemDefinition"));
+		static auto FortResourceItemDefinition = FindObject("/Script/FortniteGame.FortResourceItemDefinition");
 
 		if (ItemDefinition->IsA(FortResourceItemDefinition))
 			bDontCreateNewStack = true;
@@ -538,9 +538,9 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance, int Ammo
 EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
 {
 	static auto FortWeaponItemDefinitionClass = FindObject("/Script/FortniteGame.FortWeaponItemDefinition");
-	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition"); // FindObject("/Script/FortniteGame.FortDecoItemDefinition");
+	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition"); // FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 
-	if (Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortDecoItemDefinitionClass))
+	if (Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortTrapItemDefinitionClass))
 		return EFortQuickBars::Primary;
 	else
 		return EFortQuickBars::Secondary;
@@ -620,9 +620,14 @@ UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, 
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
 			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (Engine_Version >= 426 && Fortnite_Version < 15) // idk if right
+		else if (Engine_Version >= 426 && Fortnite_Version < 14.60) // idk if right
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
+			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Fortnite_Version == 14.60) // idk when they did it
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x180]; };
 			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 		else if (Fortnite_Version >= 15 && Fortnite_Version < 18)
@@ -780,11 +785,6 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	if (*bPickedUp)
 		return false;
 
-	*bPickedUp = false;
-
-	static auto OnRep_bPickedUp = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_bPickedUp");
-	Pickup->ProcessEvent(OnRep_bPickedUp);
-
 	auto PickupEntry = Helper::GetEntryFromPickup(Pickup);
 
 	auto Definition = FFortItemEntry::GetItemDefinition(PickupEntry);
@@ -860,12 +860,26 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 		auto CurrentWeaponGuid = Inventory::GetWeaponGuid(CurrentWeapon);
 		auto CurrentWeaponInstance = Inventory::FindItemInInventory(Controller, CurrentWeaponDef); // ugh
 
+		if (!CurrentWeaponInstance)
+		{
+			std::cout << std::format("[{}] Unable to find current weapon instance!\n", __FUNCTION__);
+			return false;
+		}
+
 		struct { FGuid ItemGuid; int Count; } drop_parms{ CurrentWeaponGuid, *UFortItem::GetCount(CurrentWeaponInstance) };
 
 		Inventory::ServerAttemptInventoryDrop(Controller, nullptr, &drop_parms);
 	}
 
 	auto Instance = GiveItem(Controller, *Definition, WhatQuickBars(*Definition), NextSlot, *Count);
+
+	if (!Instance)
+		return false;
+
+	*bPickedUp = false;
+
+	static auto OnRep_bPickedUp = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_bPickedUp");
+	Pickup->ProcessEvent(OnRep_bPickedUp);
 
 	auto NewEntry = UFortItem::GetItemEntry(Instance);
 	
@@ -892,7 +906,11 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 
 	auto entry = Inventory::GetEntryFromWeapon(Controller, Weapon);
 
-	FFortItemEntry::SetLoadedAmmo(entry, Controller, *Get<int>(Weapon, AmmoCountOffset));
+	auto WepAmmoCount = *Get<int>(Weapon, AmmoCountOffset);
+
+	std::cout << "WepAmmoCount: " << WepAmmoCount << '\n';
+
+	FFortItemEntry::SetLoadedAmmo(entry, Controller, WepAmmoCount);
 
 	if (Defines::bIsPlayground)
 		return;

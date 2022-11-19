@@ -243,7 +243,9 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
     std::cout << "giving ability: " << DefaultObject->GetFullName() << '\n';
 
-    if (Fortnite_Season >= 14 && Fortnite_Season < 17)
+    if (Fortnite_Season == 13)
+        Defines::GiveAbilityS13(AbilitySystemComponent, Handle, *(PadHexC0*)NewSpec);
+    else if (Fortnite_Season >= 14 && Fortnite_Season < 17)
         Defines::GiveAbilityS14ABOVE(AbilitySystemComponent, Handle, *(PadHexE0*)NewSpec);
     else if (Fortnite_Season >= 17)
         Defines::GiveAbilityS17ABOVE(AbilitySystemComponent, Handle, *(PadHexE8*)NewSpec);

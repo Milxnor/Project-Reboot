@@ -479,18 +479,20 @@ void Events::StartEvent()
 					auto loader_startevent = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.startevent");
 					auto BB = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.OnReady_093B6E664C060611B28F79B5E7052A39");
 					auto CC = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.OnReady_7FE9744D479411040654F5886C078D08");
+					auto loader_callstarteventonscripting = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting");
 
-					// Loader->ProcessEvent(CC, &bbparms);
+					Loader->ProcessEvent(CC, &bbparms);
 					Scripting->ProcessEvent(BB, &bbparms);
 					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
-					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
+					// Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
+					Loader->ProcessEvent(loader_callstarteventonscripting, &SecondsSinceEventBegan);
 				}
 			}
 		}
 
 		else if (Fortnite_Version == 12.61)
 		{
-			if (false)
+			// if (false)
 			{
 				auto Scripting = GetEventScripting();
 
@@ -500,10 +502,10 @@ void Events::StartEvent()
 					Scripting->ProcessEvent(bb, &bbparms);
 
 					auto startevent = FindObject<UFunction>("/Fritter/BP_Fritter_Script.BP_Fritter_Script_C.startevent");
-					Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
+					// Scripting->ProcessEvent(startevent, &SecondsSinceEventBegan);
 				}
 			}
-			else
+			// else
 			{
 				auto Loader = GetEventLoader();
 
@@ -513,7 +515,9 @@ void Events::StartEvent()
 					Loader->ProcessEvent(bb, &bbparms);
 
 					auto startevent = FindObject<UFunction>("/Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.startevent");
-					Loader->ProcessEvent(startevent, &SecondsSinceEventBegan);
+					auto callstarteventonscripting = FindObject<UFunction>("/Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.CallStartEventOnScripting");
+					// Loader->ProcessEvent(startevent, &SecondsSinceEventBegan);
+					Loader->ProcessEvent(callstarteventonscripting, &SecondsSinceEventBegan);
 				}
 			}
 		}

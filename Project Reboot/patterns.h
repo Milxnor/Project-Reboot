@@ -371,6 +371,9 @@ static bool InitializePatterns()
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 		// ActorGetNetModePattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 48 8B 9B ? ? ? ? BA ? ? ? ? 8B";
 
+		if (Fortnite_Season == 13)
+			GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49";
+
 		if (Fortnite_Version == 15.30)
 			TickFlushPattern = "4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC 80 02 ? ? 48 8B 05 AF B7 51 04 48 33 C4 48 89 85 ? 01 ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8";
 
@@ -598,7 +601,9 @@ static bool InitializePatterns()
 	else
 		Defines::InternalTryActivateAbility = decltype(Defines::InternalTryActivateAbility)(InternalTryActivateAbilityAddress);
 
-	if (Fortnite_Season >= 14 && Fortnite_Season < 17)
+	if (Fortnite_Season == 13)
+		Defines::GiveAbilityS13 = decltype(Defines::GiveAbilityS13)(GiveAbilityAddress);
+	else if (Fortnite_Season >= 14 && Fortnite_Season < 17)
 		Defines::GiveAbilityS14ABOVE = decltype(Defines::GiveAbilityS14ABOVE)(GiveAbilityAddress);
 	else if (Fortnite_Season >= 17)
 		Defines::GiveAbilityS17ABOVE = decltype(Defines::GiveAbilityS17ABOVE)(GiveAbilityAddress);

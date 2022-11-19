@@ -381,6 +381,7 @@ struct FGuid
 
 struct PadHex18 { char Pad[0x18]; };
 struct PadHex10 { char Pad[0x10]; };
+struct PadHexC0 { char Pad[0xC0]; };
 struct PadHexC8 { char Pad[0xC8]; };
 struct PadHexE0 { char Pad[0xE0]; };
 struct PadHexE8 { char Pad[0xE8]; };

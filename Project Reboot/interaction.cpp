@@ -28,16 +28,30 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 		auto bAlreadySearchedBitfield = Get<PlaceholderBitfield>(BuildingContainer, bAlreadySearchedOffset);
 
-		if (Engine_Version >= 420 && Engine_Version <= 423)
+		if (Engine_Version >= 420 && Fortnite_Season < 10)
 		{
 			if (bAlreadySearchedBitfield->Fourth)
 				return false;
 
 			bAlreadySearchedBitfield->Fourth = true;
-
-			static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
-			BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
 		}
+		else if (Fortnite_Season == 10)
+		{
+			if (bAlreadySearchedBitfield->Sixth)
+				return false;
+
+			bAlreadySearchedBitfield->Sixth = true;
+		}
+		else if (Engine_Version >= 424) // got on 13.40
+		{
+			if (bAlreadySearchedBitfield->Eighth)
+				return false;
+
+			bAlreadySearchedBitfield->Eighth = true;
+		}
+
+		static auto OnRep_bAlreadySearched = FindObject<UFunction>("/Script/FortniteGame.BuildingContainer.OnRep_bAlreadySearched");
+		BuildingContainer->ProcessEvent(OnRep_bAlreadySearched);
 
 		static auto SearchLootTierGroupOffset = BuildingContainer->GetOffset("SearchLootTierGroup");
 		auto SearchLootTierGroup = Get<FName>(BuildingContainer, SearchLootTierGroupOffset);

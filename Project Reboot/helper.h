@@ -65,5 +65,6 @@ namespace Helper
 	namespace Conversion
 	{
 		FName StringToName(FString& String); // We don't want the fstring to never get free'd
+		FString TextToString(FText Text);
 	}
 }
