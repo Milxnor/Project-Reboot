@@ -225,8 +225,10 @@ bool Server::Listen(int Port)
 
 	std::cout << "Listening on port: " << Port << '\n';
 	
-	bool bVersionSupportsNoPrejoin = Engine_Version >= 422;
+	bool bVersionSupportsNoPrejoin = Engine_Version >= 422 && Engine_Version < 500;
 	
+	std::cout << "bVersionSupportsNoPrejoin: " << bVersionSupportsNoPrejoin << '\n';
+
 	if (bVersionSupportsNoPrejoin)
 	{
 		CreateThread(0, 0, PauseThread, 0, 0, 0);
@@ -334,7 +336,7 @@ void Server::Hooks::Initialize()
 		if (!sig)
 			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
 
-		if (Fortnite_Version == 17.50)
+		if (Fortnite_Version >= 17.50)
 			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 45");
 
 		std::cout << "sig: " << sig << '\n';

@@ -6,14 +6,28 @@
 UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rotation, UObject* Owner)
 {
 	bool bUseDouble = Fortnite_Version >= 20.00;
-	bool bUseNewSpawnParameters = false; // die
+	bool bUseNewSpawnParameters = Engine_Version >= 500;
 	auto quat = Rotation.Quaternion();
 
 	if (!bUseDouble)
 	{
+		void* spawnparms;
+
 		FActorSpawnParameters SpawnParameters{};
-		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		SpawnParameters.Owner = Owner;
+		FActorSpawnParametersNew SpawnParametersnew{};
+
+		if (!bUseNewSpawnParameters)
+		{
+			SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			SpawnParameters.Owner = Owner;
+			spawnparms = &SpawnParameters;
+		}
+		else
+		{
+			SpawnParametersnew.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			SpawnParametersnew.Owner = Owner;
+			spawnparms = &SpawnParametersnew;
+		}
 
 		FTransform transform = FTransform(quat, Location);
 
@@ -613,6 +627,22 @@ UObject* Helper::GetGameData()
 
 	static auto GameDataOffset = AssetManager->GetOffset("GameData");
 	return GameDataOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataOffset);
+}
+
+void Helper::SetSnowIndex(int SnowIndex)
+{
+	auto sjt9ase9i = FindObject("/SpecialSurfaceCoverage/Maps/SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.PersistentLevel.BP_Artemis_S19Progression_C_0");
+
+	std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
+
+	if (sjt9ase9i)
+	{
+		auto setprogr = FindObject<UFunction>("/SpecialSurfaceCoverage/Items/BP_Artemis_S19Progression.BP_Artemis_S19Progression_C.SetSnowProgressionPhase");
+		sjt9ase9i->ProcessEvent(setprogr, &SnowIndex);
+
+		auto agh = FindObject<UFunction>("/SpecialSurfaceCoverage/Items/BP_Artemis_S19Progression.BP_Artemis_S19Progression_C.UpdateSnowVisualsOnClient");
+		sjt9ase9i->ProcessEvent(agh); // idk if this is needed
+	}
 }
 
 UObject* GetHealthSet(UObject* Pawn)

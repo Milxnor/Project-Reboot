@@ -83,6 +83,9 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		// *Get<float>(GameState, WarmupCountdownEndTimeOffset) = 1000.f;
 
+		if (Fortnite_Season == 19)
+			Helper::SetSnowIndex(0); // Fill snow
+
 		static bool bbb = false;
 
 		if (!bbb)
@@ -535,7 +538,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		{
 			Server::Listen();
 			Server::Hooks::Initialize();
-		}
+		}	
 
 		static auto GameSessionOffset = GameMode->GetOffset("GameSession");
 		auto GameSession = *Get<UObject*>(GameMode, GameSessionOffset);
@@ -543,7 +546,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		static auto MaxPlayersOffset = GameSession->GetOffset("MaxPlayers");
 		*Get<int>(GameSession, MaxPlayersOffset) = 100; // We would get from playlist but playground max is 4 people..
 
-		if (Fortnite_Season < 16)
+		if (true || Fortnite_Season < 16)
 			Looting::Initialize();
 		else
 			std::cout << "This version does not support looting!\n";
@@ -1512,7 +1515,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "FragmentMovement__UpdateFunc") &&
 			!strstr(FunctionName.c_str(), "TrySetup") &&
 			!strstr(FunctionName.c_str(), "Fade Doused Smoke__UpdateFunc") &&
-			!strstr(FunctionName.c_str(), "SetPlayerToSkydive"))
+			!strstr(FunctionName.c_str(), "SetPlayerToSkydive") &&
+			!strstr(FunctionName.c_str(), "BounceCar__UpdateFunc"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

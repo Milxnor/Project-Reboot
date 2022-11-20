@@ -314,6 +314,17 @@ void MainUI()
 					Defines::bShouldSpawnVehicles = true;
 				}
 
+				if (Fortnite_Season == 19)
+				{
+					static int SnowIndex = 0;
+					ImGui::SliderInt("SnowIndex", &SnowIndex, 0, 8);
+
+					if (ImGui::Button("Set Snow Phase"))
+					{
+						Helper::SetSnowIndex(SnowIndex);
+					}
+				}
+
 				if (ImGui::Button("Fill all vending machines"))
 				{
 					static auto BuildingItemCollectorClass = FindObject("/Script/FortniteGame.BuildingItemCollectorActor");

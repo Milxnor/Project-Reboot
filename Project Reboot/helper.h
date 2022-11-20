@@ -53,6 +53,7 @@ namespace Helper
 	int* GetPlayersLeft();
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 	UObject* GetGameData();
+	void SetSnowIndex(int SnowIndex);
 
 	void SetHealth(UObject* Pawn, float Health);
 	void SetMaxHealth(UObject* Pawn, float MaxHealth);
