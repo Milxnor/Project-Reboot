@@ -238,6 +238,11 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		auto CreativeToolInstance = Inventory::GiveItem(PlayerController, PhoneDef, EFortQuickBars::Primary, 1);
 	}
 
+	// static auto d = FindObject("/ParallelGameplay/Items/WestSausage/WID_WestSausage_Parallel.WID_WestSausage_Parallel");
+	// auto d2 = Inventory::GiveItem(PlayerController, d, EFortQuickBars::Primary, 2);
+
+	// FFortItemEntry::SetLoadedAmmo(UFortItem::GetItemEntry(d2), PlayerController, 100);
+
 	//
 
 	/* static UObject* Def1 = FindObject("/HighTower/Items/HoneyDew/Fist/Abilities/WID_HighTower_HoneyDew_Fists.WID_HighTower_HoneyDew_Fists");
@@ -738,7 +743,10 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	// std::cout << "TeamsLeft: " << TeamsLeft << '\n';
 
-	if (PlayersLeftPtr && !Defines::bIsPlayground)
+	static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+	auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+
+	if (PlayersLeftPtr && !Defines::bIsPlayground && OldPhase > EAthenaGamePhase::Warmup)
 	{
 		(*PlayersLeftPtr)--;
 		auto PlayersLeft = *PlayersLeftPtr;
@@ -805,9 +813,6 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 					}
 				}
 			}
-
-			static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
-			auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
 			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::EndGame;
 

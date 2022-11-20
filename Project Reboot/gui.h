@@ -244,7 +244,7 @@ void MainUI()
 			ImGui::EndTabItem();
 		}
 
-		if (false && ImGui::BeginTabItem("Dump"))
+		if (ImGui::BeginTabItem("Dump"))
 		{
 			Tab = DUMP_TAB;
 			PlayerTab = -1;
@@ -275,6 +275,22 @@ void MainUI()
 
 	std::vector<UObject*> AllControllers;
 
+	float* WarmupCountdownEndTime = nullptr;
+	UObject* GameState = nullptr;
+	float TimeSeconds = 0;
+
+	if (bLoaded)
+	{
+		GameState = Helper::GetGameState();
+		static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+		WarmupCountdownEndTime = Get<float>(GameState, WarmupCountdownEndTimeOffset);
+
+		TimeSeconds = Helper::GetTimeSeconds();
+
+		if (*WarmupCountdownEndTime - 10 >= TimeSeconds && *WarmupCountdownEndTime != -1) // IDK
+			*WarmupCountdownEndTime = TimeSeconds + 40;	
+	}
+
 	if (PlayerTab == -1)
 	{
 		if (Tab == GAME_TAB)
@@ -293,16 +309,6 @@ void MainUI()
 
 					Helper::ExecuteConsoleCommand(cmd);
 				} */
-
-				auto GameState = Helper::GetGameState();
-
-				static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
-				auto WarmupCountdownEndTime = Get<float>(GameState, WarmupCountdownEndTimeOffset);
-
-				auto TimeSeconds = Helper::GetTimeSeconds();
-
-				if (*WarmupCountdownEndTime - 10 >= TimeSeconds && *WarmupCountdownEndTime != -1) // IDK
-					*WarmupCountdownEndTime = TimeSeconds + 40;
 
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
 
@@ -458,23 +464,6 @@ void MainUI()
 					}
 				} */
 
-				if (ImGui::Button("Dump Objects"))
-				{
-					auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
-
-					std::ofstream obj("ObjectsDump.txt");
-
-					for (int i = 0; i < ObjectNum; i++)
-					{
-						auto CurrentObject = GetObjectByIndex(i);
-
-						if (!CurrentObject)
-							continue;
-
-						obj << CurrentObject->GetFullName() << '\n';
-					}
-				}
-
 				if (Defines::bIsCreative && ImGui::Button("Apply"))
 				{
 					auto aa = std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end());
@@ -608,6 +597,124 @@ void MainUI()
 				}
 			}
 		}
+
+		else if (Tab == DUMP_TAB)
+		{
+			static std::string ahh = std::format("Fortnite Version {}\n\n", std::to_string(Fortnite_Version));
+
+			if (ImGui::Button("Dump Objects"))
+			{
+				auto ObjectNum = OldObjects ? OldObjects->Num() : NewObjects->Num();
+
+				std::ofstream obj("ObjectsDump.txt");
+
+				obj << ahh;
+
+				for (int i = 0; i < ObjectNum; i++)
+				{
+					auto CurrentObject = GetObjectByIndex(i);
+
+					if (!CurrentObject)
+						continue;
+
+					obj << CurrentObject->GetFullName() << '\n';
+				}
+			}
+
+			if (ImGui::Button("Dump Skins (Skins.txt)"))
+			{
+				std::ofstream SkinsFile("Skins.txt");
+
+				if (SkinsFile.is_open())
+				{
+					SkinsFile << ahh;
+
+					static auto CIDClass = FindObjectSlow("Class /Script/FortniteGame.AthenaCharacterItemDefinition", false);
+
+					auto AllObjects = Helper::GetAllObjectsOfClass(CIDClass);
+
+					for (int i = 0; i < AllObjects.size(); i++)
+					{
+						auto CurrentCID = AllObjects.at(i);
+
+						static auto DisplayNameOffset = CurrentCID->GetOffset("DisplayName");
+						auto DisplayNameFText = (FText*)(__int64(CurrentCID) + DisplayNameOffset);
+
+						FString DisplayNameFStr = Helper::Conversion::TextToString(*DisplayNameFText);
+
+						if (!DisplayNameFStr.Data.Data)
+							continue;
+
+						SkinsFile << std::format("[{}] {}\n", DisplayNameFStr.ToString(), CurrentCID->GetPathName());
+					}
+				}
+			}
+
+			if (ImGui::Button("Dump Playlists (Playlists.txt)"))
+			{
+				std::ofstream PlaylistsFile("Playlists.txt");
+
+				if (PlaylistsFile.is_open())
+				{
+					PlaylistsFile << ahh;
+					static auto FortPlaylistClass = FindObjectSlow("Class /Script/FortniteGame.FortPlaylist", false);
+					// static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylistAthena");
+
+					auto AllObjects = Helper::GetAllObjectsOfClass(FortPlaylistClass);
+
+					for (int i = 0; i < AllObjects.size(); i++)
+					{
+						auto Object = AllObjects.at(i);
+
+						// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
+						static auto UIDisplayNameOffset = Object->GetOffset("UIDisplayName");
+						FString PlaylistNameFStr = Helper::Conversion::TextToString(*Get<FText>(Object, UIDisplayNameOffset));
+
+						if (!PlaylistNameFStr.Data.Data)
+							continue;
+
+						std::string PlaylistName = PlaylistNameFStr.ToString();
+
+						PlaylistsFile << std::format("[{}] {}\n", PlaylistName, Object->GetPathName());
+					}
+				}
+				else
+					std::cout << "Failed to open playlist file!\n";
+			}
+
+			if (ImGui::Button("Dump Weapons (Weapons.txt)"))
+			{
+				std::ofstream WeaponsFile("Weapons.txt");
+
+				if (WeaponsFile.is_open())
+				{
+					WeaponsFile << ahh;
+					static auto FortWeaponItemDefinitionClass = FindObjectSlow("Class /Script/FortniteGame.FortWeaponItemDefinition", false);
+
+					auto AllObjects = Helper::GetAllObjectsOfClass(FortWeaponItemDefinitionClass);
+
+					for (int i = 0; i < AllObjects.size(); i++)
+					{
+						auto Object = AllObjects.at(i);
+
+						// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
+						static auto DisplayNameOffset = Object->GetOffset("DisplayName");
+						FString ItemDefinitionFStr = Helper::Conversion::TextToString(*Get<FText>(Object, DisplayNameOffset));
+
+						if (!ItemDefinitionFStr.Data.Data)
+							continue;
+
+						std::string ItemDefinitionName = ItemDefinitionFStr.ToString();
+
+						// check if it contains gallery or playset?
+
+						WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetPathName());
+					}
+				}
+				else
+					std::cout << "Failed to open playlist file!\n";
+			}
+		}
 	}
 	else if (PlayerTab != 1 && bLoaded)
 	{
@@ -647,13 +754,20 @@ void MainUI()
 		if (PlayerTab < AllControllers.size())
 		{
 			auto CurrentController = AllControllers.at(PlayerTab);
+			auto CurrentPawn = Helper::GetPawnFromController(CurrentController);
 
 			if (!bIsEditingInventory)
 			{
 				static std::string WID;
 				static std::string KickReason = "You have been kicked!";
+				static int stud = 0;
 
 				ImGui::InputText("WID To Give", &WID);
+
+				auto CurrentWeapon = Helper::GetCurrentWeapon(CurrentPawn);
+				static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
+
+				ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? (int*)(__int64(CurrentWeapon) + AmmoCountOffset) : &stud);
 
 				if (ImGui::Button("Give Item"))
 				{

@@ -813,7 +813,8 @@ std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncl
 	{
 		auto Object = NewObjects ? NewObjects->GetObjectById(i) : NewObjects->GetObjectById(i);
 
-		if (!Object) continue;
+		if (!Object) 
+			continue;
 
 		if (Object->IsA(Class))
 		{

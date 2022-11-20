@@ -940,6 +940,9 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 
 	auto entry = Inventory::GetEntryFromWeapon(Controller, Weapon);
 
+	if (IsBadReadPtr(entry))
+		return;
+
 	auto WepAmmoCount = *Get<int>(Weapon, AmmoCountOffset);
 
 	std::cout << "WepAmmoCount: " << WepAmmoCount << '\n';
