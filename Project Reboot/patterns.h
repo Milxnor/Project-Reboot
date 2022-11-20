@@ -319,6 +319,7 @@ static bool InitializePatterns()
 		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9";
 		CantBuildPattern = "48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0";
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
+		CanActivateAbilityPattern = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 49 8B F0 8B DA";
 	}
 
 	if (Engine_Version == 425)
