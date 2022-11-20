@@ -184,7 +184,7 @@ void MainUI()
 	static bool bIsEditingInventory = false;
 	static bool bInformationTab = false;
 
-	auto bLoaded = Server::BeaconHost; // Looting::bInitialized;
+	auto bLoaded = Server::BeaconHost && !Defines::bIsRestarting; // Looting::bInitialized;
 
 	if (ImGui::BeginTabBar(""))
 	{
@@ -297,7 +297,9 @@ void MainUI()
 		{
 			if (bLoaded)
 			{
-				/* static std::string ConsoleCommand;
+				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
+
+				static std::string ConsoleCommand;
 
 				ImGui::InputText("Console command", &ConsoleCommand);
 
@@ -305,12 +307,13 @@ void MainUI()
 				{
 					auto wstr = std::wstring(ConsoleCommand.begin(), ConsoleCommand.end());
 
-					FString cmd = wstr.c_str();
+					auto aa = wstr.c_str();;
+					FString cmd = aa;
+
+					std::cout << "boi: " << cmd.ToString() << '\n';
 
 					Helper::ExecuteConsoleCommand(cmd);
-				} */
-
-				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
+				}
 
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
@@ -320,10 +323,15 @@ void MainUI()
 					Defines::bShouldSpawnVehicles = true;
 				}
 
+				if (ImGui::Button("Restart"))
+				{
+					Server::Restart();
+				}
+
 				if (Fortnite_Season == 19)
 				{
 					static int SnowIndex = 0;
-					ImGui::SliderInt("SnowIndex", &SnowIndex, 0, 8);
+					ImGui::SliderInt("SnowIndex", &SnowIndex, 0, 6);
 
 					if (ImGui::Button("Set Snow Phase"))
 					{
@@ -764,10 +772,13 @@ void MainUI()
 
 				ImGui::InputText("WID To Give", &WID);
 
-				auto CurrentWeapon = Helper::GetCurrentWeapon(CurrentPawn);
-				static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
+				if (CurrentPawn)
+				{
+					auto CurrentWeapon = Helper::GetCurrentWeapon(CurrentPawn);
+					static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
 
-				ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? (int*)(__int64(CurrentWeapon) + AmmoCountOffset) : &stud);
+					ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? (int*)(__int64(CurrentWeapon) + AmmoCountOffset) : &stud);
+				}
 
 				if (ImGui::Button("Give Item"))
 				{

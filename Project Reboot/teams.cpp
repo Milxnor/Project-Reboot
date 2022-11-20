@@ -15,10 +15,6 @@ bool Teams::AssignTeam(UObject* Controller)
 	using AFortTeamPrivateInfo = UObject;
 	using AController = UObject;
 
-	static constexpr int StartingTeamIndex = 3;
-	static int NextTeamIndex = StartingTeamIndex;
-	static int CurrentNumPlayersOnTeam = 0; // Scuffed
-
 	auto GameState = Helper::GetGameState();
 	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 	auto Playlist = *Helper::GetPlaylist();

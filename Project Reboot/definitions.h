@@ -30,6 +30,7 @@ namespace Defines
 	inline bool bShouldSpawnFloorLoot = false;
 	inline bool bShouldSpawnVehicles = false;
 	inline bool bShouldSpawnForagedItems = false;
+	inline bool bIsRestarting = false;
 	inline UObject* Portal = nullptr;
 
 	inline int AmountOfRestarts = 0;

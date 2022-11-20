@@ -19,6 +19,7 @@ bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Para
 bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* Parameters);
 bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Parameters);
 bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Parameters);
+bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 static bool ClientForceWorldInventoryUpdate(UObject* Controller, UFunction*, void* Parameters) { return true; }
 

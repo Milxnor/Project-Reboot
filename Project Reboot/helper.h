@@ -20,7 +20,7 @@ namespace Helper
 
 	float GetTimeSeconds();
 	bool IsPlayerController(UObject* Object);
-	void ExecuteConsoleCommand(FString& Command);
+	void ExecuteConsoleCommand(FString Command);
 	std::pair<UObject*, int> GetAmmoForDefinition(UObject* Definition);
 	UObject* GetWorld();
 	UObject* GetTransientPackage();
@@ -54,6 +54,12 @@ namespace Helper
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 	UObject* GetGameData();
 	void SetSnowIndex(int SnowIndex);
+	void ExportTexture2DToFile(UObject* Texture, FString Path, FString FileName);
+	FString GetEngineVersion();
+	std::string GetNetCL();
+	std::string GetEngineVer();
+	std::string GetFortniteVersion();
+	void RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks = 1);
 
 	void SetHealth(UObject* Pawn, float Health);
 	void SetMaxHealth(UObject* Pawn, float MaxHealth);

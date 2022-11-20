@@ -4,6 +4,7 @@
 #include "server.h"
 #include "loot.h"
 #include <intrin.h>
+#include "team.h"
 
 void Server::PauseBeaconRequests(bool bPause)
 {
@@ -114,6 +115,9 @@ DWORD WINAPI PauseThread(LPVOID)
 
 bool Server::Listen(int Port)
 {
+	if (Defines::bIsRestarting)
+		Port -= Defines::AmountOfRestarts;
+
 	if (bUseBeacons)
 	{
 		static UObject* BeaconClass = FindObject("/Script/FortniteGame.FortOnlineBeaconHost"); // We use the Fort one because then FindObject will not mistake for the BeaconHostObject.
@@ -225,7 +229,7 @@ bool Server::Listen(int Port)
 
 	std::cout << "Listening on port: " << Port << '\n';
 	
-	bool bVersionSupportsNoPrejoin = Engine_Version >= 422 && Engine_Version < 500;
+	bool bVersionSupportsNoPrejoin = false && Engine_Version >= 422 && Engine_Version < 500;
 	
 	std::cout << "bVersionSupportsNoPrejoin: " << bVersionSupportsNoPrejoin << '\n';
 
@@ -241,6 +245,37 @@ bool Server::Listen(int Port)
 	}
 
 	return true;
+}
+
+void Server::Restart()
+{
+	Defines::AmountOfRestarts++;
+	
+	std::cout << MH_StatusToString(MH_DisableHook((PVOID)TickFlushAddress)) << '\n';
+	std::cout << MH_StatusToString(MH_DisableHook((PVOID)KickPlayerAddress)) << '\n';
+	std::cout << MH_StatusToString(MH_DisableHook((PVOID)ValidationFailureAddress)) << '\n';
+
+	if (Engine_Version < 424)
+		std::cout << MH_StatusToString(MH_DisableHook((PVOID)NoReserveAddress)) << '\n';
+
+	if (BeaconHost)
+		Helper::DestroyActor(BeaconHost);
+
+	BeaconHost = nullptr;
+
+	static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
+
+	FString Level = Defines::GetMapName();
+
+	auto PC = Helper::GetLocalPlayerController();
+
+	PC->ProcessEvent(SwitchLevel, &Level);
+
+	Teams::NextTeamIndex = Teams::StartingTeamIndex;
+	Teams::CurrentNumPlayersOnTeam = 0;
+
+	Defines::bIsRestarting = true;
+	Defines::bReadyForStartMatch = true;
 }
 
 static __int64 rettruae() { return 1; }

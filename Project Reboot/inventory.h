@@ -35,6 +35,22 @@ namespace FFortItemEntry
 		return Count;
 	}
 
+	static bool* GetIsReplicatedCopy(__int64* Entry)
+	{
+		static auto bIsReplicatedCopyOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "bIsReplicatedCopy");
+		auto bIsReplicatedCopy = (bool*)(__int64(Entry) + bIsReplicatedCopyOffset);
+
+		return bIsReplicatedCopy;
+	}
+
+	static bool* GetIsDirty(__int64* Entry)
+	{
+		static auto bIsDirtyOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "bIsDirty");
+		auto bIsDirty = (bool*)(__int64(Entry) + bIsDirtyOffset);
+		
+		return bIsDirty;
+	}
+
 	static int* GetLoadedAmmo(__int64* Entry)
 	{
 		static auto LoadedAmmoOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntry", "LoadedAmmo");

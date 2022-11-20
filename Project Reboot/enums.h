@@ -291,6 +291,29 @@ struct FText
 	char UnknownData[0x18];
 };
 
+enum class EFortCustomBodyType : uint8_t
+{
+	Small = 0,
+	Medium = 1,
+	MediumAndSmall = 2,
+	Large = 3,
+	LargeAndSmall = 4,
+	LargeAndMedium = 5,
+	All = 6,
+	Deprecated = 7,
+	EFortCustomBodyType_MAX = 8
+};
+
+// Enum FortniteGame.EFortCustomGender
+enum class EFortCustomGender : uint8_t
+{
+	Invalid = 0,
+	Male = 1,
+	Female = 2,
+	Both = 3,
+	EFortCustomGender_MAX = 4
+};
+
 enum class EAthenaGamePhase : uint8_t
 {
 	None = 0,
@@ -301,6 +324,22 @@ enum class EAthenaGamePhase : uint8_t
 	EndGame = 5,
 	Count = 6,
 	EAthenaGamePhase_MAX = 7
+};
+
+enum class EFortSharedAnimationState : uint8_t
+{
+	Anim_Walk = 0,
+	Anim_Run = 1,
+	Anim_Turn = 2,
+	Anim_Attack = 3,
+	Anim_Death = 4,
+	Anim_Knockback = 5,
+	Anim_FullBodyHit = 6,
+	Anim_Pushed = 7,
+	Anim_Dance = 8,
+	Anim_Idle = 9,
+	Anim_RangedAttack = 10,
+	Anim_MAX = 11
 };
 
 enum class EFortCustomPartType : uint8_t

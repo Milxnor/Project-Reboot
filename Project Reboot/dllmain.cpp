@@ -83,6 +83,16 @@ DWORD WINAPI Initialize(LPVOID)
         MH_EnableHook((PVOID)hookthisaddr);
     }
 
+    if (Fortnite_Season >= 17)
+    {
+        auto sigcrash = Memory::FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 54 41 56 41 57 48 81 EC ? ? ? ? 65 48 8B 04 25 ? ? ? ? 4C 8B F9");
+
+        std::cout << "sigcrash: " << sigcrash << '\n';
+
+        MH_CreateHook((PVOID)sigcrash, retfalse, nullptr);
+        MH_EnableHook((PVOID)sigcrash);
+    }
+
     // if (false)
     {
         bool bIsSettingGIsClient = true;
@@ -175,6 +185,9 @@ DWORD WINAPI Initialize(LPVOID)
     std::cout << "SizeOfItemEntryStruct: " << Helper::GetSizeOfClass(FFortItemEntry::ItemEntryStruct) << '\n';
     
     // Level.Free();
+
+    std::cout << "Full Version: " << Helper::GetEngineVersion().ToString() << '\n';
+    std::cout << std::format("Engine Version {} Version {} CL {}\n", Helper::GetEngineVer(), Helper::GetFortniteVersion(), Helper::GetNetCL());
 
     auto matchmaking = Memory::FindPattern("83 BD ? ? ? ? 01 7F 18 49 8D 4D D8 48 8B D6 E8 ? ? ? ? 48");
 
@@ -284,6 +297,8 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook(Fortnite_Version < 9 ? "/Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"
         : (Engine_Version < 424 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
+
+    // AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
 
     return 0;
 }

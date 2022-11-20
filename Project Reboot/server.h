@@ -16,12 +16,10 @@ namespace Server
 	// Calls NetDriver->SetWorld
 	void SetWorld(UObject* World);
 
-	/// <summary>
 	/// Returns true if NetDriver started listening successfully
-	/// </summary>
-	/// <param name="Port">The port that the NetDriver will listen on</param>
-	/// <returns></returns>
 	bool Listen(int Port = 7777);
+	
+	void Restart();
 
 	namespace Hooks
 	{

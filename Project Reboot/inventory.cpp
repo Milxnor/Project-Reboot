@@ -107,9 +107,14 @@ void Inventory::Update(UObject* Controller, bool bAddOrRemove, FFastArraySeriali
 	auto Inventory = GetInventory(Controller);
 
 	if (ModifiedItem)
+	{
+		// *FFortItemEntry::GetIsDirty((__int64*)ModifiedItem) = true;
 		FastTArray::MarkItemDirty(Inventory, ModifiedItem);
+	}
 	else if (bAddOrRemove)
+	{
 		FastTArray::MarkArrayDirty(Inventory);
+	}
 
 	auto WorldInventory = GetWorldInventory(Controller);
 
@@ -202,11 +207,7 @@ UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count 
 
 	if (Fortnite_Season < 19)
 	{
-		struct {
-			int count;
-			int level;
-			UObject* instance;
-		} Params{ Count, 1 };
+		struct { int count; int level; UObject* instance; } Params{ Count, 1 };
 
 		static auto CTIIFn = FindObject<UFunction>("/Script/FortniteGame.FortItemDefinition.CreateTemporaryItemInstanceBP");
 		Definition->ProcessEvent(CTIIFn, &Params);
@@ -218,6 +219,9 @@ UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count 
 			static auto SOCFTIFn = FindObject<UFunction>("/Script/FortniteGame.FortItem.SetOwningControllerForTemporaryItem");
 
 			itemInstance->ProcessEvent(SOCFTIFn, &Controller);
+
+			auto Entry = UFortItem::GetItemEntry(itemInstance);
+			*FFortItemEntry::GetIsReplicatedCopy(Entry) = true;
 
 			return itemInstance;
 		}
@@ -826,14 +830,14 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
 	auto CurrentWeaponDef = Helper::GetWeaponData(CurrentWeapon);
 
-	int PrimaryQuickBarSlotsFilled = 0;
-
 	auto ItemInstances = GetItemInstances(Controller);
 
 	bool bShouldSwap = false;
 
 	if (Inventory::WhatQuickBars(*Definition) == EFortQuickBars::Primary)
 	{
+		int PrimaryQuickBarSlotsFilled = 0;
+
 		for (int i = 0; i < ItemInstances->Num(); i++)
 		{
 			auto ItemInstance = ItemInstances->At(i);
@@ -853,11 +857,11 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 			}
 		}
 
+		std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
+
 		if (CurrentWeaponDef == Helper::GetPickaxeDef(Controller) && bShouldSwap)
 			return false;
 	}
-
-	std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
 
 	int NextSlot = 1;
 

@@ -89,20 +89,14 @@ bool Helper::IsPlayerController(UObject* Object)
 	return Object->IsA(PlayerControllerClass);
 }
 
-void Helper::ExecuteConsoleCommand(FString& Command)
+void Helper::ExecuteConsoleCommand(FString Command)
 {
 	struct { UObject* WorldContextObject; FString Command; UObject* SpecificPlayer; } params{ Helper::GetWorld(), Command, nullptr };
 
 	static auto KSLClass = FindObject("/Script/Engine.Default__KismetSystemLibrary");
 
-	if (KSLClass)
-	{
-		// static auto ExecuteConsoleCommandFn = KSLClass->Function(("ExecuteConsoleCommand"));
-		static auto ExecuteConsoleCommandFn = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand");
-		KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
-	}
-	else
-		std::cout << ("No KismetSyustemLibrary!\n");
+	static auto ExecuteConsoleCommandFn = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand");
+	KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
 }
 
 std::pair<UObject*, int> Helper::GetAmmoForDefinition(UObject* Definition)
@@ -299,7 +293,7 @@ UObject* GetRandomCID()
 
 UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCharacterParts)
 {
-	static auto PawnClass = FindObject(("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
+	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
 
 	auto Pawn = Helper::Easy::SpawnActor(PawnClass, Location);
 
@@ -313,14 +307,14 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 	if (bAssignCharacterParts)
 	{
 		{
-			static auto headPart = FindObject(("/Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-			static auto bodyPart = FindObject(("/Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+			static auto headPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1");
+			static auto bodyPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01");
 
 			if (!headPart)
-				headPart = FindObject(("/Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
+				headPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA");
 
 			if (!bodyPart)
-				bodyPart = FindObject(("/Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
+				bodyPart = FindObject("/Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA");
 
 			ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
@@ -339,6 +333,12 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 	{
 		SetMaxHealth(Pawn, 100);
 		SetMaxShield(Pawn, 100);
+	}
+
+	if (Fortnite_Season >= 16)
+	{
+		static auto stormeffect = FindObject("/Game/Athena/SafeZone/GE_OutsideSafeZoneDamage.GE_OutsideSafeZoneDamage_C");
+		Helper::RemoveGameplayEffect(Pawn, stormeffect);
 	}
 
 	return Pawn;
@@ -645,6 +645,63 @@ void Helper::SetSnowIndex(int SnowIndex)
 	}
 }
 
+void Helper::ExportTexture2DToFile(UObject* Texture, FString Path, FString FileName)
+{
+	struct { UObject* WorldContextObject; UObject*Texture; FString FilePath; FString Filename; } UKismetRenderingLibrary_ExportTexture2D_Params{GetWorld(), Texture, Path, FileName};
+	
+	static auto fn = FindObject<UFunction>("/Script/Engine.KismetRenderingLibrary.ExportTexture2D");
+	static auto krl = FindObject("/Script/Engine.Default__KismetRenderingLibrary");
+
+	krl->ProcessEvent(fn, &UKismetRenderingLibrary_ExportTexture2D_Params);
+}
+
+FString Helper::GetEngineVersion()
+{
+	static auto ksl = FindObject("/Script/Engine.Default__KismetSystemLibrary");
+	static auto fn = FindObject<UFunction>("/Script/Engine.KismetSystemLibrary.GetEngineVersion");
+
+	FString EngineVersion;
+
+	ksl->ProcessEvent(fn, &EngineVersion);
+
+	return EngineVersion;
+}
+
+std::string Helper::GetNetCL()
+{
+	auto EngineVer = GetEngineVersion().ToString();
+	EngineVer = EngineVer.substr(EngineVer.find_first_of('-') + 1);
+	EngineVer = EngineVer.substr(0, EngineVer.find_first_of('+'));
+	return EngineVer;
+}
+
+std::string Helper::GetEngineVer()
+{
+	auto EngineVer = GetEngineVersion().ToString();
+	EngineVer = EngineVer.substr(0, EngineVer.find_first_of('-'));
+	return EngineVer;
+}
+
+std::string Helper::GetFortniteVersion()
+{
+	auto EngineVer = GetEngineVersion().ToString();
+	EngineVer = EngineVer.substr(EngineVer.find_last_of('-') + 1);
+	return EngineVer;
+}
+
+void Helper::RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks)
+{
+	static auto fn = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.RemoveActiveGameplayEffectBySourceEffect");
+	auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+
+	if (!ASC)
+		return;
+
+	struct { UObject* GameplayEffect; UObject* InstigatorAbilitySystemComponent; int StacksToRemove; } UAbilitySystemComponent_RemoveActiveGameplayEffectBySourceEffect_Params{GEClass, ASC, Stacks};
+
+	ASC->ProcessEvent(fn, &UAbilitySystemComponent_RemoveActiveGameplayEffectBySourceEffect_Params);
+}
+
 UObject* GetHealthSet(UObject* Pawn)
 {
 	static auto HealthSetOffset = FindOffsetStruct2("Class /Script/FortniteGame.FortPawn", "HealthSet");
@@ -827,7 +884,7 @@ std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncl
 
 UObject* Helper::GetPlayerStart()
 {
-	static auto WarmupClass = Defines::bIsCreative ? FindObject("/Script/FortniteGame.FortPlayerStartCreative") : FindObject(("/Script/FortniteGame.FortPlayerStartWarmup"));
+	static auto WarmupClass = Defines::bIsCreative ? FindObject("/Script/FortniteGame.FortPlayerStartCreative") : FindObject("/Script/FortniteGame.FortPlayerStartWarmup");
 	
 	if (!WarmupClass)
 		return nullptr;
@@ -856,7 +913,7 @@ UObject* Helper::GetPlayerStart()
 
 UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count, bool bMaxAmmo, int Ammo)
 {
-	static UObject* PickupClass = FindObject(("/Script/FortniteGame.FortPickupAthena"));
+	static UObject* PickupClass = FindObject("/Script/FortniteGame.FortPickupAthena");
 
 	auto Pickup = Helper::Easy::SpawnActor(PickupClass, Location, FRotator());
 
