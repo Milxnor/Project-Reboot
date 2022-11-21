@@ -15,8 +15,12 @@ namespace Defines
 	inline bool bIsGoingToPlayMainEvent = false;
 	inline bool bTraveled = false;
 	inline bool bWipeInventoryOnAircraft = true;
+	inline bool bInfiniteAmmo = false;
+	inline bool bInfiniteMats = false;
 
 	inline int SecondsUntilTravel = 5;
+
+	inline std::string MapName;
 
 	inline std::string Playlist = Defines::bIsCreative ? ("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
 		Defines::bIsPlayground ? ("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground") :
@@ -61,60 +65,4 @@ namespace Defines
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS13)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexC0 inSpec);
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS14ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE0 inSpec);
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS17ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE8 inSpec);
-
-	static FString GetMapName()
-	{
-		if (bIsGoingToPlayMainEvent)
-		{
-			if (Fortnite_Season == 16)
-			{
-				return L"Apollo_Terrain_Yogurt";
-			}
-		}
-
-		if (bIsCreative)
-		{
-			if (Fortnite_Season >= 7 && Engine_Version < 424)
-			{
-				static auto CreativePlaylist = FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2");
-
-				std::cout << "CreativePlaylist: " << CreativePlaylist << '\n';
-
-				if (CreativePlaylist)
-				{
-					static auto AdditionalLevelsOffset = CreativePlaylist->GetOffset("AdditionalLevels");
-
-					auto AdditionalLevels = Get<TArray<TSoftObjectPtr>>(CreativePlaylist, AdditionalLevelsOffset); // TArray<TSoftObjectPtr<class UWorld>>
-
-					std::cout << "AdditionalLevels: " << AdditionalLevels->Num() << '\n';
-
-					for (int i = 0; i < AdditionalLevels->Num(); i++)
-					{
-						auto AdditionalLevel = AdditionalLevels->At(i);
-
-						auto CurrentLevelName = AdditionalLevel.ObjectID.AssetPathName.ToString();
-						std::cout << std::format("[{}] {}\n", i, CurrentLevelName);
-					}
-
-					auto LevelToOpen = AdditionalLevels->At(AdditionalLevels->Num() - 1);
-
-					auto LevelName = LevelToOpen.ObjectID.AssetPathName.ToString();
-
-					LevelName = LevelName.substr(0, LevelName.find_last_of("."));
-
-					std::cout << "LevelName: " << LevelName << '\n';
-
-					FString levelName = std::wstring(LevelName.begin(), LevelName.end()).c_str();
-					return levelName;
-				}
-			}
-			else
-			{
-				std::cout << "You are on a version that either doesn't have creative or we don't support creative for it!\n";
-				bIsCreative = false;
-			}
-		}
-
-		return Engine_Version < 424 ? L"Athena_Terrain" : (Engine_Version < 500 ? L"Apollo_Terrain" : L"Artemis_Terrain");
-	}
 }

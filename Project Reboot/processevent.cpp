@@ -86,6 +86,8 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		if (Fortnite_Season == 19)
 			Helper::SetSnowIndex(0); // Fill snow
+		if (Fortnite_Season == 11)
+			Helper::SetSnowIndex(100);
 
 		static bool bbb = false;
 
@@ -554,12 +556,18 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		Looting::Initialize();
 
-		if (Fortnite_Version >= 13 && Playlist)
+		if (Playlist)
 		{
-			static auto LastSafeZoneIndexOffset = Playlist->GetOffset("LastSafeZoneIndex");
+			static auto MinPlayersOffset = Playlist->GetOffset("MinPlayers");
+			// *Get<int>(Playlist, MinPlayersOffset) = 1;
 
-			if (LastSafeZoneIndexOffset != -1)
-				*(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+			if (Fortnite_Version >= 13)
+			{
+				static auto LastSafeZoneIndexOffset = Playlist->GetOffset("LastSafeZoneIndex");
+
+				if (LastSafeZoneIndexOffset != -1)
+					*(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+			}
 		}
 
 		auto PlayersLeft = Helper::GetPlayersLeft();
@@ -1043,7 +1051,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 		}
 	}
 
-	if (KillerPlayerState != DeadPlayerState)
+	if (KillerPawn && KillerPlayerState != DeadPlayerState)
 	{
 		auto KillerController = Helper::GetControllerFromPawn(KillerPawn);
 
@@ -1507,6 +1515,34 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	return false;
 }
 
+bool HandleOwnerAsBuildingActorDestroyed(UObject* ObjectComponent, UFunction* func, void* Parameters)
+{
+	auto InstigatedByOffset = 0x10; // func->GetOffset("InstigatedBy", true);
+	auto InstigatedBy = *Get<UObject*>(func, InstigatedByOffset); // AController;
+
+	if (!InstigatedBy)
+		return false;
+
+	std::cout << "InstigatedBy Name: " << InstigatedBy->GetFullName() << '\n';
+
+	static auto pcl = FindObject("/Script/FortniteGame.FortPlayerController");
+
+	if (!InstigatedBy->IsA(pcl))
+		return false;
+
+	static auto EquippedWeaponItemDefinitionOffset = ObjectComponent->GetOffset("EquippedWeaponItemDefinition");
+	TSoftObjectPtr EquippedWeaponItemDefinitionSoft = *Get<TSoftObjectPtr>(ObjectComponent, EquippedWeaponItemDefinitionOffset);
+
+	auto EquippedWeaponItemDefinition = EquippedWeaponItemDefinitionSoft.Get(nullptr, true);
+
+	std::cout << "EquippedWeaponItemDefinition: " << EquippedWeaponItemDefinition << '\n';
+
+	if (EquippedWeaponItemDefinition)
+		Inventory::GiveItem(InstigatedBy, EquippedWeaponItemDefinition, EFortQuickBars::Primary, 1);
+
+	return false;
+}
+
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
 	auto funcObject = FindObject<UFunction>(str);
@@ -1634,7 +1670,9 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "BP_CalendarDynamicPOISelect") &&
 			!strstr(FunctionName.c_str(), "OnComponentHit_Event_0") &&
 			!strstr(FunctionName.c_str(), "HandleSimulatingComponentHit") &&
-			!strstr(FunctionName.c_str(), "CBGA_GreenGlop_WithGrav_C"))
+			!strstr(FunctionName.c_str(), "CBGA_GreenGlop_WithGrav_C") &&
+			!strstr(FunctionName.c_str(), "WarmupCountdownEndTimeUpdated") &&
+			!strstr(FunctionName.c_str(), "BP_CanInteract"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

@@ -180,7 +180,7 @@ static int Height = 480;
 void MainUI()
 {
 	static int Tab = 1;
-	static int PlayerTab = -1;
+	static int PlayerTab = 2435892;
 	static bool bIsEditingInventory = false;
 	static bool bInformationTab = false;
 
@@ -298,6 +298,8 @@ void MainUI()
 			if (bLoaded)
 			{
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
+				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
+				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
 
 				static std::string ConsoleCommand;
 
@@ -307,7 +309,7 @@ void MainUI()
 				{
 					auto wstr = std::wstring(ConsoleCommand.begin(), ConsoleCommand.end());
 
-					auto aa = wstr.c_str();;
+					auto aa = wstr.c_str();
 					FString cmd = aa;
 
 					std::cout << "boi: " << cmd.ToString() << '\n';
@@ -318,7 +320,7 @@ void MainUI()
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
 
-				if (Fortnite_Version == 14.60 && ImGui::Button("Summon Vehicles"))
+				if (Fortnite_Version >= 14.60 && ImGui::Button("Summon Vehicles"))
 				{
 					Defines::bShouldSpawnVehicles = true;
 				}
@@ -531,27 +533,35 @@ void MainUI()
 								if (CurrentController)
 								{
 									AllControllers.push_back(CurrentController);
+								}
+							}
 
-									auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
+							for (int i = 0; i < AllControllers.size(); i++)
+							{
+								auto CurrentController = AllControllers.at(i);
+								auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
 
-									if (!CurrentPlayerState)
-										continue;
+								if (!CurrentPlayerState)
+								{
+									std::cout << "tf!\n";
+									continue;
+								}
 
-									FString NameFStr;
+								FString NameFStr;
 
-									static auto GetPlayerName = FindObject<UFunction>("/Script/Engine.PlayerState.GetPlayerName");
-									CurrentPlayerState->ProcessEvent(GetPlayerName, &NameFStr);
+								static auto GetPlayerName = FindObject<UFunction>("/Script/Engine.PlayerState.GetPlayerName");
+								CurrentPlayerState->ProcessEvent(GetPlayerName, &NameFStr);
 
-									const wchar_t* NameWCStr = NameFStr.Data.Data;
-									std::wstring NameWStr = std::wstring(NameWCStr);
-									std::string Name = std::string(NameWStr.begin(), NameWStr.end());
+								const wchar_t* NameWCStr = NameFStr.Data.Data;
+								std::wstring NameWStr = std::wstring(NameWCStr);
+								std::string Name = std::string(NameWStr.begin(), NameWStr.end());
 
-									auto NameCStr = Name.c_str();
+								auto NameCStr = Name.c_str();
 
-									if (ImGui::Button(NameCStr))
-									{
-										PlayerTab = i;
-									}
+								if (ImGui::Button(NameCStr))
+								{
+									std::cout << "wtf! " << i << '\n';
+									PlayerTab = i;
 								}
 							}
 						}
@@ -724,7 +734,8 @@ void MainUI()
 			}
 		}
 	}
-	else if (PlayerTab != 1 && bLoaded)
+
+	else if (PlayerTab != 2435892 && bLoaded)
 	{
 		auto World = Helper::GetWorld();
 
@@ -763,9 +774,21 @@ void MainUI()
 		{
 			auto CurrentController = AllControllers.at(PlayerTab);
 			auto CurrentPawn = Helper::GetPawnFromController(CurrentController);
-
+			auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
+	
 			if (!bIsEditingInventory)
 			{
+				FString NameFStr;
+
+				static auto GetPlayerName = FindObject<UFunction>("/Script/Engine.PlayerState.GetPlayerName");
+				CurrentPlayerState->ProcessEvent(GetPlayerName, &NameFStr);
+
+				const wchar_t* NameWCStr = NameFStr.Data.Data;
+				std::wstring NameWStr = std::wstring(NameWCStr);
+				std::string Name = std::string(NameWStr.begin(), NameWStr.end());
+
+				ImGui::Text(("Viewing " + Name).c_str());
+
 				static std::string WID;
 				static std::string KickReason = "You have been kicked!";
 				static int stud = 0;
@@ -777,7 +800,30 @@ void MainUI()
 					auto CurrentWeapon = Helper::GetCurrentWeapon(CurrentPawn);
 					static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
 
-					ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? (int*)(__int64(CurrentWeapon) + AmmoCountOffset) : &stud);
+					auto AmmoCountPtr = (int*)(__int64(CurrentWeapon) + AmmoCountOffset);
+
+					if (ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? AmmoCountPtr : &stud))
+					{
+						/* if (CurrentWeapon)
+						{
+							FFortItemEntry::SetLoadedAmmo(Inventory::GetEntryFromWeapon(CurrentController, CurrentWeapon), CurrentController, *AmmoCountPtr);
+						} */
+					}
+				}
+
+				if (ImGui::Button("Spawn Llama"))
+				{
+					if (CurrentPawn)
+					{
+						static auto LlamaClass = FindObject("/Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C");
+
+						std::cout << "LlamaClass: " << LlamaClass << '\n';
+
+						if (LlamaClass)
+						{
+							auto Llama = Helper::Easy::SpawnActor(LlamaClass, Helper::GetActorLocation(CurrentPawn));
+						}
+					}
 				}
 
 				if (ImGui::Button("Give Item"))
@@ -869,6 +915,8 @@ void PregameUI()
 
 	if (!Defines::bTraveled)
 		ImGui::SliderInt("Seconds until load into game", &Defines::SecondsUntilTravel, 1, 30);
+
+	ImGui::InputText("Map Name", &Defines::MapName);
 
 	if (!Defines::bIsPlayground && !Defines::bIsGoingToPlayMainEvent)
 		ImGui::InputText("Playlist", &Defines::Playlist);

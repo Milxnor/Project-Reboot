@@ -20,6 +20,7 @@ bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* 
 bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Parameters);
 bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Parameters);
 bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters);
+bool HandleOwnerAsBuildingActorDestroyed(UObject* ObjectComponent, UFunction* func, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 static bool ClientForceWorldInventoryUpdate(UObject* Controller, UFunction*, void* Parameters) { return true; }
 

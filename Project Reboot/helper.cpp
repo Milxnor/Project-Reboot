@@ -631,17 +631,33 @@ UObject* Helper::GetGameData()
 
 void Helper::SetSnowIndex(int SnowIndex)
 {
-	auto sjt9ase9i = FindObject("/SpecialSurfaceCoverage/Maps/SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.PersistentLevel.BP_Artemis_S19Progression_C_0");
-
-	std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
-
-	if (sjt9ase9i)
+	if (Fortnite_Season == 19)
 	{
-		auto setprogr = FindObject<UFunction>("/SpecialSurfaceCoverage/Items/BP_Artemis_S19Progression.BP_Artemis_S19Progression_C.SetSnowProgressionPhase");
-		sjt9ase9i->ProcessEvent(setprogr, &SnowIndex);
+		auto sjt9ase9i = FindObject("/SpecialSurfaceCoverage/Maps/SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.PersistentLevel.BP_Artemis_S19Progression_C_0");
 
-		auto agh = FindObject<UFunction>("/SpecialSurfaceCoverage/Items/BP_Artemis_S19Progression.BP_Artemis_S19Progression_C.UpdateSnowVisualsOnClient");
-		sjt9ase9i->ProcessEvent(agh); // idk if this is needed
+		std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
+
+		if (sjt9ase9i)
+		{
+			auto setprogr = FindObject<UFunction>("/SpecialSurfaceCoverage/Items/BP_Artemis_S19Progression.BP_Artemis_S19Progression_C.SetSnowProgressionPhase");
+			sjt9ase9i->ProcessEvent(setprogr, &SnowIndex);
+
+			auto agh = FindObject<UFunction>("/SpecialSurfaceCoverage/Items/BP_Artemis_S19Progression.BP_Artemis_S19Progression_C.UpdateSnowVisualsOnClient");
+			sjt9ase9i->ProcessEvent(agh); // idk if this is needed
+		}
+	}
+
+	if (Fortnite_Season == 11)
+	{
+		auto agfag = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_ApolloSnowSetup_2");
+
+		std::cout << "agfag: " << agfag << '\n';
+
+		if (agfag)
+		{
+			auto age = FindObject<UFunction>("/Game/Athena/Apollo/Environments/Blueprints/CalendarEvents/BP_ApolloSnowSetup.BP_ApolloSnowSetup_C.RefreshMapLocations");
+			agfag->ProcessEvent(age);
+		}
 	}
 }
 

@@ -205,7 +205,7 @@ UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count 
 	if (!Definition || !Controller)
 		return nullptr;
 
-	if (Fortnite_Season < 19)
+	if (true) // Fortnite_Season < 19)
 	{
 		struct { int count; int level; UObject* instance; } Params{ Count, 1 };
 
@@ -221,7 +221,7 @@ UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count 
 			itemInstance->ProcessEvent(SOCFTIFn, &Controller);
 
 			auto Entry = UFortItem::GetItemEntry(itemInstance);
-			*FFortItemEntry::GetIsReplicatedCopy(Entry) = true;
+			// *FFortItemEntry::GetIsReplicatedCopy(Entry) = true;
 
 			return itemInstance;
 		}
@@ -704,7 +704,7 @@ UObject* Inventory::FindItemInInventory(UObject* Controller, const FGuid& Guid)
 		{
 			auto ItemInstance = ItemInstances->At(i);
 
-			if (ItemInstance)
+			if (!IsBadReadPtr(ItemInstance))
 			{
 				auto ItemGuid = UFortItem::GetGuid(ItemInstance);
 
@@ -953,7 +953,7 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 
 	FFortItemEntry::SetLoadedAmmo(entry, Controller, WepAmmoCount);
 
-	if (Defines::bIsPlayground)
+	if (Defines::bIsPlayground || Defines::bInfiniteAmmo)
 		return;
 
 	auto WeaponData = Helper::GetWeaponData(Weapon);

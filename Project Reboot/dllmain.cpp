@@ -121,6 +121,12 @@ DWORD WINAPI Initialize(LPVOID)
                 GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
             }
 
+            else if (Engine_Version == 500)
+            {
+                GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 48 8B DA 0F 84 ? ? ? ? 48", true, 2);
+                GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 0F 85 ? ? ? ? F6 83", true, 2);
+            }
+
             std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
             std::cout << "GIsServerAddr: " << GIsServerAddr << '\n';
             // std::cout << "aFTER: " << GIsClientAddr << '\n';
@@ -231,6 +237,64 @@ DWORD WINAPI Initialize(LPVOID)
         *before = 0x74;
     }
 
+    if (Defines::bIsGoingToPlayMainEvent)
+    {
+        if (Fortnite_Season == 16)
+        {
+            Defines::MapName = "Apollo_Terrain_Yogurt";
+        }
+    }
+    else
+    {
+
+        if (Defines::bIsCreative)
+        {
+            if (Fortnite_Season >= 7 && Engine_Version < 424)
+            {
+                static auto CreativePlaylist = FindObject("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2");
+
+                std::cout << "CreativePlaylist: " << CreativePlaylist << '\n';
+
+                if (CreativePlaylist)
+                {
+                    static auto AdditionalLevelsOffset = CreativePlaylist->GetOffset("AdditionalLevels");
+
+                    auto AdditionalLevels = Get<TArray<TSoftObjectPtr>>(CreativePlaylist, AdditionalLevelsOffset); // TArray<TSoftObjectPtr<class UWorld>>
+
+                    std::cout << "AdditionalLevels: " << AdditionalLevels->Num() << '\n';
+
+                    for (int i = 0; i < AdditionalLevels->Num(); i++)
+                    {
+                        auto AdditionalLevel = AdditionalLevels->At(i);
+
+                        auto CurrentLevelName = AdditionalLevel.ObjectID.AssetPathName.ToString();
+                        std::cout << std::format("[{}] {}\n", i, CurrentLevelName);
+                    }
+
+                    auto LevelToOpen = AdditionalLevels->At(AdditionalLevels->Num() - 1);
+
+                    auto LevelName = LevelToOpen.ObjectID.AssetPathName.ToString();
+
+                    LevelName = LevelName.substr(0, LevelName.find_last_of("."));
+
+                    std::cout << "LevelName: " << LevelName << '\n';
+
+                    // FString levelName = std::wstring(LevelName.begin(), LevelName.end()).c_str();
+                    Defines::MapName = LevelName;
+                }
+            }
+            else
+            {
+                std::cout << "You are on a version that either doesn't have creative or we don't support creative for it!\n";
+                Defines::bIsCreative = false;
+            }
+        }
+        else
+        {
+            Defines::MapName = Engine_Version < 424 ? "Athena_Terrain" : (Engine_Version < 500 ? "Apollo_Terrain" : "Artemis_Terrain");
+        }
+    }
+
     while (Defines::SecondsUntilTravel > 0)
     {
         Defines::SecondsUntilTravel -= 1;
@@ -246,7 +310,9 @@ DWORD WINAPI Initialize(LPVOID)
 
     static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
 
-    FString Level = Defines::GetMapName();
+    std::wstring LevelWStr = std::wstring(Defines::MapName.begin(), Defines::MapName.end());
+    const wchar_t* LevelWCSTR = LevelWStr.c_str();
+    FString Level = LevelWCSTR;
 
     PC->ProcessEvent(SwitchLevel, &Level);
 
@@ -299,6 +365,8 @@ DWORD WINAPI Initialize(LPVOID)
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     // AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
+
+    // AddHook("/Script/FortniteGame.FortHeldObjectComponent.HandleOwnerAsBuildingActorDestroyed", HandleOwnerAsBuildingActorDestroyed);
 
     return 0;
 }

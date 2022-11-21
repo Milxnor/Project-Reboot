@@ -265,7 +265,9 @@ void Server::Restart()
 
 	static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
 
-	FString Level = Defines::GetMapName();
+	std::wstring LevelWStr = std::wstring(Defines::MapName.begin(), Defines::MapName.end());
+	const wchar_t* LevelWCSTR = LevelWStr.c_str();
+	FString Level = LevelWCSTR;
 
 	auto PC = Helper::GetLocalPlayerController();
 

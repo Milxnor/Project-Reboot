@@ -118,7 +118,7 @@ namespace Build
 				}
 				else
 				{
-					if (!Defines::bIsPlayground)
+					if (!Defines::bIsPlayground && !Defines::bInfiniteMats)
 					{
 						Inventory::TakeItem(Controller, *UFortItem::GetGuid(MatInstance), 10);
 					}
