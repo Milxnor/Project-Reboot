@@ -17,6 +17,7 @@ namespace Defines
 	inline bool bWipeInventoryOnAircraft = true;
 	inline bool bInfiniteAmmo = false;
 	inline bool bInfiniteMats = false;
+	inline bool bRandomCosmetics = true;
 
 	inline int SecondsUntilTravel = 5;
 
@@ -51,8 +52,16 @@ namespace Defines
 	inline char (*ValidationFailure)(__int64* a1, __int64 a2);
 	inline __int64 (*NoReservation)(__int64* a1, __int64 a2, char a3, __int64 a4);
 	inline __int64 (*CantBuild)(UObject*, UObject*, FVector, FRotator, char, void*, char*);
+	inline __int64 (*CantBuildDouble)(UObject*, UObject*, DVector, DRotator, char, void*, char*);
 	inline void (*HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 	inline UObject* (*ReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int a2, UObject* a3, unsigned int a4, int a5, unsigned __int8 bMirrored, UObject* Controller);
+
+	inline void(*SendClientAdjustment)(UObject* controller);
+	inline void(*CallPreReplication)(UObject* actor, UObject* driver);
+	inline char(*ReplicateActor)(UObject* ActorChannel);
+	inline UObject* (*CreateChannelByName)(UObject* Connection, FName* ChName, EChannelCreateFlags CreateFlags, int32_t ChannelIndex); // = -1);
+	inline void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor, ESetChannelActorFlags Flags);
+	inline UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
 
 	inline bool (*InternalTryActivateAbility)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex18 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 	inline bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex10 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
@@ -61,6 +70,7 @@ namespace Defines
 
 	inline bool (*InternalTryActivateAbilityTest)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex18 InPredictionKey, ...);
 
+	inline FGameplayAbilitySpecHandle* (*GiveAbilityOld)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHex78 inSpec); // 419
 	inline FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexC8 inSpec); // 4.20-4.25 etc.
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS13)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexC0 inSpec);
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS14ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE0 inSpec);

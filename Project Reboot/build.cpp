@@ -38,19 +38,32 @@ namespace Build
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
 		UObject* BuildingClass = nullptr;
-		FVector BuildingLocation = FVector();
-		FRotator BuildingRotation = FRotator();
+		BothVector BuildingLocation;
+		BothRotator BuildingRotation;
 		bool bMirrored = false;
 
 		if (Fortnite_Version >= 8.3)
 		{
-			struct FCreateBuildingActorData { uint32_t BuildingClassHandle; FVector BuildLoc; FRotator BuildRot; bool bMirrored; };
+			if (Fortnite_Season < 20)
+			{
+				struct FCreateBuildingActorData { uint32_t BuildingClassHandle; FVector BuildLoc; FRotator BuildRot; bool bMirrored; };
 
-			auto Params = *(FCreateBuildingActorData*)Parameters;
+				auto Params = *(FCreateBuildingActorData*)Parameters;
 
-			BuildingLocation = Params.BuildLoc;
-			BuildingRotation = Params.BuildRot;
-			bMirrored = Params.bMirrored;
+				BuildingLocation = Params.BuildLoc;
+				BuildingRotation = Params.BuildRot;
+				bMirrored = Params.bMirrored;
+			}
+			else
+			{
+				struct FCreateBuildingActorData { uint32_t BuildingClassHandle; DVector BuildLoc; DRotator BuildRot; bool bMirrored; };
+
+				auto Params = *(FCreateBuildingActorData*)Parameters;
+
+				BuildingLocation = Params.BuildLoc;
+				BuildingRotation = Params.BuildRot;
+				bMirrored = Params.bMirrored;
+			}
 
 			static auto BroadcastRemoteClientInfoOffset = Controller->GetOffset("BroadcastRemoteClientInfo");
 			auto RemoteClientInfo = *(UObject**)(__int64(Controller) + BroadcastRemoteClientInfoOffset);
@@ -77,11 +90,12 @@ namespace Build
 		__int64 v32[2]{};
 		char dababy;
 
-		bool bCanBuild = !Defines::CantBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy);
+		bool bCanBuild = Fortnite_Season < 20 ? !Defines::CantBuild(Helper::GetWorld(), BuildingClass, BuildingLocation.fV, BuildingRotation.fR, bMirrored, v32, &dababy) :
+			!Defines::CantBuildDouble(Helper::GetWorld(), BuildingClass, BuildingLocation.dV, BuildingRotation.dR, bMirrored, v32, &dababy);;
 
 		if (bCanBuild)
 		{
-			UObject* BuildingActor = Helper::Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
+			UObject* BuildingActor = Helper::Easy::SpawnActorDynamic(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
 
 			if (BuildingActor)
 			{

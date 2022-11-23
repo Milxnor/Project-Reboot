@@ -5,6 +5,7 @@
 #include "loot.h"
 #include <intrin.h>
 #include "team.h"
+#include "replication.h"
 
 void Server::PauseBeaconRequests(bool bPause)
 {
@@ -44,7 +45,12 @@ void Server::SetWorld(UObject* World)
 				SetWorldIndex = 0x73;
 			else if (Fortnite_Season >= 19 && Fortnite_Season < 21)
 				SetWorldIndex = 0x7A; // 20.00
+			else if (Fortnite_Season == 21)
+				SetWorldIndex = 0x7C; // 21
 			else if (Fortnite_Season == 22)
+				SetWorldIndex = 0x7B;
+
+			if (Fortnite_Version == 20.40)
 				SetWorldIndex = 0x7B;
 
 			std::cout << "SetWorldIndex: " << SetWorldIndex << '\n';
@@ -122,7 +128,7 @@ bool Server::Listen(int Port)
 	{
 		static UObject* BeaconClass = FindObject("/Script/FortniteGame.FortOnlineBeaconHost"); // We use the Fort one because then FindObject will not mistake for the BeaconHostObject.
 
-		BeaconHost = Helper::Easy::SpawnActor(BeaconClass, FVector());
+		BeaconHost = Helper::Easy::SpawnActorDynamic(BeaconClass, BothVector());
 
 		if (!BeaconHost)
 		{
@@ -335,6 +341,148 @@ __int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connec
 	return NetViewer;
 }
 
+struct FPostProcessSettings
+{
+	char pad[0x04E0];
+};
+
+struct FMinimalViewInfo
+{
+	char pad[0x0530];
+};
+
+struct FViewTargetTransitionParams
+{
+	float                                              BlendTime;                                                // 0x0000(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	uint8_t              BlendFunction;                                            // 0x0004(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	unsigned char                                      UnknownData00[0x3];                                       // 0x0005(0x0003) MISSED OFFSET
+	float                                              BlendExp;                                                 // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	unsigned char                                      bLockOutgoing : 1;                                        // 0x000C(0x0001) (Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	unsigned char                                      UnknownData01[0x3];                                       // 0x000D(0x0003) MISSED OFFSET
+};
+
+struct FTViewTarget
+{
+	UObject* Target;                                                   // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	unsigned char                                      UnknownData00[0x8];                                       // 0x0008(0x0008) MISSED OFFSET
+	FMinimalViewInfo                            POV;                                                      // 0x0010(0x0530) (Edit, BlueprintVisible, NativeAccessSpecifierPublic)
+	UObject* PlayerState;                                              // 0x0540(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
+	unsigned char                                      UnknownData01[0x8];                                       // 0x0548(0x0008) MISSED OFFSET
+
+	UObject** GetPlayerState()
+	{
+		return &PlayerState;
+	}
+};
+
+void (*skidd)(UObject* PlayerCameraManager, UObject* NewTarget, FTViewTarget& VT, FViewTargetTransitionParams TransitionParams);
+
+void AssignViewTarget(UObject* PlayerCameraManager, UObject* NewTarget, FTViewTarget& VT, FViewTargetTransitionParams TransitionParams = FViewTargetTransitionParams())
+{
+	static auto aa = Memory::FindPattern("48 85 D2 0F 84 ? ? ? ? 48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 30 49 8B D8 48 8B F9 49 8B F1 4C 8B C2"); // PlayerCameraManager->VFTable[0xCA];
+
+	skidd = decltype(skidd)(aa);
+
+	skidd(PlayerCameraManager, NewTarget, VT, TransitionParams);
+}
+
+void CheckViewTarget(FTViewTarget viewTarget, UObject* OwningController)
+{
+	if (!OwningController)
+		return;
+
+	auto ViewTarget = &viewTarget;
+
+	// static auto ViewTargetOffset = PlayerCameraManager->GetOffset("ViewTarget");
+	// auto ViewTarget = Get<FTViewTarget>(PlayerCameraManager, ViewTargetOffset);
+
+	static auto ControllerClass = FindObject("/Script/Engine.Controller");
+	static auto PawnClass = FindObject("/Script/Engine.Pawn");
+	static auto PlayerStateClass = FindObject("/Script/Engine.PlayerState");
+
+	static auto PlayerCameraManagerOffset = OwningController->GetOffset("PlayerCameraManager");
+	auto PlayerCameraManager = *Get<UObject*>(OwningController, PlayerCameraManagerOffset);
+
+	if (!ViewTarget->Target)
+	{
+		ViewTarget->Target = OwningController;
+	}
+
+	if (ViewTarget->Target == OwningController)
+	{
+		*ViewTarget->GetPlayerState() = nullptr;
+	}
+	else if (ViewTarget->Target->IsA(ControllerClass))
+	{
+		*ViewTarget->GetPlayerState() = Helper::GetPlayerStateFromController(ViewTarget->Target);
+	}
+	else if (ViewTarget->Target->IsA(PawnClass))
+	{
+		*ViewTarget->GetPlayerState() = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(ViewTarget->Target));
+	}
+	else if (ViewTarget->Target->IsA(PlayerStateClass))
+	{
+		*ViewTarget->GetPlayerState() = ViewTarget->Target;
+	}
+	else
+	{
+		*ViewTarget->GetPlayerState() = nullptr;
+	}
+
+	if (*ViewTarget->GetPlayerState())
+	{
+		auto PawnPlayerState = ViewTarget->Target->IsA(PawnClass) ? Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(ViewTarget->Target)) : nullptr;
+
+		if (!ViewTarget->Target->IsA(PawnClass) || PawnPlayerState != *ViewTarget->GetPlayerState())
+		{
+			ViewTarget->Target = nullptr;
+
+			auto PlayerStateOwner = Helper::GetOwner(*ViewTarget->GetPlayerState());
+
+			if (!PlayerStateOwner)
+			{
+				*ViewTarget->GetPlayerState() = nullptr;
+			}
+			else
+			{
+				if (PlayerStateOwner->IsA(ControllerClass))
+				{
+					auto PlayerStateViewTarget = Helper::GetPawnFromController(PlayerStateOwner);
+
+					if (PlayerStateViewTarget)
+					{
+						AssignViewTarget(PlayerCameraManager, PlayerStateViewTarget, *ViewTarget);
+					}
+					else
+					{
+						ViewTarget->Target = *ViewTarget->GetPlayerState();
+					}
+				}
+				else
+				{
+					*ViewTarget->GetPlayerState() = nullptr;
+				}
+			}
+		}
+	}
+
+	if (!ViewTarget->Target)
+	{
+		auto OwningPCPawn = Helper::GetPawnFromController(OwningController);
+
+		if (OwningPCPawn) // && OwningPCPawn->IsPendingKillPending
+		{
+			AssignViewTarget(PlayerCameraManager, OwningPCPawn, *ViewTarget);
+		}
+		else
+		{
+			AssignViewTarget(PlayerCameraManager, OwningController, *ViewTarget);
+		}
+	}
+}
+
+
+
 void Server::Hooks::Initialize()
 {
 	// if (false)
@@ -357,29 +505,35 @@ void Server::Hooks::Initialize()
 
 	// Maybe: 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0
 
-	if (false)
+	if (true)
 	{
-		auto sig = Memory::FindPattern("40 57 48 83 EC 20 48 8B B9 ? ? ? ? 48 85 FF 74 53");
+		if (false)
+		{
+			auto sig = Memory::FindPattern("40 57 48 83 EC 20 48 8B B9 ? ? ? ? 48 85 FF 74 53");
 
-		std::cout << "GetViewTarget: " << sig << '\n';
+			std::cout << "GetViewTarget: " << sig << '\n';
 
-		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::GetViewTarget, nullptr)) << '\n';
-		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
+			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::GetViewTarget, nullptr)) << '\n';
+			std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
+		}
+		else // if (Fortnite_Version < 17.50)
+		{
+			auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
+
+			if (!sig)
+				sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
+
+			if (Fortnite_Version >= 17.50)
+				sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 45");
+
+			std::cout << "sig: " << sig << '\n';
+
+			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';
+			std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
+		}
 	}
-	else // if (Fortnite_Version < 17.50)
+	else
 	{
-		auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
-
-		if (!sig)
-			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
-
-		if (Fortnite_Version >= 17.50)
-			sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 45");
-
-		std::cout << "sig: " << sig << '\n';
-
-		std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';
-		std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 	}
 }
 
@@ -403,9 +557,9 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 		if (NetDriver)
 		{
-			if (Fortnite_Version <= 3.3)
+			if (Fortnite_Version <= 3.3 || Fortnite_Version >= 19.40)
 			{
-				// ReplicateActors(NetDriver, World);
+				ServerReplicateActors(NetDriver);
 			}
 			else
 			{
@@ -649,8 +803,12 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 					if (ClassActor)
 					{
-						auto CorrectLocation = Helper::GetActorLocation(ClassActor);
-						CorrectLocation.Z += 50;
+						BothVector CorrectLocation = Helper::GetActorLocationDynamic(ClassActor);
+						
+						if (Fortnite_Season < 20)
+							CorrectLocation.fV.Z += 50;
+						else
+							CorrectLocation.dV.Z += 50;
 
 						/* auto LootDrops = Looting::PickLootDrops(TierGroup);
 
@@ -663,9 +821,6 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 						if (ShouldSpawn)
 						{
-							auto CorrectLocation = Helper::GetActorLocation(ClassActor);
-							CorrectLocation.Z += 50;
-
 							UObject* MainPickup = nullptr;
 
 							if (RandomBoolWithWeight(6, 1, 100))
@@ -743,104 +898,11 @@ char Server::Hooks::ValidationFailure(__int64* a1, __int64 a2)
 	return false;
 }
 
-struct FTViewTarget
-{
-	UObject* Target;
-	// FMinimalViewInfo POV;
-
-	UObject** GetPlayerState()
-	{
-		return nullptr;
-	}
-};
-
-void CheckViewTarget(FTViewTarget* ViewTarget, UObject* OwningController)
-{
-	if (!OwningController)
-		return;
-
-	if (ViewTarget->Target == NULL)
-	{
-		ViewTarget->Target = OwningController;
-	}
-
-	auto PlayerState = ViewTarget->GetPlayerState();
-
-	// Update ViewTarget PlayerState (used to follow same player through pawn transitions, etc., when spectating)
-	if (ViewTarget->Target == OwningController)
-	{
-		*PlayerState = NULL;
-	}
-	else if (ViewTarget->Target) // Controller
-	{
-		*PlayerState = Helper::GetPlayerStateFromController(ViewTarget->Target);
-	}
-	else if (ViewTarget->Target) // Pawn
-	{
-		*PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(ViewTarget->Target)); // TODO Not do this
-	}
-	else if (ViewTarget->Target) // PlayerState
-	{
-		*PlayerState = ViewTarget->Target;
-	}
-	else
-	{
-		*PlayerState = nullptr;
-	}
-
-	if (*PlayerState) // && IsValidChecked(PlayerState))
-	{
-		// if (!IsValid(Target) || !Cast<APawn>(Target) || (CastChecked<APawn>(Target)->GetPlayerState() != PlayerState))
-		{
-			ViewTarget->Target = nullptr;
-
-			auto PlayerStateOwner = Helper::GetOwner(*PlayerState);
-
-			// not viewing pawn associated with VT.PlayerState, so look for one
-			// Assuming on server, so PlayerState Owner is valid
-			if (Helper::GetOwner(*PlayerState) == nullptr)
-			{
-				PlayerState = nullptr;
-			}
-			else
-			{
-				if (PlayerStateOwner) // controller also augaYh3quy318f92i
-				{
-					// UObject* PlayerStateViewTarget = PlayerStateOwner->GetPawn();
-					// if (IsValid(PlayerStateViewTarget))
-					{
-						// OwningController->PlayerCameraManager->AssignViewTarget(PlayerStateViewTarget, *this);
-					}
-					// else
-					{
-						ViewTarget->Target = *PlayerState; // this will cause it to update to the next Pawn possessed by the player being viewed
-					}
-				}
-				else
-				{
-					PlayerState = nullptr;
-				}
-			}
-		}
-	}
-
-	// if (!IsValid(Target))
-	/*
-	{
-		if (OwningController->GetPawn() && !OwningController->GetPawn()->IsPendingKillPending())
-		{
-			OwningController->PlayerCameraManager->AssignViewTarget(OwningController->GetPawn(), *this);
-		}
-		else
-		{
-			OwningController->PlayerCameraManager->AssignViewTarget(OwningController, *this);
-		}
-	} */
-}
-
 UObject* GetViewTargetCameraManager(UObject* NonConstThis)
 {
-	static auto PendingViewTargetOffset = NonConstThis->GetOffset("PendingViewTarget");
+	return nullptr;
+
+	/* static auto PendingViewTargetOffset = NonConstThis->GetOffset("PendingViewTarget");
 	auto PendingViewTarget = Get<FTViewTarget>(NonConstThis, PendingViewTargetOffset);
 
 	static auto PCOwnerOffset = NonConstThis->GetOffset("PCOwner");
@@ -858,7 +920,7 @@ UObject* GetViewTargetCameraManager(UObject* NonConstThis)
 	auto ViewTarget = Get<FTViewTarget>(NonConstThis, ViewTargetOffset);
 
 	CheckViewTarget(ViewTarget, PCOwner);
-	return ViewTarget->Target;
+	return ViewTarget->Target; */
 }
 
 UObject* Server::Hooks::GetViewTarget(UObject* PC, __int64 Unused, __int64 a3)

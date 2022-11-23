@@ -17,11 +17,26 @@ bool Teams::AssignTeam(UObject* Controller)
 
 	auto GameState = Helper::GetGameState();
 	auto PlayerState = Helper::GetPlayerStateFromController(Controller);
-	auto Playlist = *Helper::GetPlaylist();
 
-	static auto MaxSquadSizeOffset = Playlist->GetOffset("MaxSquadSize");
+	static int MaxPlayersPerTeam = 0;
 
-	static int MaxPlayersPerTeam = Defines::bIsPlayground ? 1 : *Get<int>(Playlist, MaxSquadSizeOffset);
+	if (MaxPlayersPerTeam == 0)
+	{
+		auto PlaylistPtr = Helper::GetPlaylist();
+
+		if (!IsBadReadPtr(PlaylistPtr) && !IsBadReadPtr(*PlaylistPtr))
+		{
+			auto Playlist = *PlaylistPtr;
+
+			static auto MaxSquadSizeOffset = Playlist->GetOffset("MaxSquadSize");
+
+			MaxPlayersPerTeam = Defines::bIsPlayground ? 1 : *Get<int>(Playlist, MaxSquadSizeOffset);
+		}
+		else
+		{
+			MaxPlayersPerTeam = 1; // for now
+		}
+	}
 
 	std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 

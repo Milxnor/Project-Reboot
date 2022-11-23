@@ -895,3 +895,90 @@ public:
 	float                                        UnclampedCurrentValue;                             // 0x20(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
 	uint8_t                                        Pad_3AF3[0x4];                                     // Fixing Size Of Struct [ Dumper-7 ]
 };
+
+template<class T = UObject, class TWeakObjectPtrBase = FWeakObjectPtr>
+struct TWeakObjectPtr : public FWeakObjectPtr
+{
+public:
+	inline T* Get() {
+		return (T*)GetObjectByIndex(ObjectIndex);
+	}
+
+	TWeakObjectPtr(int32_t ObjectIndex)
+	{
+		this->ObjectIndex = ObjectIndex;
+		this->ObjectSerialNumber = GetSerialNumber(GetByIndex<UObject>(ObjectIndex));
+	}
+
+	TWeakObjectPtr(UObject* Obj)
+	{
+		this->ObjectIndex = Obj->InternalIndex;
+		this->ObjectSerialNumber = GetSerialNumber(GetByIndex<UObject>(Obj->InternalIndex));
+	}
+
+	TWeakObjectPtr()
+	{
+	}
+};
+
+struct BothVector
+{
+	FVector fV;
+	DVector dV;
+
+	BothVector(float X, float Y, float Z)
+	{
+		fV = FVector(X, Y, Z);
+	}
+
+	BothVector(FVector vec)
+	{
+		fV = vec;
+	}
+
+	BothVector(DVector vec)
+	{
+		dV = vec;
+	}
+
+	BothVector(double X, double Y, double Z)
+	{
+		dV = DVector(X, Y, Z);
+	}
+
+	BothVector() {}
+
+	BothVector operator+(const BothVector& otherVec)
+	{
+		return Fortnite_Season < 20 ? BothVector(fV.X + otherVec.fV.X, fV.Y + otherVec.fV.Y, fV.Z + otherVec.fV.Z) :
+			BothVector(dV.X + otherVec.dV.X, dV.Y + otherVec.dV.Y, dV.Z + otherVec.dV.Z);
+	}
+};
+
+struct BothRotator
+{
+	FRotator fR = FRotator();
+	DRotator dR = DRotator();
+
+	BothRotator(float X, float Y, float Z)
+	{
+		fR = FRotator(X, Y, Z);
+	}
+
+	BothRotator(FRotator rot)
+	{
+		fR = rot;
+	}
+
+	BothRotator(DRotator rot)
+	{
+		dR = rot;
+	}
+
+	BothRotator(double X, double Y, double Z)
+	{
+		dR = DRotator(X, Y, Z);
+	}
+
+	BothRotator() {}
+};

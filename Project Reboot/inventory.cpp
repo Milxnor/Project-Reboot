@@ -51,6 +51,16 @@ int FFortItemEntry::GetStructSize()
 
 UObject* Inventory::GetWorldInventory(UObject* Controller)
 {
+	/* static auto thingy = FindObject("/Script/FortniteGame.FortAthenaAIBotController");
+
+	if (thingy && Controller->IsA(thingy))
+	{
+		static auto WorldInventoryOffset = Controller->GetOffset("Inventory");
+		auto WorldInventoryP = Get<UObject*>(Controller, WorldInventoryOffset);
+
+		return *WorldInventoryP;
+	} */
+
 	static auto WorldInventoryOffset = Controller->GetOffset("WorldInventory");
 	auto WorldInventoryP = Get<UObject*>(Controller, WorldInventoryOffset);
 
@@ -373,7 +383,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 	if (!Pawn)
 		return nullptr;
 
-	static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
+	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition");
 	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
 	static auto FortContextTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortContextTrapItemDefinition");
@@ -411,24 +421,20 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		if (!GadgetDefinition)
 			return nullptr;
 
-		EquipWeapon(Controller, Guid, GadgetDefinition, Ammo);
+		Wep = EquipWeapon(Controller, Guid, GadgetDefinition, Ammo);
 	}
-		
-	else if (false) // (ItemDefinition->IsA(FortDecoItemDefinitionClass) && Engine_Version >= 424) || ItemDefinition->IsA(FortTrapItemDefinitionClass)) // IDK
+
+	else if (ItemDefinition->IsA(FortTrapItemDefinitionClass))
 	{
 		UObject* WeaponClass = nullptr;
 		static auto GetWeaponActorClass = FindObject<UFunction>("/Script/FortniteGame.FortWeaponItemDefinition.GetWeaponActorClass");
 		ItemDefinition->ProcessEvent(GetWeaponActorClass, &WeaponClass);
 
-		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+		std::cout << "WeaponClass: " << WeaponClass << '\n';
 
-		Wep = CurrentWeapon;
+		if (!WeaponClass)
+			return nullptr;
 
-		std::cout << "ItemDefinition: " << ItemDefinition->GetFullName() << '\n';
-		std::cout << "WeaponClass: " << WeaponClass->GetFullName() << '\n';
-		std::cout << "Wep Before: " << Wep->GetFullName() << '\n';
-
-		auto PawnLoc = Helper::GetActorLocation(Pawn);
 		auto newtool = Helper::Easy::SpawnActor(WeaponClass, Helper::GetActorLocation(Pawn));
 
 		static auto PickUpActor = FindObject<UFunction>("/Script/FortniteGame.FortPawn.PickUpActor");
@@ -436,11 +442,11 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 		Pawn->ProcessEvent(PickUpActor, &parms); // TODO NOT DO THIS
 
-		std::cout << "Wep After: " << Wep->GetFullName() << '\n';
-
 		static UObject* FortContextTrapTool = FindObject("/Script/FortniteGame.FortDecoTool_ContextTrap");
 
 		// IDK
+
+		Wep = Helper::GetCurrentWeapon(Pawn);
 
 		if (Wep->IsA(FortContextTrapTool))
 		{
@@ -449,7 +455,10 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 			*ContextTrapItemDefinition = ItemDefinition->IsA(FortContextTrapItemDefinitionClass) ? ItemDefinition : nullptr;
 		}
-
+	}
+		
+	else if (false) // (ItemDefinition->IsA(FortDecoItemDefinitionClass) && Engine_Version >= 424) || ItemDefinition->IsA(FortTrapItemDefinitionClass)) // IDK
+	{
 		// std::cout << "CurrentWeapon: " << CurrentWeapon->GetFullName() << '\n';
 
 		/* static auto FortDecoHelperClass = FindObject("/Script/FortniteGame.FortDecoHelper");
@@ -522,7 +531,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		if (Wep)
 		{
 			{
-				static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
+				// static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
 				// *Get<int>(Wep, AmmoCountOffset) = Ammo;
 			}
 		}
@@ -601,7 +610,7 @@ UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, 
 
 		if (Fortnite_Season == 2)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xB8]; };
+			struct ItemEntrySize { unsigned char Unk00[0xB0]; }; // b8 on some
 			bSuccessful = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 		else if (Fortnite_Season == 3)
@@ -970,5 +979,6 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 
 	auto AmmoInstance = Inventory::FindItemInInventory(Controller, AmmoDef);
 
-	Inventory::TakeItem(Controller, *UFortItem::GetGuid(AmmoInstance), AmountToRemove);
+	if (!IsBadReadPtr(AmmoInstance))
+		Inventory::TakeItem(Controller, *UFortItem::GetGuid(AmmoInstance), AmountToRemove);
 }

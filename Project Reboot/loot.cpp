@@ -27,25 +27,37 @@ UObject* Looting::GetLTD()
 
 UObject* Looting::GetLP()
 {
-	auto Playlist = *Helper::GetPlaylist();
+	auto PlaylistPtr = Helper::GetPlaylist();
 
-	if (!Playlist)
-		return nullptr;
-
-	static UObject* lastPlaylist = nullptr;
 	static UObject* lp = nullptr;
 
-	if (Playlist != lastPlaylist)
+	if (!IsBadReadPtr(PlaylistPtr) && !IsBadReadPtr(*PlaylistPtr))
 	{
-		lastPlaylist = Playlist;
+		auto Playlist = *PlaylistPtr;
 
-		static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
-		auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
+		static UObject* lastPlaylist = nullptr;
 
-		auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424
-			? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
+		if (Playlist != lastPlaylist)
+		{
+			lastPlaylist = Playlist;
 
-		std::cout << "LootPackagesName: " << LootPackagesName << '\n';
+			static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
+			auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
+
+			auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424
+				? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
+
+			std::cout << "LootPackagesName: " << LootPackagesName << '\n';
+
+			auto ClassToUse = (LootPackagesName.contains("Composite")) ?
+				FindObject("/Script/Engine.CompositeDataTable") : FindObject("/Script/Engine.DataTable");
+
+			lp = StaticLoadObject(ClassToUse, nullptr, LootPackagesName);
+		}
+	}
+	else
+	{
+		std::string LootPackagesName = "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
 		auto ClassToUse = (LootPackagesName.contains("Composite")) ?
 			FindObject("/Script/Engine.CompositeDataTable") : FindObject("/Script/Engine.DataTable");
@@ -72,11 +84,24 @@ void AddItemAndWeight(int Index, const DefinitionInRow& Item, float Weight)
 
 void Looting::Initialize()
 {
-	if (bInitialized)
+	std::cout << "lootahh!\n";
+
+	/* if (Engine_Version >= 420)
 	{
-		std::cout << "[WARNING] Loot is already initialized!\n";
-		return;
-	}
+		auto Playlist = *Helper::GetPlaylist();
+
+		static UObject* oldPlaylist = nullptr;
+
+		if (oldPlaylist != Playlist)
+		{
+			oldPlaylist = Playlist;
+		}
+		else if (bInitialized)
+		{
+			std::cout << "[WARNING] Loot is already initialized!\n";
+			return;
+		}
+	} */
 
 	if (!StaticFindObjectO)
 	{
@@ -104,11 +129,11 @@ void Looting::Initialize()
 		return;
 	}
 
-	bInitialized = true;
-
 	auto LootPackagesRowMap = DataTables::GetRowMap(LootPackages);
 
 	auto fortnite = LootPackagesRowMap.Pairs.Elements.Data;
+
+	bInitialized = fortnite.Num() > 0;
 
 	std::cout << "Amount of rows: " << fortnite.Num() << '\n';
 

@@ -56,7 +56,7 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		static auto SearchLootTierGroupOffset = BuildingContainer->GetOffset("SearchLootTierGroup");
 		auto SearchLootTierGroup = Get<FName>(BuildingContainer, SearchLootTierGroupOffset);
 		
-		auto CorrectLocation = Helper::GetCorrectLocation(ReceivingActor);
+		auto CorrectLocation = Helper::GetCorrectLocationDynamic(ReceivingActor);
 
 		/* auto LootTierGroupName = SearchLootTierGroup->ToString();
 

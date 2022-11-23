@@ -30,6 +30,10 @@ inline uint64_t CanActivateAbilityAddress = 0;
 inline uint64_t FreeAddress = 0;
 inline uint64_t HandleReloadCostAddress = 0;
 inline uint64_t ActorGetNetModeAddress = 0;
+inline uint64_t CreateChannelAddress = 0;
+inline uint64_t ReplicateActorAddress = 0;
+inline uint64_t CallPreReplicationAddress = 0;
+inline uint64_t SetChannelActorAddress = 0;
 
 static bool InitializePatterns()
 {
@@ -76,6 +80,10 @@ static bool InitializePatterns()
 	std::string CanActivateAbilityPattern = "";
 	std::string FreePattern = "";
 	std::string HandleReloadCostPattern = "";
+	std::string CreateChannelPattern = "";
+	std::string ReplicateActorPattern = "";
+	std::string CallPreReplicationPattern = "";
+	std::string SetChannelActorPattern = "";
 
 	bool bIsNoMCPRelative = false;
 	bool bIsTickFlushRelative = false;
@@ -139,7 +147,7 @@ static bool InitializePatterns()
 	{
 		// TODO
 		Engine_Version = 419;
-		Fortnite_Version = 1.8;
+		Fortnite_Version = FullVersion.contains(("Next")) ? 2.4 : 1.8;
 	}
 
 	Fortnite_Season = std::floor(Fortnite_Version);
@@ -162,12 +170,29 @@ static bool InitializePatterns()
 
 	if (Engine_Version == 419)
 	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 52 48 8B 05 ? ? ? ? 4C 8D 45 38 48";
+		StaticLoadObjectPattern = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 33 F6 4C 8B BD ? ? ? ? 49 8B F9";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 63 41 0C 45 33 F6";
+		SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B B1 ? ? ? ? 48 8B FA 48 8B D9 48 85 F6 74 5C";
+		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ? 48 8D 05 ? ? ? ? 33 D2 33 C9 48 89 44 24 ? E8 ? ? ? ?";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8D 1C C8 81 4B ? ? ? ? ? 49 63 76 30";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 0F 29 43 ? 45 0F 29 4B ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 7B E8 48 8B F9 4D 89 6B D8 45 33 ED 4D 89 7B C8";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "40 53 56 41 56 48 81 EC ? ? ? ? 45 33 F6 48 8B DA 44 89 B4 24";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B E9 45 0F B6 F8";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 56 57 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B F0 4C 8B F2 48 8B D9 7E";
+		CantBuildPattern = "48 89 54 24 ? 55 56 41 56 48 83 EC 50";
+		ReplaceBuildingActorPattern = "48 8B C4 4C 89 40 18 55 57 48 8D A8 ? ? ? ? 48 81 EC";
+		FreePattern = "48 85 C9 74 1D 4C 8B 05 ? ? ? ? 4D 85 C0 0F 84 ? ? ? ? 49";
+		HandleReloadCostPattern = "40 53 56 41 54 41 55 41 57 48 83 EC 60 44 8B EA 4C 8B F9 E8 ? ? ? ? 49 8B 8F";
+		CreateChannelPattern = "40 56 57 41 54 41 55 41 57 48 83 EC 60 48 8B 01 41 8B F9 45 0F B6 E0 4C 63 FA 48 8B F1 FF 90 ? ? ? ? 45 33 ED 83 FF FF 0F 85 ? ? ? ? 4C 63 8E ? ? ? ? 41 83 FF 01 41 8B FD B8";
+		ReplicateActorPattern = "40 55 56 41 54 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 4C 8B E9 48 8B 49 68 48 8B 01 FF 90 ? ? ? ? 41 8B 4D 30 48 8D 35 ? ? ? ? 4C 8B F0 0F BA E1 08 0F 83 ? ? ? ? 41 83 7D ? ? 7E 12 32 C0 48 81 C4 ? ? ? ? 41 5E 41 5D 41 5C";
+		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 54 48 8D 68 A1 48 81 EC ? ? ? ? 48 89 58 08 4C 8B E2 48 89";
+		SetChannelActorPattern = "48 8B C4 55 53 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 48 8B D9 48 89 78 E0 48 8D 35 ? ? ? ? 4C 89 60 D8 48 8B FA 45 33 E4 4C 89 78 C8 44 89 A5 ? ? ? ? 45 8B FC 48 8B 41 28 48 8B 48 58 48 85 C9 0F 84 ? ? ? ?";
 	}
 
 	if (Engine_Version == 420)
@@ -352,6 +377,11 @@ static bool InitializePatterns()
 		{
 			SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97";
 		}
+
+		if (Fortnite_Season == 11) // 11.31
+		{
+			ReplaceBuildingActorPattern = "4C 8B DC 55 56 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 F6 40 38 35 ? ? ? ? 49 89 5B 18 8B DA 49 89 7B E8 49 8B F8 4D 89 63 E0 4D 89 6B D8 45 8B E9 48";
+		}
 	}
 
 	if (Engine_Version == 426)
@@ -432,7 +462,8 @@ static bool InitializePatterns()
 			TickFlushPattern = "E8 ? ? ? ? 48 8B CB E8 ? ? ? ? 84 C0 0F 85 ? ? ? ? 48 8D 4D E7";
 			bIsTickFlushRelative = true;
 			// TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A"; // 17.10
-		
+			StaticLoadObjectPattern = "48 8B C4 4C 89 48 20 48 89 50 10 48 89 48 08 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 45";
+
 			if (Fortnite_Version >= 17.30 && Fortnite_Version <= 17.50)
 			{
 				WorldGetNetModePattern = "48 83 EC 28 48 83 79 ? ? 75 20 48 8B 91 ? ? ? ? 48 85 D2 74 1E 48 8B 02 48 8B CA FF 90";
@@ -491,6 +522,39 @@ static bool InitializePatterns()
 		}
 	}
 
+	if (Fortnite_Season == 20)
+	{
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 4C 89 64 24 ? 55 41 55 41 57 48 8B EC 48 83 EC 60 45 8A E1 4C 8B E9 48 83 FA FF 0F 84 ? ? ? ? 48";
+		StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 70 33 FF 48 8D 05 ? ? ? ? 40 38 3D ? ? ? ? 4C";
+		KickPlayerPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 48 83 65 ? ? 4C 8B F2 83 65 E8 00 4C 8B E1";
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 8B DA";
+		CreateChannelPattern = "48 89 5C 24 ? 48 89 74 24 ? 44 89 4C 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 45 33 E4 48 8D 05 ? ? ? ? 44 38 25";
+		ReplicateActorPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8D 69 68";
+		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 40 F6 41 58 30 48 8B EA 48 8B D9 40 B6 01";
+		SetChannelActorPattern = "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 48 8D 3D ? ? ? ? 44 89 A5";
+		NoReservePattern = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 4D 8B F9 45";
+		ReplaceBuildingActorPattern = "48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B A5 ? ? ? ? 48 8D 3D";
+		CantBuildPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 70 49 8B E9 4D 8B F8 48 8B DA 48 8B F9 BE ? ? ? ? 48 85 D2 0F 84 ? ? ? ? E8";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45 33 ED";
+	}
+
+	if (Fortnite_Season == 21)
+	{
+		GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0 7E 54 48 63 9F ? ? ? ? 48 81 C7";
+		StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 70 33 FF 48 8D 05";
+		InternalTryActivateAbilityPattern = " 4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 48 05 ? ? ? ? 49";
+		CantBuildPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 70 49 8B E9 4D 8B F8 48 8B DA 48 8B F9 BE ? ? ? ? 48 85 D2";
+		ReplaceBuildingActorPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 48 8B 05 ? ? ? ? 48 33";
+		// StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 70 48 8B F1 41 8A D8 48 8B 0D ? ? ? ? 48 8B FA 48 85 C9 0F 84 ? ? ? ? 44 8A CB 4C 8B C7 48";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 4C 89 64 24 ? 55 41 55 41 57 48 8B EC 48 83 EC 60 45 8A E1 4C 8B E9 48 83 FA FF 0F 84 ? ? ? ? 48";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45";
+		ReplicateActorPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 FF 4C 8D 69 68 44 38 3D ? ? ? ? 48 8D 05 ? ? ? ? 48 8B F9 49";
+		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 40 F6 41 58 30 4C 8B F2 48 8B D9 40 B5 01 75 1A 48 8B 81";
+		CreateChannelPattern = "48 89 5C 24 ? 48 89 74 24 ? 44 89 4C 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 45 33 E4 48 8D 05 ? ? ? ? 44 38 25 ? ? ? ? 41 8B";
+		SetChannelActorPattern = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 4C 8D 35 ? ? ? ? 89 BD ? ? ? ? 48";
+	}
+
 	if (Fortnite_Season == 22)
 	{
 		TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8D 91";
@@ -500,6 +564,15 @@ static bool InitializePatterns()
 		StaticFindObjectPattern = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 F6 4C 8B E1 48 83 CB FF";
 		StaticLoadObjectPattern = "48 8B C4 48 89 58 08 4C 89 48 20 4C 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 81 EC ? ? ? ? 33";
 		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 8B FA 4D 8B E0 33 D2 4C 8B F1";
+		CreateChannelPattern = "48 89 5C 24 ? 48 89 74 24 ? 44 89 4C 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 45 33 E4 48 8D 05 ? ? ? ? 44 38 25";
+		ReplicateActorPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 FF 4C 8D 61 68 44 38 3D ? ? ? ? 48 8D 05";
+		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 F6 41 58 30";
+		SetChannelActorPattern = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 48 8D 1D ? ? ? ? 44 89 B5 ? ? ? ? 48 8B F9 48";
+	}
+
+	if (Fortnite_Version == 22.4)
+	{
+		TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 8A A1 ? ? ? ? 48 8D";
 	}
 
 	// todo test tickflush: E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?
@@ -539,6 +612,8 @@ static bool InitializePatterns()
 	std::cout << std::format("PropertiesSizeOffset: 0x{:x}\n", PropertiesSizeOffset);
 	std::cout << std::format("ServerReplicateActorsOffset: 0x{:x}\n", ServerReplicateActorsOffset);
 
+	bool bUseLegacyReplication = Fortnite_Version <= 3.3 || Fortnite_Version >= 19.40;
+
 	InitHostAddress = Memory::FindPattern(InitHostPattern);
 	StaticFindObjectAddress = Memory::FindPattern(StaticFindObjectPattern);
 	StaticLoadObjectAddress = Memory::FindPattern(StaticLoadObjectPattern);
@@ -562,6 +637,14 @@ static bool InitializePatterns()
 	HandleReloadCostAddress = Memory::FindPattern(HandleReloadCostPattern);
 	CanActivateAbilityAddress = Memory::FindPattern(CanActivateAbilityPattern);
 	ActorGetNetModeAddress = Memory::FindPattern(ActorGetNetModePattern);
+
+	if (bUseLegacyReplication)
+	{
+		CreateChannelAddress = Memory::FindPattern(CreateChannelPattern);
+		ReplicateActorAddress = Memory::FindPattern(ReplicateActorPattern);
+		CallPreReplicationAddress = Memory::FindPattern(CallPreReplicationPattern);
+		SetChannelActorAddress = Memory::FindPattern(SetChannelActorPattern);
+	}
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
 
@@ -597,7 +680,15 @@ static bool InitializePatterns()
 	std::cout << std::format("FreeAddress: 0x{:x}\n", (uintptr_t)FreeAddress - Base);
 	std::cout << std::format("HandleReloadCostAddress: 0x{:x}\n", (uintptr_t)HandleReloadCostAddress - Base);
 	std::cout << std::format("CanActivateAbilityAddress: 0x{:x}\n", (uintptr_t)CanActivateAbilityAddress - Base);
-	std::cout << std::format("ActorGetNetModeAddress: 0x{:x}\n", (uintptr_t)ActorGetNetModeAddress - Base);
+	// std::cout << std::format("ActorGetNetModeAddress: 0x{:x}\n", (uintptr_t)ActorGetNetModeAddress - Base);
+
+	if (bUseLegacyReplication)
+	{
+		std::cout << std::format("CreateChannelAddress: 0x{:x}\n", (uintptr_t)CreateChannelAddress - Base);
+		std::cout << std::format("ReplicateActorAddress: 0x{:x}\n", (uintptr_t)ReplicateActorAddress - Base);
+		std::cout << std::format("CallPreReplicationAddress: 0x{:x}\n", (uintptr_t)CallPreReplicationAddress - Base);
+		std::cout << std::format("SetChannelActorAddress: 0x{:x}\n", (uintptr_t)SetChannelActorAddress - Base);
+	}
 
 	if (!InitHostAddress || !ProcessEventAddress || !ObjectsAddress)
 		return false;
@@ -626,10 +717,16 @@ static bool InitializePatterns()
 		Defines::GiveAbilityS14ABOVE = decltype(Defines::GiveAbilityS14ABOVE)(GiveAbilityAddress);
 	else if (Fortnite_Season >= 17)
 		Defines::GiveAbilityS17ABOVE = decltype(Defines::GiveAbilityS17ABOVE)(GiveAbilityAddress);
-	else
+	else if (Engine_Version < 426 && Engine_Version >= 420)
 		Defines::GiveAbility = decltype(Defines::GiveAbility)(GiveAbilityAddress);
+	else
+		Defines::GiveAbilityOld = decltype(Defines::GiveAbilityOld)(GiveAbilityAddress);
 
-	Defines::CantBuild = decltype(Defines::CantBuild)(CantBuildAddress);
+	if (Fortnite_Season < 20)
+		Defines::CantBuild = decltype(Defines::CantBuild)(CantBuildAddress);
+	else
+		Defines::CantBuildDouble = decltype(Defines::CantBuildDouble)(CantBuildAddress);
+
 	Defines::ReplaceBuildingActor = decltype(Defines::ReplaceBuildingActor)(ReplaceBuildingActorAddress);
 	FMemory::Free = decltype(FMemory::Free)(FreeAddress);
 
@@ -637,6 +734,18 @@ static bool InitializePatterns()
 		NewObjects = decltype(NewObjects)(ObjectsAddress);
 	else
 		OldObjects = decltype(OldObjects)(ObjectsAddress);
+
+	if (bUseLegacyReplication)
+	{
+		if (Fortnite_Version >= 19.40)
+			Defines::CreateChannelByName = decltype(Defines::CreateChannelByName)(CreateChannelAddress);
+		else
+			Defines::CreateChannel = decltype(Defines::CreateChannel)(CreateChannelAddress);
+
+		Defines::ReplicateActor = decltype(Defines::ReplicateActor)(ReplicateActorAddress);
+		Defines::CallPreReplication = decltype(Defines::CallPreReplication)(CallPreReplicationAddress);
+		Defines::SetChannelActor = decltype(Defines::SetChannelActor)(SetChannelActorAddress);
+	}
 
 	// toFree.Free();
 

@@ -461,6 +461,11 @@ void MainUI()
 					BuildingItemCollectorActorActors.Free();
 				}
 
+				if (ImGui::Button("Start Bus Countdown"))
+				{
+					*WarmupCountdownEndTime = TimeSeconds + 9;
+				}
+
 				/* if (ImGui::Button("test looting"))
 				{
 					auto LootDrops = Looting::PickLootDrops("Loot_AthenaFloorLoot_Warmup");

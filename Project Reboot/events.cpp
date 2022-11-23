@@ -573,20 +573,24 @@ void Events::StartNewYears()
 
 std::string Events::GetEventPlaylistName()
 {
-	if (Fortnite_Version == 18.40)
-		return ("/GuavaPlaylist/Playlist/Playlist_Guava.Playlist_Guava");
+	if (Fortnite_Version == 20.40)
+		return "/ArmadilloPlaylist/Playlist/Playlist_Armadillo.Playlist_Armadillo";
+	else if (Fortnite_Version == 18.40)
+		return "/GuavaPlaylist/Playlist/Playlist_Guava.Playlist_Guava";
 	else if (Fortnite_Version == 17.50)
-		return ("/KiwiPlaylist/Playlists/Playlist_Kiwi.Playlist_Kiwi");
+		return "/KiwiPlaylist/Playlists/Playlist_Kiwi.Playlist_Kiwi";
 	else if (Fortnite_Version == 17.30)
-		return ("/BuffetPlaylist/Playlist/Playlist_Buffet.Playlist_Buffet");
+		return "/BuffetPlaylist/Playlist/Playlist_Buffet.Playlist_Buffet";
 	else if (Fortnite_Season == 16)
-		return ("/Yogurt/Playlist/Playlist_Yogurt.Playlist_Yogurt");
+		return "/Yogurt/Playlist/Playlist_Yogurt.Playlist_Yogurt";
 	else if (Fortnite_Version == 14.60)
-		return ("/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32");
+		return "/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32";
 	else if (Fortnite_Version == 12.61)
-		return ("/Game/Athena/Playlists/Fritter/Playlist_Fritter_High.Playlist_Fritter_High");
+		return "/Game/Athena/Playlists/Fritter/Playlist_Fritter_High.Playlist_Fritter_High";
 	else if (Fortnite_Version <= 12.41)
-		return ("/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High");
+		return "/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High";
+
+	return "";
 }
 
 void Events::Unvault(FName ItemToUnvault)

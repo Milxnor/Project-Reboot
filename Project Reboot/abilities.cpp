@@ -251,6 +251,8 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
         Defines::GiveAbilityS17ABOVE(AbilitySystemComponent, Handle, *(PadHexE8*)NewSpec);
     else if (Engine_Version < 426 && Engine_Version >= 420)
         Defines::GiveAbility(AbilitySystemComponent, Handle, *(PadHexC8*)NewSpec);
+    else
+        Defines::GiveAbilityOld(AbilitySystemComponent, Handle, *(PadHex78*)NewSpec);
 
     return NewSpec;
 }

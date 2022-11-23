@@ -134,6 +134,9 @@
     <ClCompile Include="..\other\inc\ImGui\imgui_widgets.cpp">
       <Filter>Third Party\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="replication.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -201,6 +204,9 @@
     </ClInclude>
     <ClInclude Include="fontawesome.h">
       <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="replication.h">
+      <Filter>Headers\Net</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

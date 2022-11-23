@@ -187,6 +187,7 @@
     <ClCompile Include="mem.cpp" />
     <ClCompile Include="mem.h" />
     <ClCompile Include="processevent.cpp" />
+    <ClCompile Include="replication.cpp" />
     <ClCompile Include="server.cpp" />
     <ClCompile Include="structs.cpp" />
     <ClCompile Include="teams.cpp" />
@@ -211,6 +212,7 @@
     <ClInclude Include="loot.h" />
     <ClInclude Include="patterns.h" />
     <ClInclude Include="processevent.h" />
+    <ClInclude Include="replication.h" />
     <ClInclude Include="server.h" />
     <ClInclude Include="structs.h" />
     <ClInclude Include="team.h" />

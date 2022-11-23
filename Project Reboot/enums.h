@@ -17,6 +17,16 @@ struct DVector // lmao
 	double X;
 	double Y;
 	double Z;
+
+	DVector operator*(const double A)
+	{
+		return DVector{ this->X * A, this->Y * A, this->Z * A };
+	}
+
+	DVector operator+(const DVector& A)
+	{
+		return DVector{ this->X + A.X, this->Y + A.Y, this->Z + A.Z };
+	}
 };
 
 struct FColor
@@ -243,6 +253,13 @@ struct FRotator
 	}
 };
 
+struct DRotator // lmao
+{
+	double Pitch;
+	double Yaw;
+	double Roll;
+};
+
 enum ESpawnActorCollisionHandlingMethod
 {
 	Undefined,
@@ -360,6 +377,25 @@ struct FAthenaMatchTeamStats
 	int                                                TotalPlayers;                                             // 0x0004(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
 
+enum EChannelType
+{
+	CHTYPE_None = 0,  // Invalid type.
+	CHTYPE_Control = 1,  // Connection control.
+	CHTYPE_Actor = 2,  // Actor-update channel.
+
+	// @todo: Remove and reassign number to CHTYPE_Voice (breaks net compatibility)
+	CHTYPE_File = 3,  // Binary file transfer.
+
+	CHTYPE_Voice = 4,  // VoIP data channel
+	CHTYPE_MAX = 8,  // Maximum.
+};
+
+enum class EChannelCreateFlags : uint32_t
+{
+	None = (1 << 0),
+	OpenedLocally = (1 << 1)
+};
+
 template<class TEnum>
 struct TEnumAsByte
 {
@@ -418,8 +454,16 @@ struct FGuid
 	}
 };
 
+enum class ESetChannelActorFlags : uint32_t
+{
+	None = 0,
+	SkipReplicatorCreation = (1 << 0),
+	SkipMarkActive = (1 << 1),
+};
+
 struct PadHex18 { char Pad[0x18]; };
 struct PadHex10 { char Pad[0x10]; };
+struct PadHex78 { char Pad[0x78]; };
 struct PadHexC0 { char Pad[0xC0]; };
 struct PadHexC8 { char Pad[0xC8]; };
 struct PadHexE0 { char Pad[0xE0]; };
