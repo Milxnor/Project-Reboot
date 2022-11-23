@@ -152,10 +152,14 @@ UObject* FindChannel(UObject* Actor, UObject* Connection)
 int* GetReplicationFrame(UObject* NetDriver)
 {
     // return (int*)(__int64(NetDriver) + 0x428);
+    if (Fortnite_Season == 1)
+        return (int*)(__int64(NetDriver) + 0x288);
     if (Fortnite_Season == 2)
         return (int*)(__int64(NetDriver) + 0x2C8);
-    else if (Fortnite_Season >= 20) // tested on 20.40 and 21.00
+    else if (Fortnite_Season == 20 || Fortnite_Season == 21) // tested on 20.40 and 21.00
         return (int*)(__int64(NetDriver) + 0x3D8);
+    else if (Fortnite_Season == 22)
+        return (int*)(__int64(NetDriver) + 0x428);
     
     return nullptr;
 }
@@ -207,23 +211,10 @@ int ServerReplicateActors(UObject* NetDriver)
         auto PC = *(UObject**)(__int64(Connection) + Connection_PCOffset);
 
         if (PC)
-        {
-            // Defines::SendClientAdjustment(PC);
-        }
-
-        /* for (int32_t ChildIdx = 0; ChildIdx < Connection->Children.Num(); ChildIdx++)
-        {
-            if (Connection->Children[ChildIdx]->PlayerController != NULL)
-            {
-                SendClientAdjustment(Connection->Children[ChildIdx]->PlayerController);
-            }
-        } */
+            Defines::SendClientAdjustment(PC);
 
         for (int i = 0; i < ConsiderList.size(); i++)
         {
-            // if (!ActorInfo)
-               // continue;
-
             auto ActorInfo = ConsiderList.at(i);
 
             // std::cout << "Consider list size: " << ConsiderList.size() << '\n';
@@ -231,9 +222,7 @@ int ServerReplicateActors(UObject* NetDriver)
             auto Actor = ActorInfo->Actor;
 
             if (!Actor)
-            {
                 continue;
-            }
 
             static auto PlayerControllerClass = FindObject(("/Script/Engine.PlayerController"));
 

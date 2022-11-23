@@ -590,7 +590,7 @@ std::string Events::GetEventPlaylistName()
 	else if (Fortnite_Version <= 12.41)
 		return "/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High";
 
-	return "";
+	return "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
 }
 
 void Events::Unvault(FName ItemToUnvault)

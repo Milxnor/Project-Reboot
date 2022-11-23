@@ -66,7 +66,10 @@ UObject* Helper::Easy::SpawnActorDynamic(UObject* Class, BothVector Location, Bo
 	}
 	else
 	{
-		return SpawnActorO(Helper::GetWorld(), Class, &Location.fV, &Rotation.fR, &SpawnParameters);
+		if (Engine_Version >= 500)
+			return SpawnActorO(Helper::GetWorld(), Class, &Location.fV, &Rotation.fR, &SpawnParametersNew);
+		else
+			return SpawnActorO(Helper::GetWorld(), Class, &Location.fV, &Rotation.fR, &SpawnParameters);
 	}
 }
 
@@ -301,7 +304,7 @@ bool ApplyCID(UObject* Pawn, UObject* CID)
 	return bSuceeded;
 }
 
-UObject* GetRandomCID()
+UObject* Helper::GetRandomCID()
 {
 	static auto CIDClass = FindObject("/Script/FortniteGame.AthenaCharacterItemDefinition");
 
@@ -329,12 +332,25 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 		return Pawn;
 
 	static auto Possess = FindObject<UFunction>("/Script/Engine.Controller.Possess");
-
 	Controller->ProcessEvent(Possess, &Pawn);
 
 	if (bAssignCharacterParts)
 	{
-		if (!Defines::bRandomCosmetics || !ApplyCID(Pawn, GetRandomCID()))
+		auto CosmeticLoadoutPawn = Helper::GetCosmeticLoadoutForPawn(Pawn);
+		auto CosmeticLoadoutPC = Helper::GetCosmeticLoadoutForPC(Controller);
+
+		static auto CharacterOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Character");
+		*Get<UObject*>(CosmeticLoadoutPawn, CharacterOffset) = *Get<UObject*>(CosmeticLoadoutPC, CharacterOffset);
+
+		static auto GliderOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Glider");
+		*Get<UObject*>(CosmeticLoadoutPawn, GliderOffset) = *Get<UObject*>(CosmeticLoadoutPC, GliderOffset);
+
+		static auto SkyDiveContrailOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "SkyDiveContrail", false, false, false);
+
+		if (SkyDiveContrailOffset != 0)
+			*Get<UObject*>(CosmeticLoadoutPawn, SkyDiveContrailOffset) = *Get<UObject*>(CosmeticLoadoutPC, SkyDiveContrailOffset);
+
+		if (!Defines::bRandomCosmetics || !ApplyCID(Pawn, *Get<UObject*>(CosmeticLoadoutPawn, CharacterOffset)))
 		{
 			static auto headPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1");
 			static auto bodyPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01");
@@ -355,13 +371,12 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 	if (ClientOnPawnSpawned)
 		Controller->ProcessEvent(ClientOnPawnSpawned); // IDK
 
-	// SetHealth(Pawn, 100);
-	// SetShield(Pawn, 0);
-
 	if (Engine_Version <= 420)
 	{
 		SetMaxHealth(Pawn, 100);
 		SetMaxShield(Pawn, 100);
+		SetHealth(Pawn, 100);
+		SetShield(Pawn, 0);
 	}
 
 	if (Fortnite_Season >= 16)
@@ -929,6 +944,7 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 		*(float*)(__int64(PlayerState) + PS_CurrentShieldOffset) = Shield;
 
 	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+	static auto MinimumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Minimum");
 	static auto BaseValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "BaseValue");
 
 	auto HealthSet = GetHealthSet(Pawn);
@@ -941,6 +957,7 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
 		*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
 		*(float*)(__int64(ShieldData) + BaseValueOffset) = Shield;
+		*(float*)(__int64(ShieldData) + MinimumOffset) = Shield;
 	}
 
 	if (CurrentShieldOffset != 0)
@@ -948,6 +965,7 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
 		*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
 		*(float*)(__int64(CurrentShieldData) + BaseValueOffset) = Shield;
+		*(float*)(__int64(CurrentShieldData) + MinimumOffset) = Shield;
 	}
 
 	static UFunction* OnRep_Shield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Shield");
@@ -1059,6 +1077,36 @@ BothVector Helper::GetCorrectLocationDynamic(UObject* Actor)
 
 	return Fortnite_Season < 20 ? BothVector(Location.fV + RightVector.fV * 70.0f + FVector{ 0, 0, 50 }) :
 		BothVector(Location.dV + RightVector.dV * 70.0f + DVector{ 0, 0, 50 });
+}
+
+void* Helper::GetCosmeticLoadoutForPC(UObject* PC)
+{
+	static auto CosmeticLoadoutPCOffset = PC->GetOffset("CosmeticLoadoutPC", false, false, false);
+
+	if (CosmeticLoadoutPCOffset != 0)
+	{
+		return Get<void>(PC, CosmeticLoadoutPCOffset);
+	}
+	else
+	{
+		static auto CustomizationLoadoutOffset = PC->GetOffset("CustomizationLoadout");
+		return Get<void>(PC, CustomizationLoadoutOffset);
+	}
+}
+
+void* Helper::GetCosmeticLoadoutForPawn(UObject* Pawn)
+{
+	static auto CosmeticLoadoutOffset = Pawn->GetOffset("CosmeticLoadout", false, false, false);
+
+	if (CosmeticLoadoutOffset != 0)
+	{
+		return Get<void>(Pawn, CosmeticLoadoutOffset);
+	}
+	else
+	{
+		static auto CustomizationLoadoutOffset = Pawn->GetOffset("CustomizationLoadout");
+		return Get<void>(Pawn, CustomizationLoadoutOffset);
+	}
 }
 
 std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncludeDefault

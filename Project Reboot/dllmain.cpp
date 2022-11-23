@@ -93,6 +93,16 @@ DWORD WINAPI Initialize(LPVOID)
         MH_EnableHook((PVOID)sigcrash);
     }
 
+    if (Fortnite_Season >= 22)
+    {
+        auto afq = Memory::FindPattern("40 55 53 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 E8 ? ? ? ? 48 8B CE E8 ? ? ? ? 45 33 FF 48 85 C0 74 5A 48");
+
+        std::cout << "afq: " << afq << '\n';
+
+        MH_CreateHook((PVOID)afq, retfalse, nullptr);
+        MH_EnableHook((PVOID)afq);
+    }
+
     // if (false)
     {
         bool bIsSettingGIsClient = true;
@@ -199,7 +209,7 @@ DWORD WINAPI Initialize(LPVOID)
 
     matchmaking = matchmaking ? matchmaking : Memory::FindPattern("83 7D 88 01 7F 0D 48 8B CE E8");
 
-    Defines::bMatchmakingSupported = matchmaking;
+    Defines::bMatchmakingSupported = matchmaking && Engine_Version >= 420;
     int idx = 0;
 
     if (Defines::bMatchmakingSupported) // now check if it leads to the right place and where the jg is at
@@ -294,6 +304,8 @@ DWORD WINAPI Initialize(LPVOID)
             Defines::MapName = Engine_Version < 424 ? "Athena_Terrain" : (Engine_Version < 500 ? "Apollo_Terrain" : "Artemis_Terrain");
         }
     }
+
+    std::cout << "skidda!\n";
 
     while (Defines::SecondsUntilTravel > 0)
     {

@@ -34,6 +34,7 @@ inline uint64_t CreateChannelAddress = 0;
 inline uint64_t ReplicateActorAddress = 0;
 inline uint64_t CallPreReplicationAddress = 0;
 inline uint64_t SetChannelActorAddress = 0;
+inline uint64_t SendClientAdjustmentAddress = 0;
 
 static bool InitializePatterns()
 {
@@ -84,6 +85,7 @@ static bool InitializePatterns()
 	std::string ReplicateActorPattern = "";
 	std::string CallPreReplicationPattern = "";
 	std::string SetChannelActorPattern = "";
+	std::string SendClientAdjustmentPattern = "";
 
 	bool bIsNoMCPRelative = false;
 	bool bIsTickFlushRelative = false;
@@ -146,7 +148,7 @@ static bool InitializePatterns()
 	else
 	{
 		// TODO
-		Engine_Version = 419;
+		Engine_Version = FullVersion.contains(("Next")) ? 419 : 416;
 		Fortnite_Version = FullVersion.contains(("Next")) ? 2.4 : 1.8;
 	}
 
@@ -160,12 +162,30 @@ static bool InitializePatterns()
 
 	if (Engine_Version == 416)
 	{
-		InitHostPattern = "";
-		StaticFindObjectPattern = "";
-		StaticLoadObjectPattern = "";
-		ProcessEventPattern = "";
-		SetWorldPattern = "";
-		PauseBeaconRequestsPattern = "";
+		InitHostPattern = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
+		StaticFindObjectPattern = "4C 8B DC 57 48 81 EC ? ? ? ? 80 3D ? ? ? ? ? 49 89 6B F0 49 89 73 E8 49 8B F0 4D 89 63 E0 45 0F B6 E1 4D 89 6B D8 4C 8B E9 4D 89 73 D0 4C 8B F2 4D 89 7B C8 74 51 48 8B 05";
+		StaticLoadObjectPattern = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 33 F6 4C 8B BD ? ? ? ? 49 8B F9";
+		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 63 41 0C 45 33 F6";
+		SetWorldPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B B1 ? ? ? ? 48 8B FA 48 8B D9 48 85 F6 74 5C";
+		PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 6F 80 3D ? ? ? ? ? 72 33 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 41 B9 ? ? ? ? 48";
+		ObjectsPattern = "48 8B 05 ? ? ? ? 48 8D 14 C8 EB 03 49 8B D6 8B 42 08 C1 E8 1D A8 01 0F 85 ? ? ? ? F7 86 ? ? ? ? ? ? ? ?";
+		InitListenPattern = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
+		TickFlushPattern = "4C 8B DC 55 53 56 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 41 0F 29 7B ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 70 48 8B 01 48 8B F1 4D 89 73 D0 4D 89 7B C8 41 0F 29 73 ? 0F 28";
+		KickPlayerPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
+		ValidationFailurePattern = "40 53 56 41 56 48 81 EC ? ? ? ? 45 33 F6 48 8B DA 44 89 B4 24";
+		ReallocPattern = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D ? ? ? ?";
+		NoReservePattern = "48 89 5C 24 ? 48 89 6C 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B E9 45 0F B6 F8";
+		InternalTryActivateAbilityPattern = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56";
+		GiveAbilityPattern = "48 89 5C 24 ? 56 57 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B F0 4C 8B F2 48 8B D9 7E";
+		CantBuildPattern = "48 89 54 24 ? 55 56 41 56 48 83 EC 50";
+		ReplaceBuildingActorPattern = "48 8B C4 4C 89 40 18 55 57 48 8D A8 ? ? ? ? 48 81 EC";
+		FreePattern = "48 85 C9 74 1D 4C 8B 05 ? ? ? ? 4D 85 C0 0F 84 ? ? ? ? 49";
+		HandleReloadCostPattern = "40 53 56 41 54 41 55 41 57 48 83 EC 60 44 8B EA 4C 8B F9 E8 ? ? ? ? 49 8B 8F";
+		CreateChannelPattern = "40 56 57 41 54 41 55 41 57 48 83 EC 60 48 8B 01 41 8B F9 45 0F B6 E0 4C 63 FA 48 8B F1 FF 90 ? ? ? ? 45 33 ED 83 FF FF 75 52 41 8B FD 48 8D 8E";
+		ReplicateActorPattern = "40 55 53 57 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8D 59 68 4C 8B F1 48 8B 0B 48 8B 01 FF 90 ? ? ? ? 41 8B 4E 30 48 8D 3D";
+		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 4C 8B FA 48 89 58 08 48 8B F9 48 89 70 10 4C 8B C1 4C 89 70 18";
+		SetChannelActorPattern = "4C 8B DC 55 53 57 41 54 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 4D 89 73 D0 44 89 A5 ? ? ? ? 4C 8D 35 ? ? ? ? 48 8B 41";
+		SendClientAdjustmentPattern = "40 55 41 54 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 4C 8D A1 ? ? ? ? 4C 8B E9 49 8B 04 24 49 8B CC FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 83 BC";
 	}
 
 	if (Engine_Version == 419)
@@ -193,6 +213,7 @@ static bool InitializePatterns()
 		ReplicateActorPattern = "40 55 56 41 54 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 4C 8B E9 48 8B 49 68 48 8B 01 FF 90 ? ? ? ? 41 8B 4D 30 48 8D 35 ? ? ? ? 4C 8B F0 0F BA E1 08 0F 83 ? ? ? ? 41 83 7D ? ? 7E 12 32 C0 48 81 C4 ? ? ? ? 41 5E 41 5D 41 5C";
 		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 54 48 8D 68 A1 48 81 EC ? ? ? ? 48 89 58 08 4C 8B E2 48 89";
 		SetChannelActorPattern = "48 8B C4 55 53 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 48 8B D9 48 89 78 E0 48 8D 35 ? ? ? ? 4C 89 60 D8 48 8B FA 45 33 E4 4C 89 78 C8 44 89 A5 ? ? ? ? 45 8B FC 48 8B 41 28 48 8B 48 58 48 85 C9 0F 84 ? ? ? ?";
+		SendClientAdjustmentPattern = "40 53 48 83 EC 20 48 8B 99 ? ? ? ? 48 39 99 ? ? ? ? 74 0A 48 83 B9 ? ? ? ? ? 74 78 48 85 DB 75 0C 48 8B 99 ? ? ? ? 48 85 DB 74 67 80 BB ? ? ? ? ? 75 5E 48 8B 81 ? ? ? ? 33 D2 48 89 54 24 ? 48 3B C2 74 09";
 	}
 
 	if (Engine_Version == 420)
@@ -573,6 +594,12 @@ static bool InitializePatterns()
 	if (Fortnite_Version == 22.4)
 	{
 		TickFlushPattern = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 8A A1 ? ? ? ? 48 8D";
+		InitHostPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 56 48 8D 68 A1 48 81 EC ? ? ? ? 48 8B F1 48 8D 3D ? ? ? ? 4C 8B C7 48 8D 4D D7 45 33 C9";
+		StaticFindObjectPattern = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 60 33 DB 4C 8B F1 48 8D 4D E8 41 8A F1 48 83 FA FF 0F 84 ? ? ? ? 48 89";
+		ReplicateActorPattern = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 F6 4C 8D 61 68 44 38 35 ? ? ? ? 48 8D 05 ? ? ? ? 48 8B F9";
+		CreateChannelPattern = "48 89 5C 24 ? 48 89 74 24 ? 44 89 4C 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 45 33 E4 48 8D 05 ? ? ? ? 44";
+		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 F6 41 58";
+		SetChannelActorPattern = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 48 8D 3D ? ? ? ? 44 89 B5 ? ? ? ? 48";
 	}
 
 	// todo test tickflush: E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?
@@ -644,6 +671,7 @@ static bool InitializePatterns()
 		ReplicateActorAddress = Memory::FindPattern(ReplicateActorPattern);
 		CallPreReplicationAddress = Memory::FindPattern(CallPreReplicationPattern);
 		SetChannelActorAddress = Memory::FindPattern(SetChannelActorPattern);
+		SendClientAdjustmentAddress = Memory::FindPattern(SendClientAdjustmentPattern);
 	}
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
@@ -688,6 +716,7 @@ static bool InitializePatterns()
 		std::cout << std::format("ReplicateActorAddress: 0x{:x}\n", (uintptr_t)ReplicateActorAddress - Base);
 		std::cout << std::format("CallPreReplicationAddress: 0x{:x}\n", (uintptr_t)CallPreReplicationAddress - Base);
 		std::cout << std::format("SetChannelActorAddress: 0x{:x}\n", (uintptr_t)SetChannelActorAddress - Base);
+		std::cout << std::format("SendClientAdjustmentAddress: 0x{:x}\n", (uintptr_t)SendClientAdjustmentAddress - Base);
 	}
 
 	if (!InitHostAddress || !ProcessEventAddress || !ObjectsAddress)
@@ -737,7 +766,7 @@ static bool InitializePatterns()
 
 	if (bUseLegacyReplication)
 	{
-		if (Fortnite_Version >= 19.40)
+		if (Engine_Version >= 422)
 			Defines::CreateChannelByName = decltype(Defines::CreateChannelByName)(CreateChannelAddress);
 		else
 			Defines::CreateChannel = decltype(Defines::CreateChannel)(CreateChannelAddress);
@@ -745,6 +774,7 @@ static bool InitializePatterns()
 		Defines::ReplicateActor = decltype(Defines::ReplicateActor)(ReplicateActorAddress);
 		Defines::CallPreReplication = decltype(Defines::CallPreReplication)(CallPreReplicationAddress);
 		Defines::SetChannelActor = decltype(Defines::SetChannelActor)(SetChannelActorAddress);
+		Defines::SendClientAdjustment = decltype(Defines::SendClientAdjustment)(SendClientAdjustmentAddress);
 	}
 
 	// toFree.Free();

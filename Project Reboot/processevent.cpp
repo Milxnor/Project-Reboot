@@ -219,6 +219,27 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		*Get<UObject*>(PlayerState, HeroTypeOffset) = HeroTypeToUse;
 	}
 
+	// SETUP LOADOUT
+
+	if (Defines::bRandomCosmetics)
+	{
+		static auto GliderClass = FindObject("/Script/FortniteGame.AthenaGliderItemDefinition");
+		static auto ContrailClass = FindObject("/Script/FortniteGame.AthenaSkyDiveContrailItemDefinition");
+
+		auto CosmeticLoadoutPC = Helper::GetCosmeticLoadoutForPC(PlayerController);
+
+		static auto CharacterOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Character");
+		*Get<UObject*>(CosmeticLoadoutPC, CharacterOffset) = Helper::GetRandomCID();
+
+		static auto GliderOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Glider");
+		*Get<UObject*>(CosmeticLoadoutPC, GliderOffset) = Helper::GetRandomObjectOfClass(GliderClass);
+
+		static auto SkyDiveContrailOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "SkyDiveContrail", false, false, false);
+
+		if (SkyDiveContrailOffset != 0)
+			*Get<UObject*>(CosmeticLoadoutPC, SkyDiveContrailOffset) = Helper::GetRandomObjectOfClass(ContrailClass);
+	}
+
 	bool bUpdate = false;
 
 	static auto EditTool = FindObject("/Game/Items/Weapons/BuildingTools/EditTool.EditTool");
@@ -234,7 +255,7 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 	Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
 
-	UObject* PickaxeDef = Helper::GetPickaxeDef(PlayerController, true); // FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+	UObject* PickaxeDef = Defines::bRandomCosmetics ? Helper::GetPickaxeDef(PlayerController, true) : FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 	auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
 	if (Defines::bIsCreative)
@@ -755,6 +776,8 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	auto PlayersLeftPtr = Helper::GetPlayersLeft();
 
+	int beforePlayersLeft = 0;
+
 	auto GameState = Helper::GetGameState();
 
 	// auto TeamsLeftOffset = GameState->GetOffset("TeamsLeft");
@@ -766,91 +789,96 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
 	auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
-	// TODO Loop through teammembers and if they are all dead then remove 1 from TeamsLeft
+	auto GameMode = Helper::GetGameMode();
+	static auto AlivePlayersOffset = GameMode->GetOffset("AlivePlayers");
 
-	if (PlayersLeftPtr && !Defines::bIsPlayground && OldPhase > EAthenaGamePhase::Warmup)
+	auto AlivePlayers = (TArray<UObject*>*)(__int64(GameMode) + AlivePlayersOffset);
+
+	if (IsBadReadPtr(PlayersLeftPtr))
 	{
-		(*PlayersLeftPtr)--;
-		auto PlayersLeft = *PlayersLeftPtr;
-
-		if (PlayersLeft <= 1) // && (int)Playlist->WinCondition <= 1
-		// if (PlayersLeft <= 1)
+		if (!Defines::bIsPlayground && OldPhase > EAthenaGamePhase::Warmup)
 		{
-			static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
-
-			UObject* FinishingWeaponDefinition = nullptr;
-
-			static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
-
-			auto DamageCauser = *(UObject**)(__int64(DeathReport) + DamageCauserOffset);
-
-			if (DamageCauser)
-			{
-				static auto ProjectileClass = FindObject("Class /Script/FortniteGame.FortProjectileBase");
-				static auto FortWeaponClass = FindObject("Class /Script/FortniteGame.FortWeapon");
-
-				if (DamageCauser->IsA(ProjectileClass))
-					FinishingWeaponDefinition = Helper::GetWeaponData(Helper::GetOwner(DamageCauser));
-				else if (DamageCauser->IsA(FortWeaponClass))
-					FinishingWeaponDefinition = Helper::GetWeaponData(DamageCauser);
-			}
-
-			struct
-			{
-				UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				uint8_t                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			} AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause };
-
-			auto GameMode = Helper::GetGameMode();
-			static auto AlivePlayersOffset = GameMode->GetOffset("AlivePlayers");
-
-			auto AlivePlayers = (TArray<UObject*>*)(__int64(GameMode) + AlivePlayersOffset);
-
-			if (AlivePlayers)
-			{
-				for (int i = 0; i < AlivePlayers->Num(); i++)
-				{
-					auto AlivePlayer = AlivePlayers->At(i);
-
-					if (!AlivePlayer)
-						continue;
-
-					if (AlivePlayer != DeadController)
-					{
-						AlivePlayer->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
-
-						auto AlivePlayerPS = Helper::GetPlayerStateFromController(AlivePlayer);
-
-						if (!AlivePlayerPS)
-							continue;
-
-						static auto PlaceOffset = AlivePlayerPS->GetOffsetSlow("Place");
-						auto Place = Get<int>(AlivePlayerPS, PlaceOffset);
-
-						*Place = 1;
-
-						static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
-						AlivePlayerPS->ProcessEvent(OnRep_Place);
-					}
-				}
-			}
-
-			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::EndGame;
-
-			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
-
-			GameState->ProcessEvent(OnRepGamePhase, &OldPhase); 
-
-			static auto EndGamePhaseStarted = FindObject<UFunction>("/Script/FortniteGame.FortGameModeAthena.EndGamePhaseStarted");
-			Helper::GetGameMode()->ProcessEvent(EndGamePhaseStarted);
+			beforePlayersLeft = *PlayersLeftPtr;
+			(*PlayersLeftPtr)--;
 		}
 	}
+	else
+	{
+		beforePlayersLeft = AlivePlayers->Num();
+	}
+
+	std::cout << "beforePlayersLeft: " << beforePlayersLeft << '\n';
+
+	if (beforePlayersLeft - 1 <= 1) // && (int)Playlist->WinCondition <= 1
+	{
+		static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
+
+		UObject* FinishingWeaponDefinition = nullptr;
+
+		static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
+
+		auto DamageCauser = *(UObject**)(__int64(DeathReport) + DamageCauserOffset);
+
+		if (DamageCauser)
+		{
+			static auto ProjectileClass = FindObject("/Script/FortniteGame.FortProjectileBase");
+			static auto FortWeaponClass = FindObject("/Script/FortniteGame.FortWeapon");
+
+			if (DamageCauser->IsA(ProjectileClass))
+				FinishingWeaponDefinition = Helper::GetWeaponData(Helper::GetOwner(DamageCauser));
+			else if (DamageCauser->IsA(FortWeaponClass))
+				FinishingWeaponDefinition = Helper::GetWeaponData(DamageCauser);
+		}
+
+		struct { UObject* FinisherPawn; UObject* FinishingWeapon; uint8_t DeathCause; } AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause };
+
+		auto GameMode = Helper::GetGameMode();
+		static auto AlivePlayersOffset = GameMode->GetOffset("AlivePlayers");
+
+		for (int i = 0; i < AlivePlayers->Num(); i++)
+		{
+			auto AlivePlayer = AlivePlayers->At(i);
+
+			if (!AlivePlayer)
+				continue;
+
+			if (AlivePlayer != DeadController)
+			{
+				AlivePlayer->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
+
+				auto AlivePlayerPS = Helper::GetPlayerStateFromController(AlivePlayer);
+
+				if (!AlivePlayerPS)
+					continue;
+
+				static auto PlaceOffset = AlivePlayerPS->GetOffsetSlow("Place");
+				auto Place = Get<int>(AlivePlayerPS, PlaceOffset);
+
+				*Place = 1;
+
+				static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
+				AlivePlayerPS->ProcessEvent(OnRep_Place);
+			}
+		}
+
+		*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::EndGame;
+
+		static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+
+		GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+
+		static auto EndGamePhaseStarted = FindObject<UFunction>("/Script/FortniteGame.FortGameModeAthena.EndGamePhaseStarted");
+
+		if (EndGamePhaseStarted)
+			Helper::GetGameMode()->ProcessEvent(EndGamePhaseStarted);
+	}
+
+	// TODO Loop through teammembers and if they are all dead then remove 1 from TeamsLeft
 
 	static auto PlaceOffset = DeadPlayerState->GetOffsetSlow("Place");
 	auto Place = Get<int>(DeadPlayerState, PlaceOffset);
 
-	*Place = PlayersLeftPtr ? *PlayersLeftPtr + 1 : 0; // SKUNKED for teams
+	*Place = beforePlayersLeft; // SKUNKED for teams
 
 	static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
 	DeadPlayerState->ProcessEvent(OnRep_Place);
@@ -861,7 +889,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	{
 		auto TeamScore = Get<int>(DeadPlayerState, TeamScoreOffset);
 
-		*TeamScore = *PlayersLeftPtr ? *PlayersLeftPtr + 1 : 0; // IDK
+		*TeamScore = beforePlayersLeft; // IDK
 
 		static auto OnRep_TeamScore = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScore");
 		DeadPlayerState->ProcessEvent(OnRep_TeamScore);
@@ -873,7 +901,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	{
 		auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
 
-		*TeamScorePlacement = *PlayersLeftPtr ? *PlayersLeftPtr + 1 : 0; // IDK
+		*TeamScorePlacement = beforePlayersLeft; // IDK
 
 		static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
 		DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
@@ -1082,12 +1110,15 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters)
 {
+	if (!Parameters)
+		return false;
+
 	auto o = Controller;
 
 	if (Engine_Version >= 424)
 		Controller = Helper::GetOwnerOfComponent(Controller); // CurrentAircraft
 
-	auto Rotation = Parameters ? *(FRotator*)Parameters : FRotator();
+	BothRotator Rotation = Fortnite_Season >= 20 ? BothRotator(*(DRotator*)Parameters) : BothRotator(*(FRotator*)Parameters);
 
 	UObject* Aircraft = nullptr;
 
@@ -1105,16 +1136,25 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 	{
 		auto GameState = Helper::GetGameState();
 
-		static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
-		auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+		static auto AircraftsOffset = GameState->GetOffset("Aircrafts", false, false, false);
 
-		if (!Aircrafts)
-			return false;
+		if (AircraftsOffset != 0)
+		{
+			auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
 
-		Aircraft = Aircrafts->At(0);
+			if (IsBadReadPtr(Aircrafts))
+				return false;
+
+			Aircraft = Aircrafts->At(0);
+		}
+		else
+		{
+			static auto AircraftOffset = GameState->GetOffset("Aircraft");
+			Aircraft = *Get<UObject*>(GameState, AircraftOffset);
+		}
 	}
 
-	if (!Aircraft)
+	if (IsBadReadPtr(Aircraft))
 		return false;
 
 	BothVector ExitLocation = Helper::GetActorLocationDynamic(Aircraft);

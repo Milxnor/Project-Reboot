@@ -169,7 +169,7 @@ UObject* LoadObject(UObject* Class, const std::string& Name) // dont trust ret
 	return Object;
 }
 
-int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint, bool bContain)
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint, bool bContain, bool bWarnIfNotFound)
 {
 	UObject* CurrentClass = nullptr;
 
@@ -214,7 +214,8 @@ int FindOffsetStruct2(const std::string& StructName, const std::string& MemberNa
 		}
 	}
 
-	std::cout << "Unable to find2 " << MemberName << '\n';
+	if (bWarnIfNotFound)
+		std::cout << "Unable to find2 " << MemberName << '\n';
 
 	return 0;
 }

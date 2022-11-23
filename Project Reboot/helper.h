@@ -33,6 +33,7 @@ namespace Helper
 	UObject* GetControllerFromPawn(UObject* Pawn);
 	UObject* GetPawnFromController(UObject* Controller);
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor);
+	UObject* GetRandomCID();
 	UObject* SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts = false);
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);
 	void SetOwner(UObject* Actor, UObject* Owner);
@@ -78,6 +79,9 @@ namespace Helper
 	BothVector GetActorForwardVectorDynamic(UObject* Actor);
 	BothVector GetActorRightVectorDynamic(UObject* Actor);
 	BothVector GetCorrectLocationDynamic(UObject* Actor);
+
+	void* GetCosmeticLoadoutForPC(UObject* PC);
+	void* GetCosmeticLoadoutForPawn(UObject* Pawn);
 
 	std::vector<UObject*> GetAllObjectsOfClass(UObject* Class);
 	UObject* GetPlayerStart();

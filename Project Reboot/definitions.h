@@ -9,8 +9,6 @@ namespace Defines
 	inline bool bReadyForStartMatch = true;
 	inline bool bIsPlayground = false;
 	inline bool bIsLateGame = false;
-	inline bool bRandomSkin = true;
-	inline bool bRandomPickaxe = true;
 	inline bool bIsCreative = false;
 	inline bool bIsGoingToPlayMainEvent = false;
 	inline bool bTraveled = false;
@@ -18,6 +16,7 @@ namespace Defines
 	inline bool bInfiniteAmmo = false;
 	inline bool bInfiniteMats = false;
 	inline bool bRandomCosmetics = true;
+	inline bool bIsSTW = false; // not implemeneted
 
 	inline int SecondsUntilTravel = 5;
 
@@ -56,12 +55,12 @@ namespace Defines
 	inline void (*HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 	inline UObject* (*ReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int a2, UObject* a3, unsigned int a4, int a5, unsigned __int8 bMirrored, UObject* Controller);
 
-	inline void(*SendClientAdjustment)(UObject* controller);
 	inline void(*CallPreReplication)(UObject* actor, UObject* driver);
 	inline char(*ReplicateActor)(UObject* ActorChannel);
 	inline UObject* (*CreateChannelByName)(UObject* Connection, FName* ChName, EChannelCreateFlags CreateFlags, int32_t ChannelIndex); // = -1);
 	inline void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor, ESetChannelActorFlags Flags);
 	inline UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
+	inline void (*SendClientAdjustment)(UObject* PlayerController);
 
 	inline bool (*InternalTryActivateAbility)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex18 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 	inline bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, PadHex10 InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327

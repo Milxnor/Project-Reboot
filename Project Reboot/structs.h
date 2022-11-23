@@ -392,7 +392,7 @@ template <typename ObjectType = UObject>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, UObject* InOuter = nullptr); // Calls StaticFindObject
 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
-int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false);
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false, bool bWarnIfNotFound = true);
 
 UObject* LoadObject(UObject* Class, const std::string& Name);
 

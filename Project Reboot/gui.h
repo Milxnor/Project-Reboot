@@ -298,6 +298,7 @@ void MainUI()
 			if (bLoaded)
 			{
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
+				ImGui::Checkbox("Random Cosmetics", &Defines::bRandomCosmetics);
 				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
 				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
 
@@ -320,7 +321,7 @@ void MainUI()
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
 
-				if (Fortnite_Version >= 14.60 && ImGui::Button("Summon Vehicles"))
+				if ((Fortnite_Version >= 14.60 && Fortnite_Season < 20) && ImGui::Button("Summon Vehicles"))
 				{
 					Defines::bShouldSpawnVehicles = true;
 				}
