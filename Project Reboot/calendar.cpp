@@ -63,6 +63,42 @@ void Calendar::FixLocations()
 		ShowFoundation(TheBlock);
 	}
 
+	if (Fortnite_Version == 17.50f) {
+		auto FarmAfter = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.farmbase_2"));
+		ShowFoundation(FarmAfter);
+
+		auto FarmPhase = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Farm_Phase_03")); // Farm Phases (Farm_Phase_01, Farm_Phase_02 and Farm_Phase_03)
+		ShowFoundation(FarmPhase);
+	}
+
+	if (Fortnite_Version == 17.40f) {
+		auto AbductedCoral = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.CoralPhase_02")); // Coral Castle Phases (CoralPhase_01, CoralPhase_02 and CoralPhase_03)
+		ShowFoundation(AbductedCoral);
+
+		auto CoralFoundation_01 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation_0"));
+		ShowFoundation(CoralFoundation_01);
+
+		auto CoralFoundation_05 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation6"));
+		ShowFoundation(CoralFoundation_05);
+
+		auto CoralFoundation_07 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation3"));
+		ShowFoundation(CoralFoundation_07);
+
+		auto CoralFoundation_10 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation2_1"));
+		ShowFoundation(CoralFoundation_10);
+
+		auto CoralFoundation_13 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation4"));
+		ShowFoundation(CoralFoundation_13);
+
+		auto CoralFoundation_17 = FindObject(("/Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation5"));
+		ShowFoundation(CoralFoundation_17);
+	}
+
+	if (Fortnite_Version == 17.30f) {
+		auto AbductedSlurpy = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Slurpy_Phase03")); // Slurpy Swamp Phases (Slurpy_Phase01, Slurpy_Phase02 and Slurpy_Phase03)
+		ShowFoundation(AbductedSlurpy);
+	}
+
 	if (Fortnite_Season == 13)
 	{
 		auto SpawnIsland = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Lobby_Foundation");

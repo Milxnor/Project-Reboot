@@ -237,7 +237,7 @@ float Helper::GetDistanceTo(UObject* Actor, UObject* OtherActor)
 	return GetDistanceTo_Params.distance;
 }
 
-bool ApplyCID(UObject* Pawn, UObject* CID)
+bool Helper::ApplyCID(UObject* Pawn, UObject* CID)
 {
 	// CID->ItemVariants
 	// CID->DefaultBackpack

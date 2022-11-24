@@ -153,6 +153,16 @@ DWORD WINAPI Initialize(LPVOID)
                 *(bool*)(GIsServerAddr) = true;
             }
 
+            if (Fortnite_Version == 20.40)
+            {
+                auto IsGameServerForEvent = __int64(GetModuleHandleW(0)) + 0x5CD2B88;
+
+                std::cout << "IsGameServerForEvent: " << IsGameServerForEvent << '\n';
+
+                MH_CreateHook((PVOID)IsGameServerForEvent, rettrue, nullptr);
+                MH_EnableHook((PVOID)IsGameServerForEvent);
+            }
+
             bSetGIsClientSuccessful = GIsClientAddr;
         }
     }
@@ -256,7 +266,6 @@ DWORD WINAPI Initialize(LPVOID)
     }
     else
     {
-
         if (Defines::bIsCreative)
         {
             if (Fortnite_Season >= 7 && Engine_Version < 424)
@@ -330,8 +339,8 @@ DWORD WINAPI Initialize(LPVOID)
 
     Defines::bTraveled = true;
 
-    if (Fortnite_Version <= 11.30) // todo test this
-        AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+    // if (Fortnite_Version <= 11.30) // todo test this
+        // AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
 
     AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
     AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
@@ -376,9 +385,28 @@ DWORD WINAPI Initialize(LPVOID)
         : (Engine_Version < 424 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
+    // AddHook("/Script/FortniteGame.BuildingActor.OnDeathServer", OnDeathServer);
+
     // AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
 
     // AddHook("/Script/FortniteGame.FortHeldObjectComponent.HandleOwnerAsBuildingActorDestroyed", HandleOwnerAsBuildingActorDestroyed);
+
+    preoffsets::DeathCause = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "DeathCause");
+    preoffsets::FinisherOrDowner = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "FinisherOrDowner");
+    preoffsets::bDBNO = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "bDBNO");
+    preoffsets::Distance = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "Distance");
+    preoffsets::KillScore = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "KillScore");
+    preoffsets::bMarkedAlive = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerControllerAthena", "bMarkedAlive");
+    preoffsets::TeamScorePlacement = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "TeamScorePlacement");
+    preoffsets::TeamScore = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "TeamScore");
+    preoffsets::Place = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "Place");
+    preoffsets::AlivePlayers = FindOffsetStruct("Class /Script/FortniteGame.FortGameModeAthena", "AlivePlayers");
+    preoffsets::GamePhase = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "GamePhase");
+    preoffsets::DeathInfo = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "DeathInfo");
+    preoffsets::LastFallDistance = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerPawnAthena", "LastFallDistance");
+    preoffsets::Tags = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "Tags");
+    preoffsets::KillerPawn = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPawn");
+    preoffsets::KillerPlayerState = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
 
     return 0;
 }

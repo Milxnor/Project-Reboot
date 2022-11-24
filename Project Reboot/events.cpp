@@ -57,6 +57,8 @@ UObject* GetEventScripting()
 		Scripting = FindObject("/Kiwi/Levels/Kiwi_P.Kiwi_P:PersistentLevel.BP_Kiwi_Master_Scripting_2");
 	else if (Fortnite_Version == 18.40)
 		Scripting = FindObject("/Guava/Levels/Guava_Persistent.Guava_Persistent.PersistentLevel.BP_Guava_SpecialEventScript_2");
+	else if (Fortnite_Version == 20.40)
+		Scripting = FindObject("/Armadillo/Levels/Armadillo_Persistent.Armadillo_Persistent:PersistentLevel.BP_Armadillo_SpecialEventScript_C_1");
 
 	std::cout << "Scripting: " << Scripting << '\n';
 
@@ -396,6 +398,24 @@ void Events::StartEvent()
 		}
 	}
 
+	else if (Fortnite_Version == 20.40)
+	{
+		auto SpecialScripting = GetEventScripting();
+
+		if (SpecialScripting)
+		{
+			auto bb = FindObject<UFunction>("/ArmadilloPlaylist/Blueprints/BP_Armadillo_PreEventManager.BP_Armadillo_PreEventManager_C.OnReady_D381C71746BBAD0F4EA129BFBE7272DA");
+			auto preeventmanager = FindObject("/ArmadilloPlaylist/Levels/Armadillo_Preshow_Presistent.Armadillo_Preshow_Presistent:PersistentLevel.BP_Armadillo_PreEventManager_C_1");
+			preeventmanager->ProcessEvent(bb, &bbparms);
+
+			// auto StartEventAtIndex = FindObject<UFunction>("/Script/SpecialEventGameplayRuntime.SpecialEventScript.StartEventAtIndex");
+			// SpecialScripting->ProcessEvent(StartEventAtIndex, &SecondsSinceEventBegan);
+
+			auto startevent = FindObject<UFunction>("/ArmadilloPlaylist/Blueprints/BP_Armadillo_PreEventManager.BP_Armadillo_PreEventManager_C.startevent");
+			preeventmanager->ProcessEvent(startevent, &SecondsSinceEventBegan);
+		}
+	}
+
 	if (bHasBeenLoaded) // These versions require manual loading stuff
 	{
 		if (Fortnite_Version == 6.21)
@@ -591,6 +611,20 @@ std::string Events::GetEventPlaylistName()
 		return "/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High";
 
 	return "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+}
+
+BothVector Events::GetSpawnLocation(bool* outSuccess)
+{
+	if (outSuccess)
+		*outSuccess = true;
+
+	if (Fortnite_Version == 20.40)
+		return BothVector(DVector(-104890.109, 120585.164, 117040.789));
+
+	if (outSuccess)
+		*outSuccess = false;
+
+	return BothVector();
 }
 
 void Events::Unvault(FName ItemToUnvault)

@@ -33,6 +33,7 @@ namespace Helper
 	UObject* GetControllerFromPawn(UObject* Pawn);
 	UObject* GetPawnFromController(UObject* Controller);
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor);
+	bool ApplyCID(UObject* Pawn, UObject* CID);
 	UObject* GetRandomCID();
 	UObject* SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts = false);
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);

@@ -211,7 +211,10 @@ int ServerReplicateActors(UObject* NetDriver)
         auto PC = *(UObject**)(__int64(Connection) + Connection_PCOffset);
 
         if (PC)
-            Defines::SendClientAdjustment(PC);
+        {
+            if (Defines::SendClientAdjustment)
+                Defines::SendClientAdjustment(PC);
+        }
 
         for (int i = 0; i < ConsiderList.size(); i++)
         {
@@ -224,7 +227,7 @@ int ServerReplicateActors(UObject* NetDriver)
             if (!Actor)
                 continue;
 
-            static auto PlayerControllerClass = FindObject(("/Script/Engine.PlayerController"));
+            static auto PlayerControllerClass = FindObject("/Script/Engine.PlayerController");
 
             if (Actor->IsA(PlayerControllerClass) && Actor != PC)
                 continue;

@@ -35,6 +35,7 @@ inline uint64_t ReplicateActorAddress = 0;
 inline uint64_t CallPreReplicationAddress = 0;
 inline uint64_t SetChannelActorAddress = 0;
 inline uint64_t SendClientAdjustmentAddress = 0;
+inline uint64_t GIsClientAddr = 0;
 
 static bool InitializePatterns()
 {

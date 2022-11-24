@@ -15,6 +15,7 @@ namespace Events
 	void StartEvent();
 	void StartNewYears();
 	std::string GetEventPlaylistName();
+	BothVector GetSpawnLocation(bool* outSuccess = nullptr);
 	// std::string GetEventCodename();
 
 	// Stuff for specific events
