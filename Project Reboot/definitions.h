@@ -40,6 +40,7 @@ namespace Defines
 	inline int AmountOfRestarts = 0;
 
 	inline std::vector<std::pair<UObject*, std::string>> ObjectsToLoad;
+	inline std::vector<ActorSpawnStruct> ActorsToSpawn;
 
 	inline bool (*InitHost)(UObject* Beacon);
 	inline void (*PauseBeaconRequests)(UObject* Beacon, bool bPause);

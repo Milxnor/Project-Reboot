@@ -385,6 +385,9 @@ DWORD WINAPI Initialize(LPVOID)
         : (Engine_Version < 424 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
+    AddHook("/Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone", OnAircraftExitedDropZone);
+    // /Script/FortniteGame.FortPlayerController:ServerDropAllItems
+
     // AddHook("/Script/FortniteGame.BuildingActor.OnDeathServer", OnDeathServer);
 
     // AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
@@ -407,6 +410,7 @@ DWORD WINAPI Initialize(LPVOID)
     preoffsets::Tags = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "Tags");
     preoffsets::KillerPawn = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPawn");
     preoffsets::KillerPlayerState = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
+    preoffsets::TeamsLeft = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "TeamsLeft");
 
     return 0;
 }

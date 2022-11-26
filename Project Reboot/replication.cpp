@@ -70,6 +70,8 @@ int PrepConnections(UObject* NetDriver)
 
 void BuildConsiderList(UObject* NetDriver, std::vector<FNetworkObjectInfo*>& OutConsiderList, UObject* World)
 {
+    bool bSupportsNetworkObjectList = false;
+
     static auto ActorsClass = FindObjectSlow("Class /Script/Engine.Actor", false);
 
     auto Actors = Helper::GetAllActorsOfClass(ActorsClass);

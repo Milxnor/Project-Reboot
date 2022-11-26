@@ -1002,6 +1002,34 @@ void MainUI()
 								CurrentPawn->ProcessEvent(LaunchCharacterJump, &AFortPawn_LaunchCharacterJump_Params);
 							}
 						}
+
+						static std::string ClassOfActorClass = "/Script/Engine.BlueprintGeneratedClass";
+						ImGui::InputText("Class of the ActorClass", &ClassOfActorClass);
+
+						static std::string ActorClassToSpawn;
+						ImGui::InputText("Actor Class to spawn at player", &ActorClassToSpawn);
+
+						if (ImGui::Button("Spawn BlueprintClass"))
+						{
+							if (CurrentPawn)
+							{
+								auto ClassOfActorClassObj = FindObject(ClassOfActorClass);
+
+								if (ClassOfActorClassObj)
+								{
+									ActorSpawnStruct newSpawn;
+									newSpawn.ClassOfClass = ClassOfActorClassObj;
+									newSpawn.ClassToSpawn = ActorClassToSpawn;
+									newSpawn.SpawnLocation = Helper::GetActorLocationDynamic(CurrentPawn);
+
+									Defines::ActorsToSpawn.push_back(newSpawn);
+								}
+								else
+								{
+									std::cout << "Unable to find class of actor class!\n";
+								}
+							}
+						}
 					}
 				}
 			}
@@ -1029,6 +1057,8 @@ void PregameUI()
 
 	if (!Defines::bIsPlayground && !Defines::bIsGoingToPlayMainEvent)
 		ImGui::InputText("Playlist", &Defines::Playlist);
+
+	ImGui::Checkbox("Lategame", &Defines::bIsLateGame);
 
 	if (ImGui::Checkbox("Going to play event", &Defines::bIsGoingToPlayMainEvent))
 	{

@@ -1,4 +1,5 @@
 #include "inventory.h"
+#include "abilities.h"
 #include "helper.h"
 
 void LoopReplicatedEntries(UObject* Controller, std::function<bool(__int64*)> func)
@@ -385,13 +386,15 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition");
 	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
-	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
+	static auto FortGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
+	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.AthenaGadgetItemDefinition");
 	static auto FortContextTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortContextTrapItemDefinition");
 
 	UObject* Wep = nullptr;
 
-	if (ItemDefinition->IsA(AthenaGadgetItemDefinitionClass))
+	if (ItemDefinition->IsA(FortGadgetItemDefinitionClass) || ItemDefinition->IsA(AthenaGadgetItemDefinitionClass))
 	{
+		std::cout << "aa!\n";
 		static auto GetWeaponItemDefinition = FindObject<UFunction>("/Script/FortniteGame.FortGadgetItemDefinition.GetWeaponItemDefinition");
 
 		UObject* GadgetDefinition = nullptr;
@@ -408,12 +411,32 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 		std::cout << "GadgetDefinition: " << GadgetDefinition << '\n';
 
+		static auto carminePack = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
+
+		if (carminePack == ItemDefinition)
+		{
+			std::cout << "thanos!\n";
+			static UObject* AS = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
+			static auto GameplayAbilitiesOffset = AS->GetOffset("GameplayAbilities");
+			auto GameplayAbilities = Get<TArray<UObject*>>(AS, GameplayAbilitiesOffset);
+
+			for (int i = 0; i < GameplayAbilities->Num(); i++) {
+				Abilities::GrantGameplayAbility(Pawn, GameplayAbilities->At(i));
+			}
+
+			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, FindObject("/Game/Athena/Heroes/Meshes/Heads/Dev_TestAsset_Head_M_XL.Dev_TestAsset_Head_M_XL"));
+			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("/Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
+		}
+
 		auto CharacterPartsOffset = ItemDefinition->GetOffset("CharacterParts");
 		auto CharacterParts = Get<TArray<UObject*>>(ItemDefinition, CharacterPartsOffset);
 
 		for (int i = 0; i < CharacterParts->size(); i++)
 		{
 			auto CharacterPart = CharacterParts->At(i);
+
+			if (!CharacterPart)
+				continue;
 
 			Helper::ChoosePart(Pawn, (EFortCustomPartType)i, CharacterPart);
 		}
@@ -787,10 +810,14 @@ bool Inventory::ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void
 
 	auto Instance = Inventory::FindItemInInventory(Controller, Params->ItemGuid);
 
+	if (IsBadReadPtr(Instance))
+		return false;
+
 	auto newDef = TakeItem(Controller, Params->ItemGuid, Params->Count);
+	auto Entry = UFortItem::GetItemEntry(Instance);
 
 	Helper::SummonPickup(Pawn, newDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count, false, 
-		*FFortItemEntry::GetLoadedAmmo(UFortItem::GetItemEntry(Instance)));
+		*FFortItemEntry::GetLoadedAmmo(Entry));
 
 	// TODO: Remove from Pawn->CurrentWeaponList
 
@@ -936,6 +963,53 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	FFortItemEntry::SetLoadedAmmo(NewEntry, Controller, PickupLoadedAmmo);
 
 	// Helper::DestroyActor(Pickup);
+
+	// static auto ThanosID = FnVerDouble >= 8 ? FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack") :
+		// FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
+
+	/*
+	static auto carminePack = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
+
+	if (carminePack == *Definition)
+	{
+		std::cout << "thanos!\n";
+
+		static UObject* AS = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
+
+		static auto GameplayAbilitiesOffset = AS->GetOffset("GameplayAbilities");
+		auto GameplayAbilities = Get<TArray<UObject*>>(AS, GameplayAbilitiesOffset);
+
+		for (int i = 0; i < GameplayAbilities->Num(); i++) 
+		{
+			Abilities::GrantGameplayAbility(Pawn, GameplayAbilities->At(i));
+		}
+
+		auto CharacterPartsOffset = (*Definition)->GetOffset("CharacterParts");
+		auto CharacterParts = Get<TArray<UObject*>>(*Definition, CharacterPartsOffset);
+
+		for (int i = 0; i < CharacterParts->size(); i++)
+		{
+			auto CharacterPart = CharacterParts->At(i);
+
+			if (!CharacterPart)
+				continue;
+
+			Helper::ChoosePart(Pawn, (EFortCustomPartType)i, CharacterPart);
+		}
+
+		static auto SpeedGE = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Speed.GE_Carmine_Speed_C");
+		static auto FallDamageImmuneGE = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C");
+		static auto DisableCrouchGE = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_DisableCrouch.GE_Carmine_DisableCrouch_C");
+		static auto EquippedGE = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Equipped.GE_Carmine_Equipped_C");
+		static auto HealthGE = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Health.GE_Carmine_Health_C");
+
+		Helper::ApplyGameplayEffect(Pawn, SpeedGE);
+		Helper::ApplyGameplayEffect(Pawn, HealthGE);
+		Helper::ApplyGameplayEffect(Pawn, FallDamageImmuneGE);
+		Helper::ApplyGameplayEffect(Pawn, DisableCrouchGE);
+		Helper::ApplyGameplayEffect(Pawn, EquippedGE);
+	}
+	*/
 
 	return false;
 }

@@ -65,6 +65,7 @@ namespace Helper
 	std::string GetNetCL();
 	std::string GetEngineVer();
 	std::string GetFortniteVersion();
+	FActiveGameplayEffectHandle ApplyGameplayEffect(UObject* Pawn, UObject* GEClass);
 	void RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks = 1);
 	UObject* GetRandomObjectOfClass(UObject* Class, bool bUseCache = true, bool bSaveToCache = true);
 

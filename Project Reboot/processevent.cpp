@@ -312,7 +312,7 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	// auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
 
 	static UObject* Def2 = FindObject("/Game/Athena/Items/Traps/TID_Floor_MountedTurret_Athena.TID_Floor_MountedTurret_Athena");
-	auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0);
+	// auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Secondary, 0);
 
 	if (Defines::bIsGoingToPlayMainEvent && Fortnite_Season == 16)
 	{
@@ -600,7 +600,9 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 				static auto LastSafeZoneIndexOffset = Playlist->GetOffset("LastSafeZoneIndex");
 
 				if (LastSafeZoneIndexOffset != -1)
-					*(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+				{
+					// *(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+				}
 			}
 		}
 
@@ -726,6 +728,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	std::cout << "Mf!\n";
 
+	auto GameMode = Helper::GetGameMode();
 	auto DeathReport = (__int64*)Parameters;
 
 	auto DeadPlayerState = Helper::GetPlayerStateFromController(DeadController);
@@ -733,6 +736,8 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	static auto KillerPawnOffset = preoffsets::KillerPawn; // FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPawn");
 	static auto KillerPlayerStateOffset = preoffsets::KillerPlayerState; // FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
+
+	std::cout << "KillerPlayerStateOffset: " << KillerPlayerStateOffset << '\n';
 
 	auto KillerPawn = *(UObject**)(__int64(DeathReport) + KillerPawnOffset);
 	auto KillerPlayerState = *(UObject**)(__int64(DeathReport) + KillerPlayerStateOffset);
@@ -776,8 +781,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 			*(float*)(__int64(DeathInfo) + preoffsets::Distance) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
 	}
 
-	static auto OnRep_DeathInfo = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_DeathInfo");
-	DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
+	std::cout << "aa!\n";
 
 	auto PlayersLeftPtr = Helper::GetPlayersLeft();
 
@@ -785,40 +789,72 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	auto GameState = Helper::GetGameState();
 
-	// auto TeamsLeftOffset = GameState->GetOffset("TeamsLeft");
+	auto TeamsLeftOffset = preoffsets::TeamsLeft;
+	std::cout << "TeamsLeftOffset: " << TeamsLeftOffset << '\n';
+	int* TeamsLeft = Get<int>(GameState, TeamsLeftOffset);
 
-	// auto TeamsLeft = *PlayersLeftPtr; // *Get<int>(GameState, TeamsLeftOffset);
+	static auto GamePhaseOffset = preoffsets::GamePhase;
+	auto GamePhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
-	// std::cout << "TeamsLeft: " << TeamsLeft << '\n';
-
-	static auto GamePhaseOffset = preoffsets::GamePhase; // GameState->GetOffset("GamePhase");
-	auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
-
-	auto GameMode = Helper::GetGameMode();
 	static auto AlivePlayersOffset = preoffsets::AlivePlayers;
+	static auto bMarkedAliveOffset = preoffsets::bMarkedAlive;
 
 	auto AlivePlayers = (TArray<UObject*>*)(__int64(GameMode) + AlivePlayersOffset);
 
-	if (IsBadReadPtr(PlayersLeftPtr))
+	*Get<bool>(DeadController, bMarkedAliveOffset) = false;
+
+	auto TeamsLeftBefore = *TeamsLeft;
+
+	if (!Defines::bIsPlayground) // && OldPhase > EAthenaGamePhase::Warmup)
 	{
-		if (!Defines::bIsPlayground && OldPhase > EAthenaGamePhase::Warmup)
+		beforePlayersLeft = *PlayersLeftPtr;
+		(*PlayersLeftPtr)--;
+
+		auto PlayerState = Helper::GetPlayerStateFromController(DeadController);
+
+		static auto PlayerTeamOffset = PlayerState->GetOffset("PlayerTeam");
+		auto PlayerTeam = Get<UObject*>(PlayerState, PlayerTeamOffset);
+
+		if (TeamsLeftOffset != 0)
 		{
-			beforePlayersLeft = *PlayersLeftPtr;
-			(*PlayersLeftPtr)--;
+			static auto TeamMembersOffset = (*PlayerTeam)->GetOffset("TeamMembers");
+			auto TeamMembers = Get<TArray<UObject*>>(*PlayerTeam, TeamMembersOffset);
+
+			bool bAllIsDead = true;
+
+			for (int i = 0; i < TeamMembers->Num(); i++)
+			{
+				auto TeamMember = TeamMembers->At(i);
+
+				auto bAlive = *Get<bool>(TeamMember, bMarkedAliveOffset);
+				std::cout << std::format("[{}] bAlive: {}", i, bAlive);
+
+				if (TeamMember != DeadController)
+				{
+					if (bAlive)
+					{
+						bAllIsDead = false;
+						break;
+					}
+				}
+			}
+
+			std::cout << "bAllIsDead: " << bAllIsDead << '\n';
+
+			if (bAllIsDead)
+			{
+				(*TeamsLeft)--;
+			}
 		}
-	}
-	else
-	{
-		beforePlayersLeft = AlivePlayers->Num();
 	}
 
 	std::cout << "beforePlayersLeft: " << beforePlayersLeft << '\n';
 
-	static auto PlaceOffset = preoffsets::Place; // DeadPlayerState->GetOffsetSlow("Place
+	static auto PlaceOffset = preoffsets::Place;
+	auto DeadPS_Place = Get<int>(DeadPlayerState, PlaceOffset);
+	*DeadPS_Place = TeamsLeftBefore;
 
-	auto Place = Get<int>(DeadPlayerState, PlaceOffset);
-
-	if (beforePlayersLeft - 1 <= 1) // && (int)Playlist->WinCondition <= 1
+	if (*TeamsLeft <= 1 && GamePhase > EAthenaGamePhase::Warmup) // && (int)Playlist->WinCondition <= 1
 	{
 		static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
 
@@ -860,31 +896,14 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 				auto apPlace = Get<int>(AlivePlayerPS, PlaceOffset);
 
 				*apPlace = 1;
-
-				static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
-				AlivePlayerPS->ProcessEvent(OnRep_Place);
 			}
 		}
 
-		/* *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::EndGame;
-
-		static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
-		GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
-
-		static auto EndGamePhaseStarted = FindObject<UFunction>("/Script/FortniteGame.FortGameModeAthena.EndGamePhaseStarted");
-
-		if (EndGamePhaseStarted)
-			Helper::GetGameMode()->ProcessEvent(EndGamePhaseStarted); */
+		static auto EndMatch = FindObject<UFunction>("/Script/Engine.GameMode.EndMatch");
+		GameMode->ProcessEvent(EndMatch);
 	}
 
-	*Place = beforePlayersLeft; // SKUNKED for teams
-
-	static auto OnRep_Place = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_Place");
-	DeadPlayerState->ProcessEvent(OnRep_Place);
-
-	// TODO Loop through teammembers and if they are all dead then remove 1 from TeamsLeft
-
-	static auto TeamScoreOffset = preoffsets::TeamScore; // DeadPlayerState->GetOffsetSlow("TeamScore");
+	/* static auto TeamScoreOffset = preoffsets::TeamScore; // DeadPlayerState->GetOffsetSlow("TeamScore");
 
 	if (TeamScoreOffset != 0)
 	{
@@ -894,7 +913,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 		static auto OnRep_TeamScore = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScore");
 		DeadPlayerState->ProcessEvent(OnRep_TeamScore);
-	}
+	} */
 
 	static auto TeamScorePlacementOffset = preoffsets::TeamScorePlacement; // DeadPlayerState->GetOffsetSlow("TeamScorePlacement");
 
@@ -902,14 +921,11 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	{
 		auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
 
-		*TeamScorePlacement = beforePlayersLeft; // IDK
+		*TeamScorePlacement = TeamsLeftBefore; // IDK
 
 		static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
 		DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
 	}
-
-	static auto bMarkedAliveOffset = preoffsets::bMarkedAlive; // DeadController->GetOffset("bMarkedAlive");
-	*Get<bool>(DeadController, bMarkedAliveOffset) = false;
 
 	struct FAthenaRewardResult
 	{
@@ -947,7 +963,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	Stats.Stats[3] = 100; // Elimations I think
 
 	auto teamStats = FAthenaMatchTeamStats();
-	teamStats.Place = *Place;
+	teamStats.Place = *DeadPS_Place;
 	teamStats.TotalPlayers = PlayersLeftPtr ? (*PlayersLeftPtr) + 1 : 100; // i believe this is supposed to be how many players were at aircraft
 
 	if (false) // 7.40
@@ -1086,26 +1102,35 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	if (KillerPawn && KillerPlayerState != DeadPlayerState)
 	{
-		auto KillerController = Helper::GetControllerFromPawn(KillerPawn);
-
 		static auto KillScoreOffset = preoffsets::KillScore; // KillerPlayerState->GetOffset("KillScore");
 		(*Get<int>(KillerPlayerState, KillScoreOffset))++;
 
-		static auto ClientReceiveKillNotification = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerPvP.ClientReceiveKillNotification") ?
-			FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerPvP.ClientReceiveKillNotification") : FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientReceiveKillNotification");
+		auto KillerController = Helper::GetControllerFromPawn(KillerPawn);
 
-		std::cout << "ClientReceiveKillNotification: " << ClientReceiveKillNotification << '\n';
+		if (KillerController)
+		{
+			static auto ClientReceiveKillNotification = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerPvP.ClientReceiveKillNotification") ?
+				FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerPvP.ClientReceiveKillNotification") : FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientReceiveKillNotification");
 
-		struct {
-			// Both playerstates
-			UObject* Killer;
-			UObject* Killed;
-		} ClientReceiveKillNotification_Params{ KillerPlayerState, DeadPlayerState };
-		KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
+			std::cout << "ClientReceiveKillNotification: " << ClientReceiveKillNotification << '\n';
+
+			struct {
+				// Both playerstates
+				UObject* Killer;
+				UObject* Killed;
+			} ClientReceiveKillNotification_Params{ KillerPlayerState, DeadPlayerState };
+
+			KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
+		}
+
+		std::cout << "areu su!\n";
 
 		static auto ClientReportKill = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.ClientReportKill");
 		KillerPlayerState->ProcessEvent(ClientReportKill, &DeadPlayerState);
 	}
+
+	static auto OnRep_DeathInfo = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_DeathInfo");
+	DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
 
 	return true;
 }
@@ -1213,20 +1238,6 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 	{
 		std::cout << "Nice!\n";
 
-		static auto BuildingFoundationClass = FindObject("/Script/FortniteGame.BuildingFoundation");
-
-		auto AllBuildingFoundations = Helper::GetAllActorsOfClass(BuildingFoundationClass);
-
-		UObject* Foundation = nullptr;
-
-		while (!Foundation)
-		{
-			auto random = rand();
-
-			if (random >= 1)
-				Foundation = AllBuildingFoundations.At(random % (AllBuildingFoundations.Num()));
-		}
-
 		auto GameState = Helper::GetGameState();
 
 		static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
@@ -1239,15 +1250,6 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 			std::cout << "No aircraft!\n";
 			return false;
 		}
-
-		static auto FlightInfoOffset = Aircraft->GetOffset("FlightInfo");
-		auto FlightInfo = Get<__int64>(Aircraft, FlightInfoOffset);
-
-		static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
-		*(FVector*)(__int64(FlightInfo) + FlightStartLocationOffset) = Helper::GetActorLocation(Foundation) + FVector{ 0, 0, 10000 };
-
-		static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
-		*(float*)(__int64(FlightInfo) + FlightSpeedOffset) = 0;
 
 		FString StartSafeZone = L"startsafezone";
 		Helper::ExecuteConsoleCommand(StartSafeZone);
@@ -1424,6 +1426,46 @@ bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* 
 
 	Teams::AssignTeam(Controller);
 
+	static bool bbbb = false;
+
+	if (!bbbb)
+	{
+		bbbb = true;
+
+		if (Defines::bIsLateGame)
+		{
+			auto GameState = Helper::GetGameState();
+
+			static auto MapInfoOffset = GameState->GetOffsetSlow("MapInfo");
+			auto MapInfo = *Get<UObject*>(GameState, MapInfoOffset);
+
+			static auto FlightInfosOffset = MapInfo->GetOffset("FlightInfos");
+			auto FlightInfos = Get<TArray<__int64>>(MapInfo, FlightInfosOffset);
+
+			auto FlightInfo = FlightInfos->AtPtr(0);
+
+			static auto BuildingFoundationClass = FindObject("/Script/FortniteGame.BuildingFoundation");
+
+			auto AllBuildingFoundations = Helper::GetAllActorsOfClass(BuildingFoundationClass);
+
+			UObject* Foundation = nullptr;
+
+			while (!Foundation)
+			{
+				auto random = rand();
+
+				if (random >= 1)
+					Foundation = AllBuildingFoundations.At(random % (AllBuildingFoundations.Num()));
+			}
+
+			static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
+			*(FVector*)(__int64(FlightInfo) + FlightStartLocationOffset) = Helper::GetActorLocation(Foundation) + FVector{ 0, 0, 10000 };
+
+			static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
+			*(float*)(__int64(FlightInfo) + FlightSpeedOffset) = 0;
+		}
+	}
+
 	return false;
 }
 
@@ -1446,6 +1488,8 @@ bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Paramete
 	UObject* Controller = Helper::GetControllerFromPawn(InteractingPawn);
 
 	CBGAParent->ProcessEvent(Gather, &Controller); */
+
+	return false;
 }
 
 struct FFortRespawnData
@@ -1608,6 +1652,33 @@ bool OnDeathServer(UObject* BuildingActor, UFunction* func, void* Parameters)
 			}
 		}
 	} */
+
+	return false;
+}
+
+bool OnAircraftExitedDropZone(UObject* GameMode, UFunction*, void* Parameters)
+{
+	auto aa = [](UObject* Controller) {
+		// static auto FortPlayerControllerClass = FindObjectSlow("Class /Script/FortniteGame.FortPlayerController", false);
+		// std::cout << "FortPlayerControllerClass: " << FortPlayerControllerClass << '\n';
+
+		// if (Controller->IsA(FortPlayerControllerClass) && Helper::IsInAircraft(Controller))
+		if (Helper::IsInAircraft(Controller))
+		{
+			if (Fortnite_Season < 20)
+			{
+				FRotator rot{ 0, 0, 0 };
+				ServerAttemptAircraftJump(Controller, nullptr, &rot);
+			}
+			else
+			{
+				DRotator rot{ 0, 0, 0 };
+				ServerAttemptAircraftJump(Controller, nullptr, &rot);
+			}
+		}
+	};
+
+	Helper::LoopConnections(aa, true);
 
 	return false;
 }

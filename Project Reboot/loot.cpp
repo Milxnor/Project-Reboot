@@ -30,6 +30,7 @@ UObject* Looting::GetLP()
 	auto PlaylistPtr = Helper::GetPlaylist();
 
 	static UObject* lp = nullptr;
+	std::string LootPackagesName;
 
 	if (!IsBadReadPtr(PlaylistPtr) && !IsBadReadPtr(*PlaylistPtr))
 	{
@@ -44,7 +45,7 @@ UObject* Looting::GetLP()
 			static auto LootPackagesOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlaylist", "LootPackages"); // Playlist->GetOffset("LootPackages");
 			auto LootPackagesSoft = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
 
-			auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && Engine_Version < 424
+			LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex // && Engine_Version < 424
 				? LootPackagesSoft->ObjectID.AssetPathName.ToString() : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
 			std::cout << "LootPackagesName: " << LootPackagesName << '\n';
@@ -57,12 +58,18 @@ UObject* Looting::GetLP()
 	}
 	else
 	{
-		std::string LootPackagesName = "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
+		LootPackagesName = "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
 		auto ClassToUse = (LootPackagesName.contains("Composite")) ?
 			FindObject("/Script/Engine.CompositeDataTable") : FindObject("/Script/Engine.DataTable");
 
 		lp = StaticLoadObject(ClassToUse, nullptr, LootPackagesName);
+	}
+
+	if (!lp)
+	{
+		Sleep(1000);
+		lp = FindObject(LootPackagesName);
 	}
 
 	return lp;

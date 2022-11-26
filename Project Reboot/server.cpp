@@ -590,6 +590,28 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 		}
 	}
 
+	if (Defines::ActorsToSpawn.size() > 0)
+	{
+		for (int i = 0; i < Defines::ActorsToSpawn.size(); i++)
+		{
+			auto& Actor = Defines::ActorsToSpawn.at(i);
+
+			auto loaded = StaticLoadObject(Actor.ClassOfClass, nullptr, Actor.ClassToSpawn);
+
+			if (loaded)
+			{
+				// std::cout << "Loaded " << Object.second << " at " << loaded << '\n';
+				Helper::Easy::SpawnActorDynamic(loaded, Actor.SpawnLocation); // scuffed
+			}
+			else
+			{
+				std::cout << "Failed to find: " << Actor.ClassToSpawn << '\n';
+			}
+
+			Defines::ActorsToSpawn.erase(Defines::ActorsToSpawn.begin() + i);
+		}
+	}
+
 	if (Defines::bShouldSpawnForagedItems)
 	{
 		Defines::bShouldSpawnForagedItems = false;

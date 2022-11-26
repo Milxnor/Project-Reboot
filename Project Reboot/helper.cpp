@@ -314,7 +314,7 @@ UObject* Helper::GetRandomCID()
 
 	while (!skin || skin->GetFullName().contains("Default") || skin->GetFullName().contains("Test"))
 	{
-		auto random = rand() % (AllObjects.size());
+		auto random = (int)GetRandomFloat(1, AllObjects.size() - 1);
 		random = random <= 0 ? 1 : random; // we love default objects
 		skin = AllObjects.at(random);
 	}
@@ -503,7 +503,13 @@ TArray<UObject*> Helper::GetAllActorsOfClass(UObject* Class)
 
 bool Helper::IsInAircraft(UObject* Controller)
 {
-	return false;
+	static auto IsInAircraftFn = FindObject<UFunction>("/Script/FortniteGame.FortPlayerController.IsInAircraft") ? FindObject<UFunction>("/Script/FortniteGame.FortPlayerController.IsInAircraft")
+		: FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.IsInAircraft");
+
+	bool bIsInAircraft = false;
+	Controller->ProcessEvent(IsInAircraftFn, &bIsInAircraft);
+
+	return bIsInAircraft;
 }
 
 UObject* Helper::GetCurrentWeapon(UObject* Pawn)
@@ -698,7 +704,7 @@ int* Helper::GetPlayersLeft()
 {
 	auto GameState = GetGameState();
 
-	static auto PlayersLeftOffset = GameState->GetOffset("PlayersLeft");
+	static auto PlayersLeftOffset = FindOffsetStruct2("Class /Script/FortniteGame.FortGameStateAthena", "PlayersLeft");
 
 	return Get<int>(GameState, PlayersLeftOffset);
 }
@@ -835,6 +841,24 @@ std::string Helper::GetFortniteVersion()
 	return EngineVer;
 }
 
+FActiveGameplayEffectHandle Helper::ApplyGameplayEffect(UObject* Pawn, UObject* GEClass)
+{
+	static auto BP_ApplyGameplayEffectToSelf = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.BP_ApplyGameplayEffectToSelf");
+
+	struct
+	{
+		UObject* GameplayEffect;
+		float Level;
+		FGameplayEffectContextHandle EffectContext;
+		FActiveGameplayEffectHandle Return;
+	} BP_ApplyGameplayEffectToSelf_Params{GEClass, 1.0, FGameplayEffectContextHandle()};
+
+	auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+	ASC->ProcessEvent(BP_ApplyGameplayEffectToSelf, &BP_ApplyGameplayEffectToSelf_Params);
+
+	return BP_ApplyGameplayEffectToSelf_Params.Return;
+}
+
 void Helper::RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks)
 {
 	static auto fn = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.RemoveActiveGameplayEffectBySourceEffect");
@@ -873,7 +897,7 @@ UObject* Helper::GetRandomObjectOfClass(UObject* Class, bool bUseCache, bool bSa
 
 	while (!RandObject || RandObject->GetFullName().contains("Default"))
 	{
-		auto random = rand() % (AllObjects.size() - 1); // idk if the -1 is needed
+		auto random = (int)GetRandomFloat(1, AllObjects.size() - 1); // idk if the -1 is needed
 		random = random <= 0 ? 1 : random; // we love default objects
 		RandObject = AllObjects.at(random);
 	}

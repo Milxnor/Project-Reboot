@@ -22,6 +22,7 @@ bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Paramet
 bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters);
 bool HandleOwnerAsBuildingActorDestroyed(UObject* ObjectComponent, UFunction* func, void* Parameters);
 bool OnDeathServer(UObject* BuildingActor, UFunction* func, void* Parameters);
+bool OnAircraftExitedDropZone(UObject* GameMode, UFunction*, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 static bool ClientForceWorldInventoryUpdate(UObject* Controller, UFunction*, void* Parameters) { return true; }
 
@@ -47,4 +48,5 @@ namespace preoffsets
 	inline int Tags = 0;
 	inline int KillerPawn = 0;
 	inline int KillerPlayerState = 0;
+	inline int TeamsLeft = 0;
 }
