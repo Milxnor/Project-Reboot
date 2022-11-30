@@ -229,40 +229,48 @@ int ServerReplicateActors(UObject* NetDriver)
             if (!Actor)
                 continue;
 
-            static auto PlayerControllerClass = FindObject("/Script/Engine.PlayerController");
-
-            if (Actor->IsA(PlayerControllerClass) && Actor != PC)
-                continue;
-
             // std::cout << "Considering: " << Actor->GetFullName() << '\n';
 
             auto Channel = FindChannel(Actor, Connection);
 
-            /* static auto bAlwaysRelevantOffset = GetOffset(Actor, "bAlwaysRelevant");
-            static auto bAlwaysRelevantBI = GetBitIndex(GetProperty(Actor, "bAlwaysRelevant"));
+            /*
 
-            static auto bNetUseOwnerRelevancyOffset = GetOffset(Actor, "bNetUseOwnerRelevancy");
-            static auto bNetUseOwnerRelevancyBI = GetBitIndex(GetProperty(Actor, "bNetUseOwnerRelevancy"));
+            static auto bAlwaysRelevantOffset = Actor->GetOffset("bAlwaysRelevant");
+            static auto bNetUseOwnerRelevancyOffset = Actor->GetOffset("bNetUseOwnerRelevancy");
+            static auto bOnlyRelevantToOwnerOffset = Actor->GetOffset("bOnlyRelevantToOwner");
 
-            static auto bOnlyRelevantToOwnerOffset = GetOffset(Actor, "bOnlyRelevantToOwner");
-            static auto bOnlyRelevantToOwnerBI = GetBitIndex(GetProperty(Actor, "bOnlyRelevantToOwner"));
-
-            if (!readd((uint8_t*)(__int64(Actor) + bAlwaysRelevantOffset), bAlwaysRelevantBI)
-                && !readd((uint8_t*)(__int64(Actor) + bNetUseOwnerRelevancyOffset), bNetUseOwnerRelevancyBI)
-                && !readd((uint8_t*)(__int64(Actor) + bOnlyRelevantToOwnerOffset), bOnlyRelevantToOwnerBI))
+            if (Defines::ActorChannelClose)
             {
-                if (Connection && ViewTarget)
+                if (!((PlaceholderBitfield*)(__int64(Actor) + bAlwaysRelevantOffset))->Fourth
+                    && !((PlaceholderBitfield*)(__int64(Actor) + bNetUseOwnerRelevancyOffset))->Fifth
+                    && !((PlaceholderBitfield*)(__int64(Actor) + bOnlyRelevantToOwnerOffset))->Third)
                 {
-                    auto Loc = Helper::GetActorLocation(ViewTarget);
-                    if (!IsNetRelevantFor(Actor, ViewTarget, ViewTarget, &Loc))
+                    if (Connection && ViewTarget)
                     {
-                        if (Channel)
-                            UActorChannel_Close(Channel);
+                        auto LocBoth = Helper::GetActorLocationDynamic(ViewTarget);
 
-                        continue;
+                        void* Loc = Fortnite_Season >= 20 ? (void*)&LocBoth.dV : &LocBoth.fV;
+
+                        static int Index = Fortnite_Season == 20 ? 0x99 : 0;
+                        Defines::IsNetRelevantFor = decltype(Defines::IsNetRelevantFor)(Actor->VFTable[Index]);
+
+                        if (!Defines::IsNetRelevantFor(Actor, ViewTarget, ViewTarget, Loc))
+                        {
+                            if (Channel)
+                                Defines::ActorChannelClose(Channel, EChannelCloseReason::Relevancy);
+
+                            continue;
+                        }
                     }
                 }
-            } */
+            }
+            else */
+            {
+                static auto PlayerControllerClass = FindObject("/Script/Engine.PlayerController");
+
+                if (Actor->IsA(PlayerControllerClass) && Actor != PC)
+                    continue;
+            }
 
             if (!Channel)
             {

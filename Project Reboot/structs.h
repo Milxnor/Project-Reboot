@@ -843,17 +843,57 @@ struct FCurveTableRowHandle
 	UObject* CurveTable;
 	FName RowName;
 
-	bool Eval(float* OutVal, FString ContextString)
+	bool Eval(float InVal, float* OutVal)
 	{
+#ifdef balls
 		// EvaluateCurveTableRow
 
-		return false;
+		struct
+		{
+			FCurveTableRowHandle                  CurveTableRowHandle;                               // 0x0(0x10)(Parm, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        InXY;                                              // 0x10(0x4)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        OutXY;                                             // 0x14(0x4)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FString                                ContextString;                                     // 0x18(0x10)(Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                         ReturnValue;                                       // 0x28(0x1)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} UFortKismetLibrary_EvaluateCurveTableRow_Params{*this, InVal};
 
-		__int64 (__fastcall* evalO)(FCurveTableRowHandle* CurveTableRowHandle, __int64 Unused, float* YValue, FString ContextString) = nullptr;
+		if (OutVal)
+			*OutVal = UFortKismetLibrary_EvaluateCurveTableRow_Params.OutXY;
+
+		static auto fn = FindObject<UFunction>("/Script/FortniteGame.FortKismetLibrary.EvaluateCurveTableRow");
+		static auto FKLClass = FindObject("/Script/FortniteGame.Default__FortKismetLibrary");
+
+		FKLClass->ProcessEvent(fn, &UFortKismetLibrary_EvaluateCurveTableRow_Params);
+
+		return UFortKismetLibrary_EvaluateCurveTableRow_Params.ReturnValue;
+#else
+		struct
+		{
+		public:
+			UObject* CurveTable;                                        // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FName                                  RowName;                                           // 0x8(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        InXY;                                              // 0x10(0x4)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t         OutResult;                                         // 0x14(0x1)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        OutXY;                                             // 0x18(0x4)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FString                                ContextString;                                     // 0x20(0x10)(Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} UDataTableFunctionLibrary_EvaluateCurveTableRow_Params{CurveTable, RowName, InVal};
+
+		static auto DTFL = FindObject("/Script/Engine.Default__DataTableFunctionLibrary");
+		static auto fn = FindObject<UFunction>("/Script/Engine.DataTableFunctionLibrary.EvaluateCurveTableRow");
+
+		DTFL->ProcessEvent(fn, &UDataTableFunctionLibrary_EvaluateCurveTableRow_Params);
+
+		if (OutVal)
+			*OutVal = UDataTableFunctionLibrary_EvaluateCurveTableRow_Params.OutXY;
+
+		return true;
+#endif
+
+		bool (__fastcall* evalO)(FCurveTableRowHandle* CurveTableRowHandle, __int64 Unused, float* YValue, FString ContextString) = nullptr;
 
 		evalO = decltype(evalO)(Memory::FindPattern("4C 8B DC 53 48 83 EC 70 49 8B D8 0F 29 74 24 ? 45 33 C0 48 8D 05 ? ? ? ? 44 38 05 ? ? ? ? 4C"));
 
-		return evalO(this, 0, OutVal, ContextString);
+		return evalO(this, 0, OutVal, FString());
 	}
 };
 

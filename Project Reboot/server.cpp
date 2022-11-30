@@ -526,6 +526,9 @@ void Server::Hooks::Initialize()
 			if (Fortnite_Version >= 17.50)
 				sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 45");
 
+			if (!sig)
+				sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 89 11 45 33 C0 48 8B 42 30 48 8B D9 48 85 C0 75 07 48 8B 82 ? ? ? ? 48 89 41 08 48 8D 79 18 48"); // 20.40
+
 			std::cout << "sig: " << sig << '\n';
 
 			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';

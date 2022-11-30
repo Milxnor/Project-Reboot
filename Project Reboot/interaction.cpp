@@ -4,6 +4,15 @@
 #include "inventory.h"
 #include "datatables.h"
 
+#include <intrin.h>
+#include <MinHook.h>
+
+inline __int64 rettruae() 
+{ 
+	std::cout << "skidda! " << __int64(_ReturnAddress()) - __int64(GetModuleHandleW(0)) << '\n';
+	return 1; 
+}
+
 bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* Parameters)
 {
 	if (!Parameters)
@@ -15,6 +24,32 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 	if (!ReceivingActor)
 		return false;
+
+	std::cout << "aa!\n";
+
+	/* auto funcaa = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 33 DB 48 8B FA 48 8B F1 48 85 D2 0F 84 ? ? ? ? 8B 82");
+	UObject* (__fastcall* asf23f)(UObject* a1, UObject* a2) = decltype(asf23f)(funcaa);
+
+	void* a = asf23f(ReceivingActor, FindObject("/Script/FortniteGame.FortInteractInterface"));
+
+	// std::cout << "aname: " << (*(UObject**)(__int64(a) - 0x330))->GetFullName() << '\n';
+
+	void** vtble = ((UObject*)a)->VFTable;
+	std::cout << "FortInteractInterface VTABLE: " << __int64(vtble) - __int64(GetModuleHandleW(0)) << '\n';
+	auto funca = (PVOID)vtble[0x5];
+
+	std::cout << "ABuildingContainer::ServerOnAttemptInteract: " << __int64(funca) - __int64(GetModuleHandleW(0)) << '\n';
+
+	// DWORD Old;
+
+	// VirtualProtect((PVOID)vtble[0x5], 8, PAGE_READWRITE, &Old);
+	// *(PVOID*)vtble[0x5] = &rettruae;
+	// VirtualProtect((PVOID)vtble[0x5], 8, Old, &Old);
+
+	// MH_CreateHook((PVOID)funca, rettruae, nullptr);
+	// MH_EnableHook((PVOID)funca);
+
+	return false; */
 
 	static auto BuildingContainerClass = FindObject("/Script/FortniteGame.BuildingContainer");
 

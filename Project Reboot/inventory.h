@@ -112,7 +112,7 @@ namespace Inventory
 	// FUNCTIONS
 
 	void Update(UObject* Controller, bool bAddOrRemove = false, FFastArraySerializerItem* ModifiedItem = nullptr);
-	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true);
+	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true, int LoadedAmmo = -1);
 	UObject* EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition, int Ammo = 0);
 	UObject* EquipWeapon(UObject* Controller, UObject* Instance, int Ammo = 0);
 	EFortQuickBars WhatQuickBars(UObject* Definition); // returns the quickbar the item should go in

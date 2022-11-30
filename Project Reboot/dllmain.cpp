@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "ai.h"
 #include "patterns.h"
 #include "server.h"
 #include "helper.h"
@@ -20,6 +21,18 @@
 
 __int64 rettrue() { return 1; }
 __int64 retfalse() { return 0; }
+__int64 printretandretfalse()
+{
+    if (Defines::test2)
+    {
+        auto retaddy = __int64(_ReturnAddress()) - __int64(GetModuleHandleW(0));
+
+        if (retaddy != 0x1b0f70f)
+            std::cout << retaddy << '\n'; // std::format("0x{:x}\n", retaddy);
+    }
+
+    return 0;
+}
 
 DWORD WINAPI Initialize(LPVOID)
 {
@@ -32,6 +45,8 @@ DWORD WINAPI Initialize(LPVOID)
 
         SetConsoleTitleA("Project Reboot V2");
     }
+
+    std::ios::sync_with_stdio(false);
 
     // Log::Init();
 
@@ -314,6 +329,8 @@ DWORD WINAPI Initialize(LPVOID)
         }
     }
 
+    // Defines::MapName = "Creative_NoApollo_Terrain";
+
     std::cout << "skidda!\n";
 
     while (Defines::SecondsUntilTravel > 0)
@@ -339,8 +356,18 @@ DWORD WINAPI Initialize(LPVOID)
 
     Defines::bTraveled = true;
 
-    // if (Fortnite_Version <= 11.30) // todo test this
-        // AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+    if (false)
+    {
+        if (Fortnite_Version <= 11.30) // todo test this
+        {
+            static auto fna = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn");
+
+            if (fna)
+                AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+            else
+                AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawn);
+        }
+    }
 
     AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
     AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
@@ -386,6 +413,9 @@ DWORD WINAPI Initialize(LPVOID)
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     AddHook("/Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone", OnAircraftExitedDropZone);
+    AddHook("/Script/FortniteGame.FortAthenaVehicle.ServerUpdateStateSync", ServerUpdateStateSync);
+    AddHook("/Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", UFuncRetTrue);
+
     // /Script/FortniteGame.FortPlayerController:ServerDropAllItems
 
     // AddHook("/Script/FortniteGame.BuildingActor.OnDeathServer", OnDeathServer);
@@ -394,7 +424,19 @@ DWORD WINAPI Initialize(LPVOID)
 
     // AddHook("/Script/FortniteGame.FortHeldObjectComponent.HandleOwnerAsBuildingActorDestroyed", HandleOwnerAsBuildingActorDestroyed);
 
+    // auto sigfgw4y = Memory::FindPattern("4C 8B DC 49 89 5B 20 55 56 57 48 83 EC 60 8A 81 ? ? ? ? 49 8B F8 48 8B DA 48 8B F1 3C 01 75 4A");
+
+    // MH_CreateHook((PVOID)sigfgw4y, AI::GetRandomLocationSafeToReach, (PVOID*)&AI::GetRandomLocationSafeToReachO);
+    // MH_EnableHook((PVOID)sigfgw4y);
+
+    // auto aF1F = (uintptr_t)(__int64(GetModuleHandleW(0)) + 0x2B6CD0);
+    // auto aF1F = Memory::FindPattern("48 83 EC 28 80 B9 ? ? ? ? ? 72 09 48 8B 01 FF 90 ? ? ? ? 32 C0 48 83 C4 28 C3");
+
+    // MH_CreateHook((PVOID)aF1F, rettrue, nullptr);
+    // MH_EnableHook((PVOID)aF1F);
+
     preoffsets::DeathCause = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "DeathCause");
+    preoffsets::bInitialized = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "bInitialized");
     preoffsets::FinisherOrDowner = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "FinisherOrDowner");
     preoffsets::bDBNO = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "bDBNO");
     preoffsets::Distance = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DeathInfo", "Distance");
@@ -411,6 +453,22 @@ DWORD WINAPI Initialize(LPVOID)
     preoffsets::KillerPawn = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPawn");
     preoffsets::KillerPlayerState = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
     preoffsets::TeamsLeft = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "TeamsLeft");
+
+    /* auto ahh = Memory::FindPattern("49 8B 04 24 48 8D 55 F8 49 8B CC FF 50 28 84 C0 0F 84 ? ? ? ? 48 89 7D A8 48 89 7D B0 48 89");
+
+    for (int i = 0; i < 22; i++)
+    {
+        auto byte = (uint8_t*)(ahh + i);
+        std::cout << std::format("[{}] 0x{:x}\n", i, (int)*byte);
+
+        if (*byte == 0x0F)
+        {
+            std::cout << "foudn!\n";
+            *(uint8_t*)(ahh + i + 1) = 0x87;
+        }
+
+        //*byte = 0x0;
+    } */
 
     return 0;
 }

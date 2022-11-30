@@ -72,12 +72,12 @@ __int64* Inventory::GetInventory(UObject* Controller)
 {
 	auto WorldInventory = GetWorldInventory(Controller);
 
-	if (WorldInventory)
+	if (!IsBadReadPtr(WorldInventory))
 	{
 		static auto InventoryOffset = WorldInventory->GetOffset("Inventory");
 		auto Inventory = Get<__int64>(WorldInventory, InventoryOffset);
 
-		return Inventory;
+		return IsBadReadPtr(Inventory) ? nullptr : Inventory;
 	}
 
 	return nullptr;
@@ -166,7 +166,7 @@ static float GetMaxStackSize(UObject* ItemDefinition)
 
 	bool bIsScalableFloat = Engine_Version >= 424; // prob wrong
 
-	return bIsScalableFloat ? ((FScalableFloat*)(__int64(ItemDefinition) + MaxStackSizeOffset))->Value :
+	return bIsScalableFloat ? *(float*)(__int64(ItemDefinition) + MaxStackSizeOffset) :
 		*(int*)(__int64(ItemDefinition) + MaxStackSizeOffset);
 }
 
@@ -248,7 +248,7 @@ UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count 
 	return nullptr;
 }
 
-UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count, bool bUpdate)
+UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count, bool bUpdate, int LoadedAmmo)
 {
 	if (!ItemDefinition)
 		return nullptr;
@@ -347,6 +347,9 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 		auto CreateAndAddItem = [&](int countForItem) {
 			*FFortItemEntry::GetItemDefinition(ItemEntry) = ItemDefinition;
 			*FFortItemEntry::GetCount(ItemEntry) = countForItem;
+
+			if (LoadedAmmo != -1)
+				FFortItemEntry::SetLoadedAmmo(ItemEntry, Controller, LoadedAmmo);
 
 			GetItemInstances(Controller)->Add(ItemInstance);
 			GetReplicatedEntries(Controller)->Add(*ItemEntry, SizeOfItemEntryStruct);
@@ -575,8 +578,9 @@ EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
 {
 	static auto FortWeaponItemDefinitionClass = FindObject("/Script/FortniteGame.FortWeaponItemDefinition");
 	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition"); // FindObject("/Script/FortniteGame.FortDecoItemDefinition");
+	static auto FortGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
 
-	if (Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortTrapItemDefinitionClass))
+	if ((Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortTrapItemDefinitionClass)) || Definition->IsA(FortGadgetItemDefinitionClass))
 		return EFortQuickBars::Primary;
 	else
 		return EFortQuickBars::Secondary;
@@ -687,6 +691,11 @@ UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, 
 			{
 				ItemInstances->RemoveAt(i);
 			}
+		}
+
+		// if (Fortnite_Version < 7.4)
+		{
+			// static auto EmptySlot = FindObject<UFunction>("/Script/FortniteGame.FortQuickBars.EmptySlot");
 		}
 	}
 	

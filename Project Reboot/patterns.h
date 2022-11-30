@@ -35,6 +35,8 @@ inline uint64_t ReplicateActorAddress = 0;
 inline uint64_t CallPreReplicationAddress = 0;
 inline uint64_t SetChannelActorAddress = 0;
 inline uint64_t SendClientAdjustmentAddress = 0;
+inline uint64_t CloseActorChannel = 0;
+
 inline uint64_t GIsClientAddr = 0;
 
 static bool InitializePatterns()
@@ -87,6 +89,7 @@ static bool InitializePatterns()
 	std::string CallPreReplicationPattern = "";
 	std::string SetChannelActorPattern = "";
 	std::string SendClientAdjustmentPattern = "";
+	std::string ActorChannelClosePattern = "";
 
 	bool bIsNoMCPRelative = false;
 	bool bIsTickFlushRelative = false;
@@ -116,6 +119,8 @@ static bool InitializePatterns()
 
 	std::string FNVer = FullVersion;
 	std::string EngineVer = FullVersion;
+	std::string CLStr;
+	int CL = 0;
 
 	if (!FullVersion.contains(("Live")) && !FullVersion.contains(("Next")) && !FullVersion.contains(("Cert")))
 	{
@@ -149,7 +154,11 @@ static bool InitializePatterns()
 	else
 	{
 		// TODO
-		Engine_Version = FullVersion.contains(("Next")) ? 419 : 416;
+		// Engine_Version = FullVersion.contains(("Next")) ? 419 : 416;
+		CLStr = FullVersion.substr(FullVersion.find_first_of('-') + 1);
+		CLStr = CLStr.substr(0, CLStr.find_first_of('+'));
+		CL = std::stoi(CLStr);
+		Engine_Version = CL <= 3775276 ? 416 : 419; // std::stoi(FullVersion.substr(0, FullVersion.find_first_of('-')));
 		Fortnite_Version = FullVersion.contains(("Next")) ? 2.4 : 1.8;
 	}
 
@@ -160,6 +169,9 @@ static bool InitializePatterns()
 	// Now we have the engine version and fn 
 
 	// patterns
+
+	std::cout << "CLStr: " << CLStr << '\n';
+	std::cout << "CL: " << CL << '\n';
 
 	if (Engine_Version == 416)
 	{
@@ -215,6 +227,18 @@ static bool InitializePatterns()
 		CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 54 48 8D 68 A1 48 81 EC ? ? ? ? 48 89 58 08 4C 8B E2 48 89";
 		SetChannelActorPattern = "48 8B C4 55 53 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 48 8B D9 48 89 78 E0 48 8D 35 ? ? ? ? 4C 89 60 D8 48 8B FA 45 33 E4 4C 89 78 C8 44 89 A5 ? ? ? ? 45 8B FC 48 8B 41 28 48 8B 48 58 48 85 C9 0F 84 ? ? ? ?";
 		SendClientAdjustmentPattern = "40 53 48 83 EC 20 48 8B 99 ? ? ? ? 48 39 99 ? ? ? ? 74 0A 48 83 B9 ? ? ? ? ? 74 78 48 85 DB 75 0C 48 8B 99 ? ? ? ? 48 85 DB 74 67 80 BB ? ? ? ? ? 75 5E 48 8B 81 ? ? ? ? 33 D2 48 89 54 24 ? 48 3B C2 74 09";
+		
+		if (CL == 3807424) // 1.11
+		{
+			StaticFindObjectPattern = "4C 8B DC 49 89 5B 08 49 89 6B 18 49 89 73 20 57 41 56 41 57 48 83 EC 60 80 3D ? ? ? ? ? 41 0F B6 E9 49 8B F8 48 8B DA 4C 8B F1 74 51 48 8B 05";
+			SetChannelActorPattern = "48 8B C4 55 53 57 41 54 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 48 89 70 D8 44 89 A5";
+			ReplicateActorPattern = "40 55 56 41 54 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 4C 8B E9 48 8B 49 68 48 8B 01 FF 90 ? ? ? ? 41";
+			CallPreReplicationPattern = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 54 48 8D 68 A1 48 81 EC ? ? ? ? 48 89 58 08 4C 8B E2";
+			CreateChannelPattern = "40 56 57 41 54 41 55 41 57 48 83 EC 60 48 8B 01 41 8B F9 45 0F B6 E0 4C 63 FA 48 8B F1 FF 90 ? ? ? ? 45 33";
+			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 0F 29 43 ? 45 0F 29 4B ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 70 49 89 5B 18 49 89 7B E8 48 8B";
+			PauseBeaconRequestsPattern = "40 53 48 83 EC 30 48 8B D9 84 D2 74 6F 80 3D ? ? ? ? ? 72 33 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 41 B9 ? ? ? ? 48";
+			InternalTryActivateAbilityPattern = "4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 41 54 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B F1 E8 ? ? ? ? 48 8B C8";
+		}
 	}
 
 	if (Engine_Version == 420)
@@ -559,6 +583,7 @@ static bool InitializePatterns()
 		ReplaceBuildingActorPattern = "48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B A5 ? ? ? ? 48 8D 3D";
 		CantBuildPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 70 49 8B E9 4D 8B F8 48 8B DA 48 8B F9 BE ? ? ? ? 48 85 D2 0F 84 ? ? ? ? E8";
 		ProcessEventPattern = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45 33 ED";
+		ActorChannelClosePattern = "40 55 53 56 57 41 56 48 8B EC 48 83 EC 40 4C 8B 41 68 40 8A F2 48 8B 51 28 48 8B D9 48 8D 4D 48 E8 ? ? ? ? 80 3D";
 	}
 
 	if (Fortnite_Season == 21)

@@ -1,6 +1,10 @@
 #pragma once
 
+#include <functional>
+
 #include "structs.h"
+
+void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func);
 
 namespace Abilities
 {

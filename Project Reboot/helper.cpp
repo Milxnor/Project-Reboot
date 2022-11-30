@@ -336,21 +336,6 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 
 	if (bAssignCharacterParts)
 	{
-		auto CosmeticLoadoutPawn = Helper::GetCosmeticLoadoutForPawn(Pawn);
-		auto CosmeticLoadoutPC = Helper::GetCosmeticLoadoutForPC(Controller);
-
-		static auto CharacterOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Character");
-		*Get<UObject*>(CosmeticLoadoutPawn, CharacterOffset) = *Get<UObject*>(CosmeticLoadoutPC, CharacterOffset);
-
-		static auto GliderOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Glider");
-		*Get<UObject*>(CosmeticLoadoutPawn, GliderOffset) = *Get<UObject*>(CosmeticLoadoutPC, GliderOffset);
-
-		static auto SkyDiveContrailOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "SkyDiveContrail", false, false, false);
-
-		if (SkyDiveContrailOffset != 0)
-			*Get<UObject*>(CosmeticLoadoutPawn, SkyDiveContrailOffset) = *Get<UObject*>(CosmeticLoadoutPC, SkyDiveContrailOffset);
-
-		if (!Defines::bRandomCosmetics || !ApplyCID(Pawn, *Get<UObject*>(CosmeticLoadoutPawn, CharacterOffset)))
 		{
 			static auto headPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1");
 			static auto bodyPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01");

@@ -30,6 +30,14 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 
 		if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed build
 			return;
+
+		/* float skidda = 0;
+		BuildingResourceAmountOverride->Eval(Defines::test1, &skidda);
+		std::cout << "skidda: " << skidda << '\n';
+		auto idk = (float)((int)(float)((float)(skidda * 2.0) - 0.5) >> 1);
+		std::cout << "idk: " << idk << '\n';
+		auto ret = fmaxf(idk, 0.0);
+		std::cout << "RETURNS: " << (unsigned int)-((int)(float)(-0.5 - (float)(ret + ret)) >> 1) << '\n'; */
 	}
 
 	auto MaxResourcesToSpawn = 6;

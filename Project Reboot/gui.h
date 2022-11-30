@@ -357,9 +357,35 @@ void MainUI()
 			if (bLoaded)
 			{
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
-				ImGui::Checkbox("Random Cosmetics", &Defines::bRandomCosmetics);
 				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
 				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
+				// ImGui::Checkbox("Test 2", &Defines::test2);
+				// ImGui::SliderFloat("test1", &Defines::test1, 0.f, 1.f);
+
+				/* if (ImGui::Button("Bot Fool"))
+				{
+					std::cout << "eeer!\n";
+					auto GameMode = Helper::GetGameMode();
+					static auto AISettingsOffset = GameMode->GetOffset("AISettings");
+					auto AISettings = *Get<UObject*>(GameMode, AISettingsOffset);
+					static auto AIServicesOffset = AISettings->GetOffset("AIServices");
+
+					static auto funna = FindObject("/Script/FortniteGame.AthenaAIServicePlayerBots");
+					auto newplayerbots = Helper::Easy::SpawnObject(funna, AISettings);
+
+					static auto funna1 = FindObject("/Script/FortniteGame.AthenaAIServiceLoot");
+					auto newloot = Helper::Easy::SpawnObject(funna1, AISettings);
+
+					static auto funna2 = FindObject("/Script/FFortniteGame.AthenaAIServiceVehicle");
+					auto newvehicle = Helper::Easy::SpawnObject(funna2, AISettings);
+
+					Get<TArray<UObject*>>(AISettings, AIServicesOffset)->Add(newplayerbots);
+					Get<TArray<UObject*>>(AISettings, AIServicesOffset)->Add(newloot);
+					Get<TArray<UObject*>>(AISettings, AIServicesOffset)->Add(newvehicle);
+
+					static auto AIDirectorOffset = GameMode->GetOffset("AIDirector");
+					(*Get<UObject*>(GameMode, AIDirectorOffset))->ProcessEvent(FindObject<UFunction>("/Script/FortniteGame.FortAIDirector.Activate"));
+				} */
 
 				static std::string ConsoleCommand;
 

@@ -53,7 +53,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 	{
 		bIsFirstClient = true;
 
-		Defines::bShouldSpawnFloorLoot = Looting::bInitialized && Fortnite_Version < 19.40;
+		Defines::bShouldSpawnFloorLoot = Looting::bInitialized && Fortnite_Version < 19.40;// (Fortnite_Version >= 19.40 ? (bool)Defines::ActorChannelClose : true);
 
 		static auto func1 = FindObject("/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
 
@@ -231,25 +231,6 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	// SETUP LOADOUT
 
-	if (Defines::bRandomCosmetics)
-	{
-		static auto GliderClass = FindObject("/Script/FortniteGame.AthenaGliderItemDefinition");
-		static auto ContrailClass = FindObject("/Script/FortniteGame.AthenaSkyDiveContrailItemDefinition");
-
-		auto CosmeticLoadoutPC = Helper::GetCosmeticLoadoutForPC(PlayerController);
-
-		static auto CharacterOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Character");
-		*Get<UObject*>(CosmeticLoadoutPC, CharacterOffset) = Helper::GetRandomCID();
-
-		static auto GliderOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Glider");
-		*Get<UObject*>(CosmeticLoadoutPC, GliderOffset) = Helper::GetRandomObjectOfClass(GliderClass);
-
-		static auto SkyDiveContrailOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "SkyDiveContrail", false, false, false);
-
-		if (SkyDiveContrailOffset != 0)
-			*Get<UObject*>(CosmeticLoadoutPC, SkyDiveContrailOffset) = Helper::GetRandomObjectOfClass(ContrailClass);
-	}
-
 	bool bUpdate = false;
 
 	static auto EditTool = FindObject("/Game/Items/Weapons/BuildingTools/EditTool.EditTool");
@@ -265,7 +246,7 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 	Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
 
-	UObject* PickaxeDef = Defines::bRandomCosmetics ? Helper::GetPickaxeDef(PlayerController, true) : FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+	UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 	auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
 	if (Defines::bIsCreative)
@@ -601,7 +582,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 				if (LastSafeZoneIndexOffset != -1)
 				{
-					// *(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+					*(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
 				}
 			}
 		}
@@ -763,22 +744,28 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	*(uint8_t*)(__int64(DeathInfo) + preoffsets::DeathCause) = DeathCause;
 	*(UObject**)(__int64(DeathInfo) + preoffsets::FinisherOrDowner) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 	*(bool*)(__int64(DeathInfo) + preoffsets::bDBNO) = bWasDBNO;
+	
+	if (preoffsets::bInitialized != 0)
+		*(bool*)(__int64(DeathInfo) + preoffsets::bInitialized) = true;
 
 	static auto FallDamageEnumValue = GetEnumValue(DeathCauseEnum, "FallDamage");
 	
 	// if (preoffsets::DeathTags != 0)
 		// *Get<FGameplayTagContainer>(DeathInfo, preoffsets::DeathTags) = *Tags;
 
-	if (DeathCause != FallDamageEnumValue)
+	if (preoffsets::Distance != 0)
 	{
-		*(float*)(__int64(DeathInfo) + preoffsets::Distance) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
-	}
-	else
-	{
-		static auto LastFallDistanceOffset = preoffsets::LastFallDistance; // DeadPawn->GetOffsetSlow("LastFallDistance");
+		if (DeathCause != FallDamageEnumValue)
+		{
+			*(float*)(__int64(DeathInfo) + preoffsets::Distance) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
+		}
+		else
+		{
+			static auto LastFallDistanceOffset = preoffsets::LastFallDistance; // DeadPawn->GetOffsetSlow("LastFallDistance");
 
-		if (LastFallDistanceOffset != -1)
-			*(float*)(__int64(DeathInfo) + preoffsets::Distance) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
+			if (LastFallDistanceOffset != -1)
+				*(float*)(__int64(DeathInfo) + preoffsets::Distance) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
+		}
 	}
 
 	std::cout << "aa!\n";
@@ -849,6 +836,8 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	}
 
 	std::cout << "beforePlayersLeft: " << beforePlayersLeft << '\n';
+
+	auto KillerController = KillerPawn ? Helper::GetControllerFromPawn(KillerPawn) : nullptr;
 
 	static auto PlaceOffset = preoffsets::Place;
 	auto DeadPS_Place = Get<int>(DeadPlayerState, PlaceOffset);
@@ -1105,8 +1094,6 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 		static auto KillScoreOffset = preoffsets::KillScore; // KillerPlayerState->GetOffset("KillScore");
 		(*Get<int>(KillerPlayerState, KillScoreOffset))++;
 
-		auto KillerController = Helper::GetControllerFromPawn(KillerPawn);
-
 		if (KillerController)
 		{
 			static auto ClientReceiveKillNotification = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerPvP.ClientReceiveKillNotification") ?
@@ -1318,17 +1305,16 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 					// auto Quaternion = *Rotation; // Helper::GetActorRotation(Vehicle);
 					// auto Rotator = Quaternion.Rotator();
 
-					// auto Rotator = Helper::GetActorRotation(Vehicle);
+					auto Rotator = Helper::GetActorRotation(Vehicle);
 					// auto Quaternion = Rotator.Quaternion();
 
-					/* auto wrongRot = *Rotation;
-					auto Rotator = wrongRot.Rotator();
-					std::cout << "Before: ";
-					Rotator.Describe();
-					Rotator = { Rotator.Pitch, Rotator.Roll, Rotator.Yaw }; */
-					auto Rotator = Helper::GetActorRotation(Vehicle);
-					// std::cout << "After Rot: ";
-					// Rotator.Describe();
+					// auto wrongRot = *Rotation;
+					// auto Rotator = wrongRot.Rotator();
+					// std::cout << "Before: ";
+					// Rotator = { Rotator.Yaw, Rotator.Roll, Rotator.Pitch };
+
+					// auto Rotator = Helper::GetActorRotation(Vehicle);
+
 					auto Quaternion = Rotator.Quaternion();
 
 					// std::cout << "Quat: ";
@@ -1542,6 +1528,8 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	if (!EmoteAsset)
 		return false;
 
+	return false;
+
 	auto Pawn = Helper::GetPawnFromController(Controller);
 
 	if (!Pawn)
@@ -1683,6 +1671,42 @@ bool OnAircraftExitedDropZone(UObject* GameMode, UFunction*, void* Parameters)
 	return false;
 }
 
+bool PlayerCanRestart(UObject* GameMode, UFunction*, void* Parameters)
+{
+	/* std::cout << "PlayerCanRestart!\n";
+
+	struct aa { UObject* Controller; bool ret; };
+	
+	auto Params = (aa*)Parameters;
+
+	Params->ret = true;
+
+	static auto bWorldIsReadyOffset = GameMode->GetOffset("bWorldIsReady");
+	std::cout << "Get<PlaceholderBitfield>(GameMode, bWorldIsReadyOffset)->First : " << Get<PlaceholderBitfield>(GameMode, bWorldIsReadyOffset)->First << '\n';
+	Get<PlaceholderBitfield>(GameMode, bWorldIsReadyOffset)->First = true;
+
+	return true; */
+
+	return false;
+}
+
+bool ServerUpdateStateSync(UObject* Vehicle, UFunction*, void* Parameters)
+{
+	/* auto StateSyncData = (TArray<unsigned char>*)Parameters;
+
+	std::cout << "StateSyncData Num: " << StateSyncData->Num() << '\n';
+
+	for (int i = 0; i < StateSyncData->Num(); i++)
+	{
+		auto StateSyncDataCurrent = StateSyncData->At(i);
+
+		std::cout << "StateSyncData: " << StateSyncData << '\n';
+		std::cout << "StateSyncData Int: " << (int)StateSyncData << '\n';
+	} */
+
+	return false;
+}
+
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
 	auto funcObject = FindObject<UFunction>(str);
@@ -1815,7 +1839,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "BP_CanInteract") &&
 			!strstr(FunctionName.c_str(), "AthenaHitPointBar_C") &&
 			!strstr(FunctionName.c_str(), "ServerFireAIDirectorEvent") &&
-			!strstr(FunctionName.c_str(), "BlueprintThreadSafeUpdateAnimation"))
+			!strstr(FunctionName.c_str(), "BlueprintThreadSafeUpdateAnimation") &&
+			!strstr(FunctionName.c_str(), "On Amb Zap Spawn"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

@@ -15,7 +15,6 @@ namespace Defines
 	inline bool bWipeInventoryOnAircraft = true;
 	inline bool bInfiniteAmmo = false;
 	inline bool bInfiniteMats = false;
-	inline bool bRandomCosmetics = true;
 	inline bool bIsSTW = false; // not implemeneted
 
 	inline int SecondsUntilTravel = 5;
@@ -25,6 +24,7 @@ namespace Defines
 	inline std::string Playlist = Defines::bIsCreative ? ("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
 		Defines::bIsPlayground ? ("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground") :
 			("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+			// ("/Game/Athena/Playlists/DefaultBots/Playlist_Bots_DefaultSolo.Playlist_Bots_DefaultSolo");
 
 	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
 
@@ -37,6 +37,8 @@ namespace Defines
 	inline bool bIsRestarting = false;
 	inline UObject* Portal = nullptr;
 
+	inline float test1 = 0;
+	inline bool test2 = false;
 	inline int AmountOfRestarts = 0;
 
 	inline std::vector<std::pair<UObject*, std::string>> ObjectsToLoad;
@@ -55,6 +57,9 @@ namespace Defines
 	inline __int64 (*CantBuildDouble)(UObject*, UObject*, DVector, DRotator, char, void*, char*);
 	inline void (*HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 	inline UObject* (*ReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int a2, UObject* a3, unsigned int a4, int a5, unsigned __int8 bMirrored, UObject* Controller);
+
+	inline bool (*IsNetRelevantFor)(UObject*, UObject*, UObject*, void*); // end var is location
+	inline void (*ActorChannelClose)(UObject*, EChannelCloseReason);
 
 	inline void(*CallPreReplication)(UObject* actor, UObject* driver);
 	inline char(*ReplicateActor)(UObject* ActorChannel);

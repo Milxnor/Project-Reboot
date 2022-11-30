@@ -84,6 +84,8 @@ bool Teams::AssignTeam(UObject* Controller)
 	static auto TeamMembersOffset = (*PlayerTeam)->GetOffset("TeamMembers");
 	auto TeamMembers = Get<TArray<AController*>>(*PlayerTeam, TeamMembersOffset);
 
+	// SquadMembers
+
 	if (CurrentNumPlayersOnTeam == 0)
 		TeamMembers->Free();
 

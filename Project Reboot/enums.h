@@ -209,6 +209,17 @@ enum class EFortWeaponUpgradeCosts : uint8_t
 	EFortWeaponUpgradeCosts_MAX = 28,
 };
 
+enum class EChannelCloseReason : uint8_t
+{
+	Destroyed,
+	Dormancy,
+	LevelUnloaded,
+	Relevancy,
+	TearOff,
+	/* reserved */
+	MAX = 15		// this value is used for serialization, modifying it may require a network version change
+};
+
 struct FRotator
 {
 	float Pitch;
@@ -329,6 +340,15 @@ enum class EFortCustomGender : uint8_t
 	Female = 2,
 	Both = 3,
 	EFortCustomGender_MAX = 4
+};
+
+enum class EReachLocationValidationMode : uint8_t
+{
+	None = 0,
+	Storm = 1,
+	Leash = 2,
+	SoftLeash = 3,
+	EReachLocationValidationMode_MAX = 4
 };
 
 enum class EAthenaGamePhase : uint8_t
