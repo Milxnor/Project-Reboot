@@ -840,7 +840,9 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 						for (auto& LootDrop : LootDrops)
 						{
 							Helper::SummonPickup(nullptr, LootDrop.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, LootDrop.second, true);
-						} */
+						}
+
+						continue; */
 
 						bool ShouldSpawn = RandomBoolWithWeight(0.3f);
 

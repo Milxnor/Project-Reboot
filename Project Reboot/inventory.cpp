@@ -393,6 +393,15 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 	static auto AthenaGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.AthenaGadgetItemDefinition");
 	static auto FortContextTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortContextTrapItemDefinition");
 
+	// if (Pawn->CurrentWeapon->ItemEntryGuid == Guid) return nullptr;
+
+	auto ItemInstance = Inventory::FindItemInInventory(Controller, Guid);
+
+	if (!ItemInstance)
+		return nullptr;
+
+	auto ItemEntry = UFortItem::GetItemEntry(ItemInstance);
+
 	UObject* Wep = nullptr;
 
 	if (ItemDefinition->IsA(FortGadgetItemDefinitionClass) || ItemDefinition->IsA(AthenaGadgetItemDefinitionClass))
@@ -557,8 +566,8 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		if (Wep)
 		{
 			{
-				// static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
-				// *Get<int>(Wep, AmmoCountOffset) = Ammo;
+				static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
+				FFortItemEntry::SetLoadedAmmo(ItemEntry, Controller, *Get<int>(Wep, AmmoCountOffset));
 			}
 		}
 	}
@@ -970,6 +979,8 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	std::cout << "PickupLoadedAmmo: " << PickupLoadedAmmo << '\n';
 
 	FFortItemEntry::SetLoadedAmmo(NewEntry, Controller, PickupLoadedAmmo);
+
+	// Inventory::EquipWeapon(Controller, Instance, PickupLoadedAmmo);
 
 	// Helper::DestroyActor(Pickup);
 

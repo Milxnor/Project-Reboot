@@ -609,7 +609,9 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		Defines::bIsRestarting = false;
 	}
 
-	return false;
+	*(bool*)Parameters = true;
+
+	return true;
 }
 
 uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, bool* OutWasDBNO = nullptr)
@@ -849,7 +851,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 		UObject* FinishingWeaponDefinition = nullptr;
 
-		static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
+		static auto DamageCauserOffset = preoffsets::DamageCauser;
 
 		auto DamageCauser = *(UObject**)(__int64(DeathReport) + DamageCauserOffset);
 
@@ -886,6 +888,11 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 				*apPlace = 1;
 			}
+		}
+
+		if (preoffsets::WinningPlayerState != 0)
+		{
+			*(UObject**)(__int64(GameState) + preoffsets::WinningPlayerState) = KillerPlayerState;
 		}
 
 		static auto EndMatch = FindObject<UFunction>("/Script/Engine.GameMode.EndMatch");
@@ -992,38 +999,46 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	DeathLocation.Describe();
 
-	if (false)
+	if (Fortnite_Version >= 8.30) // && Fortnite_Version != 14.40
 	{
-		static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
+		/* auto DeadPawnASC = Helper::GetAbilitySystemComponent(DeadPawn);
 
-		auto Chip = Helper::Easy::SpawnActor(ChipClass, DeathLocation, Helper::GetActorRotation(DeadPawn));
+		static auto skidd = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.TryActivateAbilityByClass");
 
-		if (Chip && DeadPlayerState)
+		struct {
+			UObject*          InAbilityToActivate;                               // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                         bAllowRemoteActivation;                            // 0x8(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                         ReturnValue;
+		} para{FindObject("/Game/Athena/Items/EnvironmentalItems/SCMachine/GA_Athena_SCMachine_Passive.GA_Athena_SCMachine_Passive_C"), true};
+
+		DeadPawnASC->ProcessEvent(skidd, &para); */
+
+		// if (false)
 		{
-			Helper::InitializeBuildingActor(DeadController, Chip);
+			static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
 
-			static auto PS_SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "SquadId", true);
-			auto PS_SquadId = Get<int>(DeadPlayerState, PS_SquadIdOffset);
+			auto Chip = Helper::Easy::SpawnActor(ChipClass, DeathLocation, Helper::GetActorRotation(DeadPawn));
 
-			static auto SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "SquadId", true); // Chip->GetOffset("SquadId");
-			*Get<uint8_t>(Chip, SquadIdOffset) = *PS_SquadId;
+			if (Chip && DeadPlayerState)
+			{
+				Helper::InitializeBuildingActor(DeadController, Chip);
 
-			static auto OwnerTeamOffset = Chip->GetOffset("OwnerTeam");
-			*Get<uint8_t>(Chip, OwnerTeamOffset) = *PS_SquadId;
+				static auto PS_SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "SquadId", true);
+				auto PS_SquadId = Get<int>(DeadPlayerState, PS_SquadIdOffset);
 
-			static auto ChipExpirationLengthOffset = Chip->GetOffset("ChipExpirationLength");
-			Get<FScalableFloat>(Chip, ChipExpirationLengthOffset)->Value = 100;
+				static auto SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "SquadId", true); // Chip->GetOffset("SquadId");
+				*Get<uint8_t>(Chip, SquadIdOffset) = *PS_SquadId;
 
-			static auto SetReplicateMovementFn = FindObject<UFunction>("/Script/Engine.Actor.SetReplicateMovement");
-			bool bTrue = true;
-			Chip->ProcessEvent(SetReplicateMovementFn, &bTrue);
+				static auto OwnerTeamOffset = Chip->GetOffset("OwnerTeam");
+				*Get<uint8_t>(Chip, OwnerTeamOffset) = *PS_SquadId;
 
-			static auto ProjectileMovementComponentClass = FindObject("/Script/Engine.ProjectileMovementComponent"); // UFortProjectileMovementComponent
+				static auto ChipExpirationLengthOffset = Chip->GetOffset("ChipExpirationLength");
+				Get<FScalableFloat>(Chip, ChipExpirationLengthOffset)->Value = 100;
 
-			static auto ProjectileMovementOffset = Chip->GetOffset("ProjectileMovement");
-			auto ProjectileMovement = Get<UObject*>(Chip, ProjectileMovementOffset);
-			std::cout << "bef: " << *ProjectileMovement << '\n';
-			*ProjectileMovement = Helper::Easy::SpawnObject(ProjectileMovementComponentClass, Chip);
+				static auto SetReplicateMovementFn = FindObject<UFunction>("/Script/Engine.Actor.SetReplicateMovement");
+				bool bTrue = true;
+				Chip->ProcessEvent(SetReplicateMovementFn, &bTrue);
+			}
 		}
 	}
 
@@ -1840,7 +1855,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "AthenaHitPointBar_C") &&
 			!strstr(FunctionName.c_str(), "ServerFireAIDirectorEvent") &&
 			!strstr(FunctionName.c_str(), "BlueprintThreadSafeUpdateAnimation") &&
-			!strstr(FunctionName.c_str(), "On Amb Zap Spawn"))
+			!strstr(FunctionName.c_str(), "On Amb Zap Spawn") &&
+			!strstr(FunctionName.c_str(), "ServerSetPlayerCanDBNORevive"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

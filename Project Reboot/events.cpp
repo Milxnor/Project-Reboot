@@ -39,6 +39,8 @@ UObject* GetEventScripting()
 		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations:PersistentLevel.BP_FestivusManager");
 	else if (Fortnite_Version == 8.51)
 		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
+	else if (Fortnite_Version == 9.40 || Fortnite_Version == 9.41)
+		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_CattusDoggus_Scripting_2");
 	else if (Fortnite_Version == 10.40)
 		Scripting = FindObject("/Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2");
 	else if (Fortnite_Version == 11.30)
@@ -91,6 +93,19 @@ void Events::LoadEvent()
 		{
 			auto LoadSnowLevel = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.LoadSnowLevel");
 			Scripting->ProcessEvent(LoadSnowLevel);
+
+			bHasBeenLoaded = true;
+		}
+	}
+
+	else if (Fortnite_Version == 9.40 || Fortnite_Version == 9.41)
+	{
+		auto Scripting = GetEventScripting();
+
+		if (Scripting)
+		{
+			auto LoadCattusLevel = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cattus/BP_CattusDoggus_Scripting.BP_CattusDoggus_Scripting_C.LoadCattusLevel");
+			Scripting->ProcessEvent(LoadCattusLevel, &Condition);
 
 			bHasBeenLoaded = true;
 		}
@@ -445,6 +460,20 @@ void Events::StartEvent()
 
 				static auto FinalSequence = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/White/BP_SnowScripting.BP_SnowScripting_C.FinalSequence");
 				Scripting->ProcessEvent(FinalSequence);
+			}
+		}
+
+		else if (Fortnite_Version == 9.40 || Fortnite_Version == 9.41)
+		{
+			auto Scripting = GetEventScripting();
+
+			if (Scripting)
+			{
+				auto bb = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cattus/BP_CattusDoggus_Scripting.BP_CattusDoggus_Scripting_C.OnReady_C11CA7624A74FBAEC54753A3C2BD4506");
+				Scripting->ProcessEvent(bb, &bbparms);
+
+				auto startevent = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cattus/BP_CattusDoggus_Scripting.BP_CattusDoggus_Scripting_C.startevent");
+				Scripting->ProcessEvent(startevent);
 			}
 		}
 

@@ -52,4 +52,6 @@ namespace preoffsets
 	inline int KillerPlayerState = 0;
 	inline int TeamsLeft = 0;
 	inline int bInitialized = 0;
+	inline int WinningPlayerState = 0;
+	inline int DamageCauser = 0;
 }

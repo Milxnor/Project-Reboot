@@ -454,11 +454,12 @@ static bool InitializePatterns()
 		FreePattern = "48 85 C9 74 2E 53 48 83 EC 20 48 8B D9";
 		// ActorGetNetModePattern = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 48 8B 9B ? ? ? ? BA ? ? ? ? 8B";
 
-		if (Fortnite_Season == 13)
-			GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49";
-
 		if (Fortnite_Version == 15.30)
+		{
 			TickFlushPattern = "4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC 80 02 ? ? 48 8B 05 AF B7 51 04 48 33 C4 48 89 85 ? 01 ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8";
+		}
+
+		// TODO: Try 4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 for S15 tickflush
 
 		if (Fortnite_Version == 15.10)
 		{
@@ -467,10 +468,16 @@ static bool InitializePatterns()
 		}
 
 		if (Fortnite_Season == 13)
+		{
+			GiveAbilityPattern = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49";
+			NoMCPPattern = "E8 ? ? ? ? 84 C0 74 AF B0 01";
 			TickFlushPattern = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 63 E0 45 33 E4 4D 89 6B D8 45";
+		}
 
 		if (Fortnite_Version == 14.60)
+		{
 			NoMCPPattern = "48 83 EC 28 65 48 8B 04 25 ? ? ? ? 8B 0D ? ? ? ? BA ? ? ? ? 48 8B 0C C8 8B 04 0A 39 05 ? ? ? ? 7F 0C 0F B6 05 ? ? ? ? 48 83 C4 28 C3 48 8D 0D ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? ? 75 DF E8 ? ? ? ? 48 8B C8 48 8D 15 ? ? ? ? E8 ? ? ? ? 48 8D 0D ? ? ? ? 88 05 ? ? ? ? E8 ? ? ? ? EB B7";
+		}
 	}
 
 	if (Engine_Version == 427) // 4.26.1
@@ -685,7 +692,7 @@ static bool InitializePatterns()
 	CantBuildAddress = Memory::FindPattern(CantBuildPattern);
 	ReplaceBuildingActorAddress = Memory::FindPattern(ReplaceBuildingActorPattern);
 	WorldGetNetModeAddress = Memory::FindPattern(WorldGetNetModePattern);
-	NoMCPAddress = Engine_Version < 426 ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
+	NoMCPAddress = Fortnite_Season < 14 ? Memory::FindPattern(NoMCPPattern, true, 1) : Memory::FindPattern(NoMCPPattern);
 	FreeAddress = Memory::FindPattern(FreePattern);
 	HandleReloadCostAddress = Memory::FindPattern(HandleReloadCostPattern);
 	CanActivateAbilityAddress = Memory::FindPattern(CanActivateAbilityPattern);

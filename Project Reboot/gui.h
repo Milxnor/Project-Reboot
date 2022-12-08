@@ -416,6 +416,11 @@ void MainUI()
 					Server::Restart();
 				}
 
+				/* if (ImGui::Button("Summon FloorLoot"))
+				{
+					Defines::bShouldSpawnFloorLoot = true;
+				} */
+
 				if (Fortnite_Season == 19)
 				{
 					static int SnowIndex = 0;
@@ -709,6 +714,8 @@ void MainUI()
 
 		else if (Tab == DUMP_TAB)
 		{
+			ImGui::Text("These will all be in your Win64 folder!");
+
 			static std::string ahh = std::format("Fortnite Version {}\n\n", std::to_string(Fortnite_Version));
 
 			if (ImGui::Button("Dump Objects"))

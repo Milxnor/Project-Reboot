@@ -41,7 +41,8 @@ DWORD WINAPI Initialize(LPVOID)
         AllocConsole();
 
         FILE* stream;
-        freopen_s(&stream, "CONOUT$", "w+", stdout);
+        std::string out = "CONOUT$";
+        freopen_s(&stream, out.c_str(), "w+", stdout);
 
         SetConsoleTitleA("Project Reboot V2");
     }
@@ -230,48 +231,72 @@ DWORD WINAPI Initialize(LPVOID)
     std::cout << "Full Version: " << Helper::GetEngineVersion().ToString() << '\n';
     std::cout << std::format("Engine Version {} Version {} CL {}\n", Helper::GetEngineVer(), Helper::GetFortniteVersion(), Helper::GetNetCL());
 
-    auto matchmaking = Memory::FindPattern("83 BD ? ? ? ? 01 7F 18 49 8D 4D D8 48 8B D6 E8 ? ? ? ? 48");
-
-    matchmaking = matchmaking ? matchmaking : Memory::FindPattern("83 7D 88 01 7F 0D 48 8B CE E8");
-
-    Defines::bMatchmakingSupported = matchmaking && Engine_Version >= 420;
-    int idx = 0;
-
-    if (Defines::bMatchmakingSupported) // now check if it leads to the right place and where the jg is at
+    if (Fortnite_Version != 22.4)
     {
-        for (int i = 0; i < 9; i++)
+        auto matchmaking = Memory::FindPattern("83 BD ? ? ? ? 01 7F 18 49 8D 4D D8 48 8B D6 E8 ? ? ? ? 48");
+
+        matchmaking = matchmaking ? matchmaking : Memory::FindPattern("83 7D 88 01 7F 0D 48 8B CE E8");
+
+        Defines::bMatchmakingSupported = matchmaking && Engine_Version >= 420;
+        int idx = 0;
+
+        if (Defines::bMatchmakingSupported) // now check if it leads to the right place and where the jg is at
         {
-            auto byte = (uint8_t*)(matchmaking + i);
+            for (int i = 0; i < 9; i++)
+            {
+                auto byte = (uint8_t*)(matchmaking + i);
+
+                if (IsBadReadPtr(byte))
+                    continue;
+
+                // std::cout << std::format("[{}] 0x{:x}\n", i, (int)*byte);
+
+                if (*byte == 0x7F)
+                {
+                    Defines::bMatchmakingSupported = true;
+                    idx = i;
+                    break;
+                }
+
+                Defines::bMatchmakingSupported = false;
+            }
+        }
+
+        std::cout << "Matchmaking will " << (Defines::bMatchmakingSupported ? "be supported\n" : "not be supported\n");
+
+        if (Defines::bMatchmakingSupported)
+        {
+            std::cout << "idx: " << idx << '\n';
+
+            auto before = (uint8_t*)(matchmaking + idx);
+
+            std::cout << "before byte: " << (int)*before << '\n';
+
+            *before = 0x74;
+        }
+    }
+    /* else
+    {
+        auto sigg = Memory::FindPattern("83 7C 24 ? ? 0F 8F ? ? ? ? 44 39 3D ? ? ? ? 41 8A DF 74 33 48 8B 0D ? ? ? ? 48 85 C9 74 27");
+
+        for (int i = 0; i < 100; i++)
+        {
+            auto byte = (uint8_t*)(sigg + i);
 
             if (IsBadReadPtr(byte))
                 continue;
 
-            // std::cout << std::format("[{}] 0x{:x}\n", i, (int)*byte);
-
-            if (*byte == 0x7F)
+            if (*byte == 0x1)
             {
-                Defines::bMatchmakingSupported = true;
-                idx = i;
+                std::cout << "found!\n";
+                *byte = 0x5;
                 break;
             }
-
-            Defines::bMatchmakingSupported = false;
         }
-    }
+    } */
 
-    std::cout << "Matchmaking will " << (Defines::bMatchmakingSupported ? "be supported\n" : "not be supported\n");
-
-    if (Defines::bMatchmakingSupported)
-    {
-        std::cout << "idx: " << idx << '\n';
-
-        auto before = (uint8_t*)(matchmaking + idx);
-
-        std::cout << "before byte: " << (int)*before << '\n';
-
-        *before = 0x74;
-    }
-
+    std::cout << "patched!\n";
+  
     if (Defines::bIsGoingToPlayMainEvent)
     {
         if (Fortnite_Season == 16)
@@ -447,12 +472,14 @@ DWORD WINAPI Initialize(LPVOID)
     preoffsets::Place = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "Place");
     preoffsets::AlivePlayers = FindOffsetStruct("Class /Script/FortniteGame.FortGameModeAthena", "AlivePlayers");
     preoffsets::GamePhase = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "GamePhase");
+    preoffsets::WinningPlayerState = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "WinningPlayerState");
     preoffsets::DeathInfo = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "DeathInfo");
     preoffsets::LastFallDistance = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerPawnAthena", "LastFallDistance");
     preoffsets::Tags = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "Tags");
     preoffsets::KillerPawn = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPawn");
     preoffsets::KillerPlayerState = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
     preoffsets::TeamsLeft = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "TeamsLeft");
+    preoffsets::DamageCauser = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "DamageCauser");
 
     /* auto ahh = Memory::FindPattern("49 8B 04 24 48 8D 55 F8 49 8B CC FF 50 28 84 C0 0F 84 ? ? ? ? 48 89 7D A8 48 89 7D B0 48 89");
 

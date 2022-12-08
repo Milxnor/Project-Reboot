@@ -513,6 +513,11 @@ struct FGameplayAbilitySpecHandle
 	}
 };
 
+struct FTimerHandle
+{
+	uint64_t Handle;
+};
+
 enum class EFortResourceType : uint8_t
 {
 	Wood = 0,

@@ -3,6 +3,7 @@
 #include "loot.h"
 #include "inventory.h"
 #include "datatables.h"
+#include "abilities.h"
 
 #include <intrin.h>
 #include <MinHook.h>
@@ -181,9 +182,79 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 				Helper::SummonPickup(nullptr, AmmoDef2, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount2, true, false);
 			}
 		}
+
+		else
+		{
+			UObject* classPrivate = BuildingContainer->ClassPrivate;
+
+			while (classPrivate)
+			{
+				std::cout << "Class Private Name: " << classPrivate->GetFullName() << '\n';
+				classPrivate = classPrivate->ClassPrivate;
+			}
+		}
+
+	} // CONTAINER
+
+	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
+
+	if (ReceivingActor->IsA(PawnClass))
+	{
+		std::cout << "revive!\n";
+
+		return false;
+
+		// static auto skidda = FindObject<UFunction>("/Game/Abilities/NPC/Generic/GAB_AthenaDBNO.GAB_AthenaDBNO_C.OnFinish_4C169D40441E45B462D83CBBA67F6E45");
+
+		auto DBNOPawn = ReceivingActor;
+		auto DBNOPawnASC = Helper::GetAbilitySystemComponent(DBNOPawn);
+
+		/* static auto skidad = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.TryActivateAbilityByClass");
+
+		struct {
+			UObject* InAbilityToActivate;                               // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                         bAllowRemoteActivation;                            // 0x8(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                         ReturnValue;
+		} para{ FindObject("/Game/Abilities/NPC/Generic/GAB_AthenaDBNORevive.GAB_AthenaDBNORevive_C"), true };
+
+		DeadPawnASC->ProcessEvent(skidad, &para);
+
+		*/
+
+		/* auto skadgfv = Abilities::DoesASCHaveAbility(DeadPawnASC, FindObject("/Game/Abilities/NPC/Generic/GAB_AthenaDBNO.Default__GAB_AthenaDBNO_C"));
+
+		std::cout << "skadgf.size(): " << skadgfv.size() << '\n';
+
+		if (skadgfv.size() >= 2) */
+		{
+			auto palyerstatename = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(DBNOPawnASC))->GetName();
+			std::cout << "palyerstatename: " << palyerstatename << '\n';
+			auto skadgf = FindObjectSlow(std::format("{}.GAB_AthenaDBNO_C_", palyerstatename)); // skadgfv[1];
+			std::cout << "skadgf: " << skadgf << '\n';
+
+			if (skadgf)
+			{
+				std::cout << "name: " << skadgf->GetFullName() << '\n';
+
+				static auto aa = FindObject<UFunction>("/Script/GameplayAbilities.GameplayAbility.K2_CancelAbility");
+				skadgf->ProcessEvent(aa);
+
+				/*
+				struct
+				{
+				public:
+					FGameplayAbilitySpecHandle            AbilityToCancel;                                   // 0x0(0x4)(Parm, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					FGameplayAbilityActivationInfo        ActivationInfo;                                    // 0x8(0x20)(Parm, NoDestructor, NativeAccessSpecifierPublic)
+				} UAbilitySystemComponent_ServerCancelAbility_Params{skadgf->CurrentActivationInfo};
+				*/
+			}
+		}
+
+		static auto clientonpoa = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived");
+		Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(clientonpoa, &Controller);
 	}
 
-	if (ReceivingActorName.contains("Wumba")) // AB_Athena_Wumba_C
+	if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // AB_Athena_Wumba_C
 	{
 		if (Fortnite_Season < 15) // idk but whenever they start taking gold we dont support
 		{

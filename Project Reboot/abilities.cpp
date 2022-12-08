@@ -158,26 +158,27 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     }
 }
 
-UObject* Abilities::DoesASCHaveAbility(UObject* ASC, UObject* Ability)
+std::vector<UObject*> Abilities::DoesASCHaveAbility(UObject* ASC, UObject* Ability)
 {
+    std::vector<UObject*> AbilitiesToReturn;
+
     if (!ASC || !Ability)
-        return nullptr;
+        return AbilitiesToReturn;
 
-    UObject* AbilityToReturn = nullptr;
-
-    auto compareAbilities = [&AbilityToReturn, &Ability](__int64* Spec) {
+    auto compareAbilities = [&AbilitiesToReturn, &Ability](__int64* Spec) {
         auto CurrentAbility = GetAbilityFromSpec(Spec);
 
-        if (*CurrentAbility == Ability)
+        if ((*CurrentAbility)->ClassPrivate == Ability->ClassPrivate)
         {
-            AbilityToReturn = *CurrentAbility;
-            return;
+            AbilitiesToReturn.push_back(*CurrentAbility);
+            // AbilityToReturn = *CurrentAbility;
+            // return;
         }
     };
 
     LoopSpecs(ASC, compareAbilities);
 
-    return AbilityToReturn;
+    return AbilitiesToReturn;
 }
 
 void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass)
@@ -236,7 +237,7 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
     auto Handle = (FGameplayAbilitySpecHandle*)(__int64(NewSpec) + HandleOffset);
 
-    if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
+    if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)).size())
         return nullptr;
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232

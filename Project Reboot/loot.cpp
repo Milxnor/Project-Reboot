@@ -4,7 +4,9 @@
 
 UObject* Looting::GetLTD()
 {
-	auto ltd = FindObject("/Game/Items/Datatables/AthenaLootTierData_Client.AthenaLootTierData_Client");
+	auto Class = FindObject("/Script/Engine.DataTable");
+	auto ltd = LoadObject(Class, "/Game/Items/Datatables/AthenaLootTierData_Client.AthenaLootTierData_Client");
+	// std::cout << "ltd: " << ltd << '\n';
 	return ltd;
 
 	auto Playlist = *Helper::GetPlaylist();
@@ -71,6 +73,8 @@ UObject* Looting::GetLP()
 		Sleep(1000);
 		lp = FindObject(LootPackagesName);
 	}
+
+	// std::cout << "lp: " << lp << '\n';
 
 	return lp;
 }
