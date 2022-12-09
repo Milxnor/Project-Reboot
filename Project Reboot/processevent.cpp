@@ -609,9 +609,10 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		Defines::bIsRestarting = false;
 	}
 
-	*(bool*)Parameters = true;
+	// *(bool*)Parameters = true;
 
-	return true;
+	// return true;
+	return false;
 }
 
 uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, bool* OutWasDBNO = nullptr)
@@ -1001,19 +1002,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	if (Fortnite_Version >= 8.30) // && Fortnite_Version != 14.40
 	{
-		/* auto DeadPawnASC = Helper::GetAbilitySystemComponent(DeadPawn);
-
-		static auto skidd = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.TryActivateAbilityByClass");
-
-		struct {
-			UObject*          InAbilityToActivate;                               // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			bool                                         bAllowRemoteActivation;                            // 0x8(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			bool                                         ReturnValue;
-		} para{FindObject("/Game/Athena/Items/EnvironmentalItems/SCMachine/GA_Athena_SCMachine_Passive.GA_Athena_SCMachine_Passive_C"), true};
-
-		DeadPawnASC->ProcessEvent(skidd, &para); */
-
-		// if (false)
+		if (false)
 		{
 			static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
 

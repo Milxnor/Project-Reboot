@@ -440,7 +440,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("/Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
 		}
 
-		auto CharacterPartsOffset = ItemDefinition->GetOffset("CharacterParts");
+		/* auto CharacterPartsOffset = ItemDefinition->GetOffset("CharacterParts");
 		auto CharacterParts = Get<TArray<UObject*>>(ItemDefinition, CharacterPartsOffset);
 
 		for (int i = 0; i < CharacterParts->size(); i++)
@@ -451,7 +451,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 				continue;
 
 			Helper::ChoosePart(Pawn, (EFortCustomPartType)i, CharacterPart);
-		}
+		} */
 
 		if (!GadgetDefinition)
 			return nullptr;
@@ -586,10 +586,10 @@ UObject* Inventory::EquipWeapon(UObject* Controller, UObject* Instance, int Ammo
 EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
 {
 	static auto FortWeaponItemDefinitionClass = FindObject("/Script/FortniteGame.FortWeaponItemDefinition");
-	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition"); // FindObject("/Script/FortniteGame.FortDecoItemDefinition");
-	static auto FortGadgetItemDefinitionClass = FindObject("/Script/FortniteGame.FortGadgetItemDefinition");
+	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition");
+	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 
-	if ((Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortTrapItemDefinitionClass)) || Definition->IsA(FortGadgetItemDefinitionClass))
+	if (Definition->IsA(FortWeaponItemDefinitionClass) || (Definition->IsA(FortDecoItemDefinitionClass) && !Definition->IsA(FortTrapItemDefinitionClass)))
 		return EFortQuickBars::Primary;
 	else
 		return EFortQuickBars::Secondary;

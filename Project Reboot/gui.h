@@ -432,6 +432,35 @@ void MainUI()
 					}
 				}
 
+				else if (Fortnite_Season == 13)
+				{
+					static UObject* WL = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2"); // Is this 13.40 specific?
+					static auto last = Defines::AmountOfRestarts;
+
+					if (!WL || Defines::AmountOfRestarts != last)
+					{
+						last = Defines::AmountOfRestarts;
+						WL = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2");
+					}
+
+					if (WL)
+					{
+
+						static auto MaxWaterLevelOffset = WL->GetOffset("MaxWaterLevel");
+
+						static int MaxWaterLevel = *Get<int>(WL, MaxWaterLevelOffset);
+						static int WaterLevel = 0;
+
+						ImGui::SliderInt("WaterLevel", &WaterLevel, 0, MaxWaterLevel);
+
+						if (ImGui::Button("Set Water Level"))
+						{
+							Calendar::SetWaterLevel(WaterLevel);
+							// ApolloSetup->UpdateMinimapData(ApolloSetup->MinimapTextures.At(WaterLevel), ApolloSetup->MinimapDiscoveryMasks.At(WaterLevel));
+						}
+					}			
+				}
+
 				if (ImGui::Button("Fill all vending machines"))
 				{
 					static auto BuildingItemCollectorClass = FindObject("/Script/FortniteGame.BuildingItemCollectorActor");
