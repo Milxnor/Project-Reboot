@@ -589,7 +589,14 @@ EFortQuickBars Inventory::WhatQuickBars(UObject* Definition)
 	static auto FortTrapItemDefinitionClass = FindObject("/Script/FortniteGame.FortTrapItemDefinition");
 	static auto FortDecoItemDefinitionClass = FindObject("/Script/FortniteGame.FortDecoItemDefinition");
 
-	if (Definition->IsA(FortWeaponItemDefinitionClass) || (Definition->IsA(FortDecoItemDefinitionClass) && !Definition->IsA(FortTrapItemDefinitionClass)))
+	if (Definition->IsA(FortDecoItemDefinitionClass))
+	{
+		if (Definition->IsA(FortTrapItemDefinitionClass))
+			return EFortQuickBars::Secondary;
+		else
+			return EFortQuickBars::Primary;
+	}
+	else if (Definition->IsA(FortWeaponItemDefinitionClass))
 		return EFortQuickBars::Primary;
 	else
 		return EFortQuickBars::Secondary;
@@ -715,7 +722,7 @@ UObject* Inventory::TakeItem(UObject* Controller, const FGuid& Guid, int Count, 
 
 void Inventory::WipeInventory(UObject* Controller, bool bTakePickaxe)
 {
-	auto PickaxeDef = Helper::GetPickaxeDef(Controller);
+	// auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
 	auto ItemInstances = Inventory::GetItemInstances(Controller);
 

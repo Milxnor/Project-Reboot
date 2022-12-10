@@ -186,8 +186,9 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		else
 		{
 			UObject* classPrivate = BuildingContainer->ClassPrivate;
+			static auto ClassClass = FindObject("/Script/CoreUObject.Class");
 
-			while (classPrivate)
+			while (classPrivate && classPrivate != ClassClass)
 			{
 				std::cout << "Class Private Name: " << classPrivate->GetFullName() << '\n';
 				classPrivate = classPrivate->ClassPrivate;

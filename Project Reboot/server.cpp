@@ -683,7 +683,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 	{
 		Defines::bShouldSpawnVehicles = false;
 
-		static auto FortVehicleSpawnerClass = FindObject("/Game/Athena/DrivableVehicles/Athena_VehicleSpawner.Athena_VehicleSpawner_C");
+		static auto FortVehicleSpawnerClass = FindObject("/Script/FortniteGame.FortAthenaVehicleSpawner"); // FindObject("/Game/Athena/DrivableVehicles/Athena_VehicleSpawner.Athena_VehicleSpawner_C");
 
 		auto spawnerClass = FortVehicleSpawnerClass;
 
@@ -702,59 +702,66 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 			static auto FortVehicleItemDefVariantsOffset = Spawner->GetOffset("FortVehicleItemDefVariants");
 
-			struct FVehicleWeightedDef
-			{
-				TSoftObjectPtr VehicleItemDef;
-				FScalableFloat                              Weight;                                                   // 0x0028(0x0020) (Edit, BlueprintVisible, BlueprintReadOnly)
-			};
-
-			auto FortVehicleItemDefVariants = Get<TArray<FVehicleWeightedDef>>(Spawner, FortVehicleItemDefVariantsOffset);
-
-			// std::cout << "FortVehicleItemDefVariants: " << FortVehicleItemDefVariants->Num() << '\n';
+			bool aa = true;
 
 			static auto VIDClass = FindObject("/Script/FortniteGame.FortVehicleItemDefinition");
 
-			if (FortVehicleItemDefVariants->Num() > 0)
+			if (FortVehicleItemDefVariantsOffset != 0)
 			{
-				auto first = FortVehicleItemDefVariants->At(0);
-
-				auto AssetPathName = first.VehicleItemDef.ObjectID.AssetPathName;
-
-				// std::cout << "AssetPathName: " << AssetPathName.ComparisonIndex << '\n';
-
-				if (!AssetPathName.ComparisonIndex)
-					continue;
-
-				auto VehicleItemDef = load(VIDClass, AssetPathName.ToString());
-
-				// std::cout << "VehicleItemDef: " << VehicleItemDef << '\n';
-
-				if (VehicleItemDef)
+				struct FVehicleWeightedDef
 				{
-					static auto VehicleActorClassOffset = VehicleItemDef->GetOffset("VehicleActorClass");
+					TSoftObjectPtr VehicleItemDef;
+					FScalableFloat Weight;                                                   // 0x0028(0x0020) (Edit, BlueprintVisible, BlueprintReadOnly)
+				};
 
-					auto VehicleActorClassSoft = Get<TSoftObjectPtr>(VehicleItemDef, VehicleActorClassOffset);
+				auto FortVehicleItemDefVariants = Get<TArray<FVehicleWeightedDef>>(Spawner, FortVehicleItemDefVariantsOffset);
 
-					auto assetpathname = VehicleActorClassSoft->ObjectID.AssetPathName;
+				// std::cout << "FortVehicleItemDefVariants: " << FortVehicleItemDefVariants->Num() << '\n';
 
-					// std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
+				if (FortVehicleItemDefVariants->Num() > 0)
+				{
+					aa = false;
+					auto first = FortVehicleItemDefVariants->At(0);
 
-					if (!assetpathname.ComparisonIndex)
+					auto AssetPathName = first.VehicleItemDef.ObjectID.AssetPathName;
+
+					// std::cout << "AssetPathName: " << AssetPathName.ComparisonIndex << '\n';
+
+					if (!AssetPathName.ComparisonIndex)
 						continue;
 
-					auto VehicleActorClass = load(Helper::GetBGAClass(), assetpathname.ToString());
+					auto VehicleItemDef = load(VIDClass, AssetPathName.ToString());
 
-					// std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
+					// std::cout << "VehicleItemDef: " << VehicleItemDef << '\n';
 
-					if (!VehicleActorClass)
-						continue;
+					if (VehicleItemDef)
+					{
+						static auto VehicleActorClassOffset = VehicleItemDef->GetOffset("VehicleActorClass");
 
-					auto SpawnerLoc = Helper::GetActorLocation(Spawner);
+						auto VehicleActorClassSoft = Get<TSoftObjectPtr>(VehicleItemDef, VehicleActorClassOffset);
 
-					Helper::Easy::SpawnActor(VehicleActorClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
+						auto assetpathname = VehicleActorClassSoft->ObjectID.AssetPathName;
+
+						// std::cout << "assetpathname sof: " << assetpathname.ComparisonIndex << '\n';
+
+						if (!assetpathname.ComparisonIndex)
+							continue;
+
+						auto VehicleActorClass = load(Helper::GetBGAClass(), assetpathname.ToString());
+
+						// std::cout << "VehicleActorClass: " << VehicleActorClass << '\n';
+
+						if (!VehicleActorClass)
+							continue;
+
+						auto SpawnerLoc = Helper::GetActorLocation(Spawner);
+
+						Helper::Easy::SpawnActor(VehicleActorClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
+					}
 				}
 			}
-			else
+			
+			if (aa)
 			{
 				static auto FortVehicleItemDefOffset = Spawner->GetOffset("FortVehicleItemDef");
 

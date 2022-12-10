@@ -79,6 +79,9 @@ UObject* Looting::GetLP()
 	return lp;
 }
 
+using FFortLootTierData = void;
+using FFortLootPackageData = void;
+
 void Looting::SpawnForagedItems()
 {
 	Defines::bShouldSpawnForagedItems = true;

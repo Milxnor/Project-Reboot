@@ -406,7 +406,7 @@ void MainUI()
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
 
-				if ((Fortnite_Version >= 14.60 && Fortnite_Season < 20) && ImGui::Button("Summon Vehicles"))
+				if ((Fortnite_Version >= 12.41 && Fortnite_Season < 20) && ImGui::Button("Summon Vehicles"))
 				{
 					Defines::bShouldSpawnVehicles = true;
 				}
@@ -836,24 +836,35 @@ void MainUI()
 					WeaponsFile << ahh;
 					static auto FortWeaponItemDefinitionClass = FindObjectSlow("Class /Script/FortniteGame.FortWeaponItemDefinition", false);
 
-					auto AllObjects = Helper::GetAllObjectsOfClass(FortWeaponItemDefinitionClass);
+					static auto GetWeaponItemDefinition = FindObject<UFunction>("/Script/FortniteGame.FortGadgetItemDefinition.GetWeaponItemDefinition");
 
-					for (int i = 0; i < AllObjects.size(); i++)
+					auto auahd = [&WeaponsFile](UObject* Class) {
+						auto AllObjects = Helper::GetAllObjectsOfClass(Class);
+
+						for (int i = 0; i < AllObjects.size(); i++)
+						{
+							auto Object = AllObjects.at(i);
+
+							static auto DisplayNameOffset = Object->GetOffset("DisplayName");
+							FString ItemDefinitionFStr = Helper::Conversion::TextToString(*Get<FText>(Object, DisplayNameOffset));
+
+							if (!ItemDefinitionFStr.Data.Data)
+								continue;
+
+							std::string ItemDefinitionName = ItemDefinitionFStr.ToString();
+
+							// check if it contains gallery or playset?
+
+							WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetPathName());
+						}
+					};
+
+					auahd(FortWeaponItemDefinitionClass);
+
+					if (GetWeaponItemDefinition)
 					{
-						auto Object = AllObjects.at(i);
-
-						// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
-						static auto DisplayNameOffset = Object->GetOffset("DisplayName");
-						FString ItemDefinitionFStr = Helper::Conversion::TextToString(*Get<FText>(Object, DisplayNameOffset));
-
-						if (!ItemDefinitionFStr.Data.Data)
-							continue;
-
-						std::string ItemDefinitionName = ItemDefinitionFStr.ToString();
-
-						// check if it contains gallery or playset?
-
-						WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetPathName());
+						static auto FortGadgetItemDefinitionClass = FindObjectSlow("Class /Script/FortniteGame.FortGadgetItemDefinition", false);
+						auahd(FortGadgetItemDefinitionClass);
 					}
 				}
 				else
@@ -960,10 +971,13 @@ void MainUI()
 					{
 						if (!WID.empty())
 						{
-							std::string cpywid;
+							std::string cpywid = WID;
 
-							if (WID.find(".") == std::string::npos)
-								cpywid = std::format("{}.{}", WID, WID);
+							if (cpywid.find(".") == std::string::npos)
+								cpywid = std::format("{}.{}", cpywid, cpywid);
+
+							if (cpywid.find(" ") != std::string::npos)
+								cpywid = cpywid.substr(cpywid.find(" ") + 1);
 
 							auto wid = FindObjectSlow(cpywid);
 

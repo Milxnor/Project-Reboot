@@ -497,6 +497,8 @@ DWORD WINAPI Initialize(LPVOID)
         //*byte = 0x0;
     } */
 
+    srand(time(0));
+
     return 0;
 }
 
