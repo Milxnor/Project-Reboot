@@ -53,8 +53,6 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 	{
 		bIsFirstClient = true;
 
-		Defines::bShouldSpawnFloorLoot = Looting::bInitialized && Fortnite_Version < 19.40;// (Fortnite_Version >= 19.40 ? (bool)Defines::ActorChannelClose : true);
-
 		static auto func1 = FindObject("/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
 
 		AddHook(func1 ? "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange" :
@@ -114,6 +112,8 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 				cube->ProcessEvent(spawncube);
 			}
 		}
+
+		Defines::bShouldSpawnFloorLoot = Looting::bInitialized && Fortnite_Version < 19.40;// (Fortnite_Version >= 19.40 ? (bool)Defines::ActorChannelClose : true);
 	}
 
 	UObject* PlayerController = *(UObject**)Parameters;
@@ -493,6 +493,19 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	if (bGoIntoWarmup)
 	{
+		auto GameMode = Helper::GetGameMode();
+
+		/* int WarmupCountdownLengthSeconds = 1000;
+
+		static auto WarmupEarlyCountdownDurationOffset = GameMode->GetOffset("WarmupEarlyCountdownDuration");
+		*Get<float>(GameMode, WarmupEarlyCountdownDurationOffset) = WarmupCountdownLengthSeconds;
+
+		static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+		*Get<float>(GameState, WarmupCountdownEndTimeOffset) = Helper::GetTimeSeconds() + WarmupCountdownLengthSeconds;
+
+		static auto WarmupCountdownStartTimeOffset = GameState->GetOffset("WarmupCountdownStartTime");
+		*Get<float>(GameState, WarmupCountdownEndTimeOffset) = Helper::GetTimeSeconds(); */
+
 		auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
 		*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
@@ -524,12 +537,25 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		if (Defines::Playlist == "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground" && Fortnite_Version > 11.30)
 			Defines::Playlist = "/Game/Athena/Playlists/BattleLab/Playlist_BattleLab.Playlist_BattleLab";
 
-		UObject* Playlist = FindObject(Defines::Playlist);
+		std::string cpyplaylist = Defines::Playlist;
+
+		if (cpyplaylist.find(".") == std::string::npos)
+			cpyplaylist = std::format("{}.{}", cpyplaylist, cpyplaylist);
+
+		if (cpyplaylist.find(" ") != std::string::npos)
+			cpyplaylist = cpyplaylist.substr(cpyplaylist.find(" ") + 1);
+
+		auto Playlist = FindObjectSlow(cpyplaylist);
 
 		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
+		
+		static auto GameplayTagContainerOffset = Playlist->GetOffset("GameplayTagContainer");
+		auto GameplayTagContainer = Get<FGameplayTagContainer>(Playlist, GameplayTagContainerOffset);
+
+		std::cout << "playltist tgags; " << GameplayTagContainer->ToStringSimple(true) << '\n';
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
-
+		
 		if (GameStatePlaylist)
 		{
 			*GameStatePlaylist = Playlist;
@@ -569,7 +595,13 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		*Get<int>(GameSession, MaxPlayersOffset) = 100; // We would get from playlist but playground max is 4 people..
 
 		if (Engine_Version >= 420)
+		{
+#ifdef TEST_NEW_LOOTING
+			Looting::bInitialized = true;
+#else
 			Looting::Initialize();
+#endif
+		}
 
 		if (Playlist)
 		{
@@ -596,7 +628,8 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		Calendar::FixLocations();
 
-		Events::LoadEvent();
+		if (Defines::bIsGoingToPlayMainEvent)
+			Events::LoadEvent();
 
 		if (Defines::bIsCreative)
 			LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // scuffed
@@ -846,58 +879,62 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	auto DeadPS_Place = Get<int>(DeadPlayerState, PlaceOffset);
 	*DeadPS_Place = TeamsLeftBefore;
 
-	if (*TeamsLeft <= 1 && GamePhase > EAthenaGamePhase::Warmup) // && (int)Playlist->WinCondition <= 1
+	if (GamePhase > EAthenaGamePhase::Warmup)
 	{
-		static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
-
-		UObject* FinishingWeaponDefinition = nullptr;
-
-		static auto DamageCauserOffset = preoffsets::DamageCauser;
-
-		auto DamageCauser = *(UObject**)(__int64(DeathReport) + DamageCauserOffset);
-
-		if (DamageCauser)
+		if (*TeamsLeft <= 1) // && (int)Playlist->WinCondition <= 1
 		{
-			static auto ProjectileClass = FindObject("/Script/FortniteGame.FortProjectileBase");
-			static auto FortWeaponClass = FindObject("/Script/FortniteGame.FortWeapon");
+			static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
 
-			if (DamageCauser->IsA(ProjectileClass))
-				FinishingWeaponDefinition = Helper::GetWeaponData(Helper::GetOwner(DamageCauser));
-			else if (DamageCauser->IsA(FortWeaponClass))
-				FinishingWeaponDefinition = Helper::GetWeaponData(DamageCauser);
-		}
+			UObject* FinishingWeaponDefinition = nullptr;
 
-		struct { UObject* FinisherPawn; UObject* FinishingWeapon; uint8_t DeathCause; } AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause };
+			static auto DamageCauserOffset = preoffsets::DamageCauser;
 
-		for (int i = 0; i < AlivePlayers->Num(); i++)
-		{
-			auto AlivePlayer = AlivePlayers->At(i);
+			auto DamageCauser = *(UObject**)(__int64(DeathReport) + DamageCauserOffset);
 
-			if (!AlivePlayer)
-				continue;
-
-			if (AlivePlayer != DeadController)
+			if (DamageCauser)
 			{
-				AlivePlayer->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
+				static auto ProjectileClass = FindObject("/Script/FortniteGame.FortProjectileBase");
+				static auto FortWeaponClass = FindObject("/Script/FortniteGame.FortWeapon");
 
-				auto AlivePlayerPS = Helper::GetPlayerStateFromController(AlivePlayer);
+				if (DamageCauser->IsA(ProjectileClass))
+					FinishingWeaponDefinition = Helper::GetWeaponData(Helper::GetOwner(DamageCauser));
+				else if (DamageCauser->IsA(FortWeaponClass))
+					FinishingWeaponDefinition = Helper::GetWeaponData(DamageCauser);
+			}
 
-				if (!AlivePlayerPS)
+			struct { UObject* FinisherPawn; UObject* FinishingWeapon; uint8_t DeathCause; } AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause };
+
+			for (int i = 0; i < AlivePlayers->Num(); i++)
+			{
+				auto AlivePlayer = AlivePlayers->At(i);
+
+				if (!AlivePlayer)
 					continue;
 
-				auto apPlace = Get<int>(AlivePlayerPS, PlaceOffset);
+				if (AlivePlayer != DeadController)
+				{
+					AlivePlayer->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 
-				*apPlace = 1;
+					auto AlivePlayerPS = Helper::GetPlayerStateFromController(AlivePlayer);
+
+					if (!AlivePlayerPS)
+						continue;
+
+					auto apPlace = Get<int>(AlivePlayerPS, PlaceOffset);
+
+					*apPlace = 1;
+				}
 			}
+
+			if (preoffsets::WinningPlayerState != 0)
+			{
+				*(UObject**)(__int64(GameState) + preoffsets::WinningPlayerState) = KillerPlayerState;
+			}
+
+			static auto EndMatch = FindObject<UFunction>("/Script/Engine.GameMode.EndMatch");
+			GameMode->ProcessEvent(EndMatch);
 		}
 
-		if (preoffsets::WinningPlayerState != 0)
-		{
-			*(UObject**)(__int64(GameState) + preoffsets::WinningPlayerState) = KillerPlayerState;
-		}
-
-		static auto EndMatch = FindObject<UFunction>("/Script/Engine.GameMode.EndMatch");
-		GameMode->ProcessEvent(EndMatch);
 	}
 
 	/* static auto TeamScoreOffset = preoffsets::TeamScore; // DeadPlayerState->GetOffsetSlow("TeamScore");
@@ -1002,31 +1039,126 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	if (Fortnite_Version >= 8.30) // && Fortnite_Version != 14.40
 	{
-		if (false)
+		// if (false)
 		{
 			static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
 
-			auto Chip = Helper::Easy::SpawnActor(ChipClass, DeathLocation, Helper::GetActorRotation(DeadPawn));
+			auto Chip = Helper::Easy::SpawnActor(ChipClass, DeathLocation);
 
 			if (Chip && DeadPlayerState)
 			{
-				Helper::InitializeBuildingActor(DeadController, Chip);
+				std::cout << "Chip: " << Chip->GetFullName() << '\n';
 
 				static auto PS_SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.FortPlayerStateAthena", "SquadId", true);
 				auto PS_SquadId = Get<int>(DeadPlayerState, PS_SquadIdOffset);
 
-				static auto SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "SquadId", true); // Chip->GetOffset("SquadId");
+				static auto UnHideOffset = 0x7E0; // Chip->GetOffset("UnHide");
+
+				if (UnHideOffset != 0)
+					*Get<int>(Chip, UnHideOffset) = 0;
+
+				static auto OnRep_UnHide = FindObject<UFunction>("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C.OnRep_UnHide");
+
+				std::cout << "OnRep_UnHide: " << OnRep_UnHide << '\n';
+
+				struct
+				{
+				public:
+					bool                                         CallFunc_Conv_IntToBool_ReturnValue;               // 0x0(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor)
+					// uint8                                        Pad_630C[0x3];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					int32_t                                        Temp_int_Array_Index_Variable;                     // 0x4(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					float                                        CallFunc_GetGameTimeInSeconds_ReturnValue;         // 0x8(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					// uint8                                        Pad_630D[0x4];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					TArray<UObject*>         CallFunc_GetLocalFortPlayerControllers_ReturnValue; // 0x10(0x10)(ZeroConstructor, ReferenceParm)
+					int32_t                                        Temp_int_Loop_Counter_Variable;                    // 0x20(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					// uint8                                        Pad_630E[0x4];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					UObject* CallFunc_Array_Get_Item;                           // 0x28(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					uint8_t                                        CallFunc_GetActorTeam_ReturnValue;                 // 0x30(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					// uint8                                        Pad_630F[0x3];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					int32_t                                        CallFunc_Add_IntInt_ReturnValue;                   // 0x34(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					bool                                         CallFunc_EqualEqual_ByteByte_ReturnValue;          // 0x38(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor)
+					// uint8                                        Pad_6310[0x3];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					int32_t                                        CallFunc_Array_Length_ReturnValue;                 // 0x3C(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+					bool                                         CallFunc_Less_IntInt_ReturnValue;                  // 0x40(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor)
+					bool                                         CallFunc_Conv_IntToBool_ReturnValue_1;             // 0x41(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor)
+				} ABGA_Athena_SCMachine_Pickup_C_OnRep_UnHide_Params{};
+
+				Chip->ProcessEvent(OnRep_UnHide, &ABGA_Athena_SCMachine_Pickup_C_OnRep_UnHide_Params);
+
+				static UFunction* SetActorHiddenInGame = FindObject<UFunction>("/Script/Engine.Actor.SetActorHiddenInGame");
+				bool bNewHidden = false;
+				Chip->ProcessEvent(SetActorHiddenInGame, &bNewHidden);
+
+				static auto SquadIdOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "SquadId", true);
 				*Get<uint8_t>(Chip, SquadIdOffset) = *PS_SquadId;
 
+				static auto OwnerPlayerControllerOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "OwnerPlayerController", true);
+				*Get<UObject*>(Chip, OwnerPlayerControllerOffset) = DeadController;
+
+				static auto OwnerPlayerIdOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "OwnerPlayerId", true);
+				static auto UniqueIdOffset = DeadPlayerState->GetOffset("UniqueId");
+				*Get<FUniqueNetIdRepl>(Chip, OwnerPlayerIdOffset) = *Get<FUniqueNetIdRepl>(DeadPlayerState, UniqueIdOffset);
+
+				struct FRebootCardReplicatedState
+				{
+				public:
+					float                                        ChipExpirationServerStartTime;                     // 0x0(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        Pad_269F[0x4];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					UObject* PlayerState;                                       // 0x8(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				};
+
+				struct FFortResurrectionData
+				{
+				public:
+					bool                                         bResurrectionChipAvailable;                        // 0x0(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        Pad_2933[0x3];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+					float                                        ResurrectionExpirationTime;                        // 0x4(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					float                                        ResurrectionExpirationLength;                      // 0x8(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					FVector                               WorldLocation;                                     // 0xC(0xC)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				};
+
+				static auto bAutoAcquireSpawnChipOffset = Chip->GetOffset("bAutoAcquireSpawnChip");
+				*Get<bool>(Chip, bAutoAcquireSpawnChipOffset) = false;
+
+				static auto IsPendingKillOffset = Chip->GetOffset("IsPendingKill");
+				*Get<bool>(Chip, IsPendingKillOffset) = false;
+
+				static auto OwnerPlayerStateOffset = FindOffsetStruct("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip", "OwnerPlayerState", true);
+				*Get<UObject*>(Chip, OwnerPlayerStateOffset) = DeadPlayerState;
+
 				static auto OwnerTeamOffset = Chip->GetOffset("OwnerTeam");
-				*Get<uint8_t>(Chip, OwnerTeamOffset) = *PS_SquadId;
+				*Get<uint8_t>(Chip, OwnerTeamOffset) = *Helper::GetTeamIndex(DeadPlayerState);
 
 				static auto ChipExpirationLengthOffset = Chip->GetOffset("ChipExpirationLength");
 				Get<FScalableFloat>(Chip, ChipExpirationLengthOffset)->Value = 100;
 
+				static auto Row_PickupLifeOffset = Chip->GetOffset("Row_PickupLife");
+				Get<FScalableFloat>(Chip, Row_PickupLifeOffset)->Value = 100;
+
+				static auto SpawnSoundPlayedOffset = Chip->GetOffset("SpawnSoundPlayed");
+				*Get<bool>(Chip, SpawnSoundPlayedOffset) = true;
+
+				static auto ResurrectionChipAvailableOffset = DeadPlayerState->GetOffset("ResurrectionChipAvailable");
+				auto ResurrectionChipAvailable = Get<FFortResurrectionData>(DeadPlayerState, ResurrectionChipAvailableOffset);
+				ResurrectionChipAvailable->WorldLocation = DeathLocation;
+				ResurrectionChipAvailable->bResurrectionChipAvailable = true;
+				ResurrectionChipAvailable->ResurrectionExpirationTime = Helper::GetTimeSeconds() + 70;
+				ResurrectionChipAvailable->ResurrectionExpirationLength = 70;
+
+				static auto RebootCardReplicatedStateOffset = Chip->GetOffset("RebootCardReplicatedState");
+				Get<FRebootCardReplicatedState>(Chip, RebootCardReplicatedStateOffset)->PlayerState = DeadPlayerState;
+				Get<FRebootCardReplicatedState>(Chip, RebootCardReplicatedStateOffset)->ChipExpirationServerStartTime = Helper::GetTimeSeconds();
+
+				static auto OnRep_RebootCardReplicatedState = FindObject<UFunction>("/Script/FortniteGame.BuildingGameplayActorSpawnChip.OnRep_RebootCardReplicatedState");
+				Chip->ProcessEvent(OnRep_RebootCardReplicatedState);
+
 				static auto SetReplicateMovementFn = FindObject<UFunction>("/Script/Engine.Actor.SetReplicateMovement");
 				bool bTrue = true;
 				Chip->ProcessEvent(SetReplicateMovementFn, &bTrue);
+
+				Helper::InitializeBuildingActor(DeadController, Chip);
+
+				*Get<bool>(Chip, IsPendingKillOffset) = false;
 			}
 		}
 	}
@@ -1845,7 +1977,8 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "ServerFireAIDirectorEvent") &&
 			!strstr(FunctionName.c_str(), "BlueprintThreadSafeUpdateAnimation") &&
 			!strstr(FunctionName.c_str(), "On Amb Zap Spawn") &&
-			!strstr(FunctionName.c_str(), "ServerSetPlayerCanDBNORevive"))
+			!strstr(FunctionName.c_str(), "ServerSetPlayerCanDBNORevive") &&
+			!strstr(FunctionName.c_str(), "BGA_Petrol_Pickup_C"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
 		}

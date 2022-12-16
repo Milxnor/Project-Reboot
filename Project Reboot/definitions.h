@@ -3,6 +3,17 @@
 #include "structs.h"
 #include "log.h"
 
+// #define TEST_NEW_LOOTING
+// #define DEVELOPER_LOGGING
+
+#ifdef DEVELOPER_LOGGING
+#define DEV_LOG(...) std::cout << std::format(__VA_ARGS__) << '\n';
+#else
+#define DEV_LOG(...)
+#endif
+
+#define LOG(...) std::cout << std::format(__VA_ARGS__) << '\n';
+
 namespace Defines
 {
 	inline bool bLogProcessEvent = false;
@@ -23,11 +34,12 @@ namespace Defines
 
 	inline std::string Playlist = Defines::bIsCreative ? ("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
 		Defines::bIsPlayground ? ("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground") :
-			("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
-			// ("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
-			// ("/Game/Athena/Playlists/DefaultBots/Playlist_Bots_DefaultSolo.Playlist_Bots_DefaultSolo");
+		("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		// ("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
+		// ("/Game/Athena/Playlists/DefaultBots/Playlist_Bots_DefaultSolo.Playlist_Bots_DefaultSolo");
+		// ("Playlist_SolidGold_Solo");
 
-	inline std::string urlForPortal = "https://images-ext-2.discordapp.net/external/fX-M8zr0lV9X4eU6cCKGbkbNhyLpSpSgLcUHrQX5BZw/https/i.ibb.co/F7VPqsW/image.png?width=1012&height=676";
+	inline std::string urlForPortal = "";
 
 	// DON'T CHANGE BELOW THIS
 

@@ -183,8 +183,6 @@ DWORD WINAPI Initialize(LPVOID)
         }
     }
 
-    CreateThread(0, 0, GuiThread, 0, 0, 0);
-
     MH_CreateHook((PVOID)CanActivateAbilityAddress, rettrue, nullptr); // TODO: Find a better fix
     MH_EnableHook((PVOID)CanActivateAbilityAddress);
 
@@ -357,6 +355,8 @@ DWORD WINAPI Initialize(LPVOID)
     // Defines::MapName = "Creative_NoApollo_Terrain";
 
     std::cout << "skidda!\n";
+
+    CreateThread(0, 0, GuiThread, 0, 0, 0);
 
     while (Defines::SecondsUntilTravel > 0)
     {

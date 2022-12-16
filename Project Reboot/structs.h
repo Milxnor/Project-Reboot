@@ -800,7 +800,10 @@ namespace FastTArray
 
 struct FGameplayTag
 {
+	static const int npos = -1;
 	FName                                       TagName;                                                  // 0x0000(0x0008) (Edit, ZeroConstructor, EditConst, IsPlainOldData)
+
+	bool operator==(const FGameplayTag& OtherTag) { return TagName.ComparisonIndex == OtherTag.TagName.ComparisonIndex;  }
 };
 
 struct FGameplayTagContainer
@@ -829,6 +832,22 @@ struct FGameplayTagContainer
 			}
 		}
 		return RetString;
+	}
+
+	int HasTag(const std::string& Str)
+	{
+		for (int i = 0; i < GameplayTags.Num(); i++)
+		{
+			if (GameplayTags.At(i).TagName.ToString() == Str)
+				return i;
+		}
+		
+		return FGameplayTag::npos;
+	}
+
+	bool HasTag(FGameplayTag& Tag)
+	{
+		return HasTag(Tag.TagName.ToString());
 	}
 
 	void Reset()
@@ -903,7 +922,7 @@ struct FScalableFloat
 public:
 	float                                        Value;                                             // 0x0(0x4)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	int idk;                    // Fixing Size After Last Property  [ Dumper-7 ]
-	char Curve[0x10]; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FCurveTableRowHandle Curve; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	void* idk2;                              // Fixing Size Of Struct [ Dumper-7 ]
 };
 

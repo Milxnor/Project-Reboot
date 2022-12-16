@@ -387,6 +387,15 @@ void MainUI()
 					(*Get<UObject*>(GameMode, AIDirectorOffset))->ProcessEvent(FindObject<UFunction>("/Script/FortniteGame.FortAIDirector.Activate"));
 				} */
 
+				if (ImGui::Button("Test"))
+				{
+					auto Playlist = *Helper::GetPlaylist();
+					static auto LootPackagesOffset = Playlist->GetOffset("LootPackages");
+					auto LootPackages = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
+
+					std::cout << "Lootpackages: " << LootPackages->ObjectID.AssetPathName.ToString() << '\n';
+				}
+
 				static std::string ConsoleCommand;
 
 				ImGui::InputText("Console command", &ConsoleCommand);
@@ -416,10 +425,10 @@ void MainUI()
 					Server::Restart();
 				}
 
-				/* if (ImGui::Button("Summon FloorLoot"))
+				if (ImGui::Button("toggle FloorLoot"))
 				{
-					Defines::bShouldSpawnFloorLoot = true;
-				} */
+					Defines::bShouldSpawnFloorLoot = !Defines::bShouldSpawnFloorLoot;
+				}
 
 				if (Fortnite_Season == 19)
 				{
@@ -697,12 +706,12 @@ void MainUI()
 
 		else if (Tab == EVENT_TAB)
 		{
-			if (ImGui::Button("loadevent"))
+			if (ImGui::Button("Load Event (click first, wait a second then Start Event)"))
 			{
 				Events::LoadEvent();
 			}
 
-			if (ImGui::Button("startevent"))
+			if (ImGui::Button("Start Event"))
 			{
 				Events::StartEvent();
 			}
@@ -712,15 +721,8 @@ void MainUI()
 				Events::StartNewYears();
 			}
 
-			if (Fortnite_Version == 14.60 && ImGui::Button("Show carrier"))
+			if (false && Fortnite_Version == 14.60 && ImGui::Button("Show carrier"))
 			{
-				struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ Helper::GetGameState(), *Helper::GetPlaylist(),
-					FGameplayTagContainer() };
-
-				auto fnc = FindObject<UFunction>("/Junior/Blueprints/BP_CarrierLoader.BP_CarrierLoader_C.OnReady_13D45E9346036B11F782F9922BC368EC");
-				auto loader = FindObject("/Junior/Levels/Junior_Map.Junior_Map.PersistentLevel.BP_CarrierLoader_2");
-
-				loader->ProcessEvent(fnc, &bbparms);
 			}
 
 			if (Fortnite_Version == 8.51)
@@ -982,7 +984,7 @@ void MainUI()
 							auto wid = FindObjectSlow(cpywid);
 
 							if (wid)
-								Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
+								Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1, true, Helper::GetMaxBullets(wid));
 							else
 								std::cout << "Unable to find WID!\n";
 						}

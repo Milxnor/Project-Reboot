@@ -127,10 +127,18 @@ std::pair<UObject*, int> Helper::GetAmmoForDefinition(UObject* Definition)
 	static auto GetAmmoWorldItemDefinition_BP = FindObject<UFunction>("/Script/FortniteGame.FortWorldItemDefinition.GetAmmoWorldItemDefinition_BP");
 	UObject* AmmoDef;
 	Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
+	
+	static auto FortWorldItemDefinitionClass = FindObject("/Script/FortniteGame.FortWorldItemDefinition");
 
-	static auto DropCountOffset = AmmoDef->GetOffset("DropCount");
+	int DropCount = 0;
 
-	auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
+	// if (AmmoDef->IsA(FortWorldItemDefinitionClass))
+	if (AmmoDef)
+	{
+		static auto DropCountOffset = AmmoDef->GetOffset("DropCount");
+
+		DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
+	}
 
 	return std::make_pair(AmmoDef, DropCount);
 }
@@ -677,7 +685,7 @@ UObject* Helper::GetPickaxeDef(UObject* Controller, bool bGetNew)
 
 		if (ItemInstances->Num() >= 6)
 		{
-			auto PickaxeInstance = ItemInstances->At(5); // cursed probs
+			auto PickaxeInstance = ItemInstances->At(5); // cursed probs // loop through all inventoryt and find  first melee
 			toRet = IsBadReadPtr(PickaxeInstance) ? nullptr : *UFortItem::GetDefinition(PickaxeInstance);
 		}
 	}
@@ -750,13 +758,24 @@ UObject* Helper::GetGameData()
 	return GameDataOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataOffset);
 }
 
+UObject* Helper::GetGameDataBR()
+{
+	auto Engine = GetEngine();
+
+	static auto AssetManagerOffset = Engine->GetOffset("AssetManager");
+	UObject* AssetManager = *Get<UObject*>(Engine, AssetManagerOffset);
+
+	static auto GameDataBROffset = AssetManager->GetOffset("GameDataBR");
+	return GameDataBROffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataBROffset);
+}
+
 void Helper::SetSnowIndex(int SnowIndex)
 {
 	if (Fortnite_Season == 19)
 	{
 		auto sjt9ase9i = FindObject("/SpecialSurfaceCoverage/Maps/SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.PersistentLevel.BP_Artemis_S19Progression_C_0");
 
-		std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
+		// std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
 
 		if (sjt9ase9i)
 		{

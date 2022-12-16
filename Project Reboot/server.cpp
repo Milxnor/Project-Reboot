@@ -256,6 +256,7 @@ bool Server::Listen(int Port)
 void Server::Restart()
 {
 	Defines::AmountOfRestarts++;
+	Defines::bIsRestarting = true;
 	
 	std::cout << MH_StatusToString(MH_DisableHook((PVOID)TickFlushAddress)) << '\n';
 	std::cout << MH_StatusToString(MH_DisableHook((PVOID)KickPlayerAddress)) << '\n';
@@ -268,6 +269,8 @@ void Server::Restart()
 		Helper::DestroyActor(BeaconHost);
 
 	BeaconHost = nullptr;
+
+	// Sleep(5000);
 
 	static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
 
@@ -282,7 +285,6 @@ void Server::Restart()
 	Teams::NextTeamIndex = Teams::StartingTeamIndex;
 	Teams::CurrentNumPlayersOnTeam = 0;
 
-	Defines::bIsRestarting = true;
 	Defines::bReadyForStartMatch = true;
 }
 
@@ -827,7 +829,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 			{
 				auto ClassActors = Helper::GetAllActorsOfClass(Class);
 
-				std::cout << "Size; " << ClassActors.Num() << '\n';
+				std::cout << "Size: " << ClassActors.Num() << '\n';
 
 				for (int i = 0; i < ClassActors.Num(); i++)
 				{
@@ -842,14 +844,18 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 						else
 							CorrectLocation.dV.Z += 50;
 
-						/* auto LootDrops = Looting::PickLootDrops(TierGroup);
+#ifdef TEST_NEW_LOOTING
+
+						auto LootDrops = Looting::PickLootDrops(TierGroup);
 
 						for (auto& LootDrop : LootDrops)
 						{
 							Helper::SummonPickup(nullptr, LootDrop.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, LootDrop.second, true);
 						}
 
-						continue; */
+						continue;
+
+#endif
 
 						bool ShouldSpawn = RandomBoolWithWeight(0.3f);
 
@@ -908,7 +914,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 			if (SpawnFloorLoot(SpawnIsland_FloorLoot, "Loot_AthenaFloorLoot_Warmup") != 0)
 			{
-				if (SpawnFloorLoot(BRIsland_FloorLoot, "Loot_AthenaFloorLoot") != 0)
+				// if (SpawnFloorLoot(BRIsland_FloorLoot, "Loot_AthenaFloorLoot") != 0)
 				{
 					Defines::bShouldSpawnFloorLoot = false;
 					std::cout << "Finished spawning floor loot!\n";

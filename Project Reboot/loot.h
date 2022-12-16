@@ -1,5 +1,7 @@
 #pragma once
 
+#include "definitions.h"
+
 #include "structs.h"
 
 enum class ItemType
@@ -70,13 +72,14 @@ namespace Looting
 	inline int LlamaItems = 2;
 	inline int FactionLootItems = 3;
 
-	UObject* GetLTD();
-	UObject* GetLP();
-	// { return FindObject("/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client"); }
+	std::vector<UObject*> GetLTD();
+	std::vector<UObject*> GetLP();
 
 	void Initialize();
 	void SpawnForagedItems();
-	// std::vector<std::pair<UObject*, int>> PickLootDrops(const std::string& TierGroupName, int WorldLevel = 1, int ForcedLootTier = 1); // Definition, DropCount
+#ifdef TEST_NEW_LOOTING
+	std::vector<std::pair<UObject*, int>> PickLootDrops(const std::string& TierGroupName, int WorldLevel = 1, int ForcedLootTier = 1); // Definition, DropCount
+#endif
 
 	static const DefinitionInRow GetRandomItem(ItemType Type, int LootType = LootItems, ERarity Rarity = ERarity::None)
 	{

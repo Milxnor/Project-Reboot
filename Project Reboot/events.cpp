@@ -533,8 +533,8 @@ void Events::StartEvent()
 					Loader->ProcessEvent(CC, &bbparms);
 					Scripting->ProcessEvent(BB, &bbparms);
 					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
-					// Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
-					Loader->ProcessEvent(loader_callstarteventonscripting, &SecondsSinceEventBegan);
+					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
+					// Loader->ProcessEvent(loader_callstarteventonscripting, &SecondsSinceEventBegan);
 				}
 			}
 		}

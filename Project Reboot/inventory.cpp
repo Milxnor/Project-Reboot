@@ -1,3 +1,4 @@
+#include "datatables.h"
 #include "inventory.h"
 #include "abilities.h"
 #include "helper.h"
@@ -166,8 +167,18 @@ static float GetMaxStackSize(UObject* ItemDefinition)
 
 	bool bIsScalableFloat = Engine_Version >= 424; // prob wrong
 
-	return bIsScalableFloat ? *(float*)(__int64(ItemDefinition) + MaxStackSizeOffset) :
-		*(int*)(__int64(ItemDefinition) + MaxStackSizeOffset);
+	float MaxStackSize = 0;
+
+	if (!bIsScalableFloat)
+	{
+		MaxStackSize = *(int*)(__int64(ItemDefinition) + MaxStackSizeOffset);
+	}
+	else
+	{
+		MaxStackSize = *(float*)(__int64(ItemDefinition) + MaxStackSizeOffset);
+	}
+
+	return MaxStackSize;
 }
 
 bool ModifyItemCount(UObject* Controller, UObject* Instance, int IncreaseBy, bool bDecrease = false)
@@ -348,11 +359,11 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 			*FFortItemEntry::GetItemDefinition(ItemEntry) = ItemDefinition;
 			*FFortItemEntry::GetCount(ItemEntry) = countForItem;
 
-			if (LoadedAmmo != -1)
-				FFortItemEntry::SetLoadedAmmo(ItemEntry, Controller, LoadedAmmo);
-
 			GetItemInstances(Controller)->Add(ItemInstance);
 			GetReplicatedEntries(Controller)->Add(*ItemEntry, SizeOfItemEntryStruct);
+
+			if (LoadedAmmo != -1)
+				FFortItemEntry::SetLoadedAmmo(UFortItem::GetItemEntry(ItemInstance), Controller, LoadedAmmo);
 
 			if (Fortnite_Version < 7.4)
 			{
@@ -567,7 +578,7 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 		{
 			{
 				static auto AmmoCountOffset = Wep->GetOffset("AmmoCount");
-				FFortItemEntry::SetLoadedAmmo(ItemEntry, Controller, *Get<int>(Wep, AmmoCountOffset));
+				// FFortItemEntry::SetLoadedAmmo(ItemEntry, Controller, *Get<int>(Wep, AmmoCountOffset));
 			}
 		}
 	}
@@ -910,8 +921,14 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 			if (Inventory::WhatQuickBars(Definition) == EFortQuickBars::Primary)
 			{
-				PrimaryQuickBarSlotsFilled++;
-				bShouldSwap = (PrimaryQuickBarSlotsFilled - 6) >= 5;
+				static auto NumberOfSlotsToTakeOffset = Definition->GetOffset("NumberOfSlotsToTake", false, false, false);
+
+				/* if (NumberOfSlotsToTakeOffset != 0)
+					PrimaryQuickBarSlotsFilled += *(uint8_t*)(__int64(Definition) + NumberOfSlotsToTakeOffset);
+				else */
+					PrimaryQuickBarSlotsFilled++;
+
+				bShouldSwap = (PrimaryQuickBarSlotsFilled - 6) >= 5; // pickaxe + building pieces
 
 				if (bShouldSwap)
 					break;
@@ -970,7 +987,10 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 		Inventory::ServerAttemptInventoryDrop(Controller, nullptr, &drop_parms);
 	}
 
-	auto Instance = GiveItem(Controller, *Definition, WhatQuickBars(*Definition), NextSlot, *Count);
+	auto PickupLoadedAmmo = *FFortItemEntry::GetLoadedAmmo(PickupEntry);
+	std::cout << "PickupLoadedAmmo: " << PickupLoadedAmmo << '\n';
+
+	auto Instance = GiveItem(Controller, *Definition, WhatQuickBars(*Definition), NextSlot, *Count, true, PickupLoadedAmmo);
 
 	if (!Instance)
 		return false;
@@ -979,13 +999,6 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	static auto OnRep_bPickedUp = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_bPickedUp");
 	Pickup->ProcessEvent(OnRep_bPickedUp);
-
-	auto NewEntry = UFortItem::GetItemEntry(Instance);
-	
-	auto PickupLoadedAmmo = *FFortItemEntry::GetLoadedAmmo(PickupEntry);
-	std::cout << "PickupLoadedAmmo: " << PickupLoadedAmmo << '\n';
-
-	FFortItemEntry::SetLoadedAmmo(NewEntry, Controller, PickupLoadedAmmo);
 
 	// Inventory::EquipWeapon(Controller, Instance, PickupLoadedAmmo);
 
@@ -1038,7 +1051,7 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	}
 	*/
 
-	return false;
+	return true;
 }
 
 void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
@@ -1046,6 +1059,8 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 	// std::cout << "pls help!\n";
 
 	// Defines::HandleReloadCost(Weapon, AmountToRemove);
+
+
 
 	static auto AmmoCountOffset = Weapon->GetOffset("AmmoCount");
 

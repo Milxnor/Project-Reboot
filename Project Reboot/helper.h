@@ -59,6 +59,7 @@ namespace Helper
 	int* GetPlayersLeft();
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 	UObject* GetGameData();
+	UObject* GetGameDataBR();
 	void SetSnowIndex(int SnowIndex);
 	void ExportTexture2DToFile(UObject* Texture, FString Path, FString FileName);
 	FString GetEngineVersion();

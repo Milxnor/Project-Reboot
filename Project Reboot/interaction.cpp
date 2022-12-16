@@ -92,13 +92,29 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		static auto SearchLootTierGroupOffset = BuildingContainer->GetOffset("SearchLootTierGroup");
 		auto SearchLootTierGroup = Get<FName>(BuildingContainer, SearchLootTierGroupOffset);
 		
+		if (SearchLootTierGroup->ToString() == "Loot_Treasure")
+		{
+			FString correctTreasure = L"Loot_AthenaTreasure";
+			*SearchLootTierGroup = Helper::Conversion::StringToName(correctTreasure);
+			// correctTreasure.Free();
+		}
+		else if (SearchLootTierGroup->ToString() == "Loot_Ammo")
+		{
+			FString correctAmmo = L"Loot_AthenaAmmoLarge";
+			*SearchLootTierGroup = Helper::Conversion::StringToName(correctAmmo);
+			// correctAmmo.Free();
+		}
+
 		auto CorrectLocation = Helper::GetCorrectLocationDynamic(ReceivingActor);
 
-		/* auto LootTierGroupName = SearchLootTierGroup->ToString();
+#ifdef TEST_NEW_LOOTING
+		auto LootDrops = Looting::PickLootDrops(SearchLootTierGroup->ToString());
 
-		LootTierGroupName = LootTierGroupName == "Loot_Treasure" ? "Loot_AthenaTreasure" : LootTierGroupName;
-
-		std::cout << "LootTierGroupName: " << LootTierGroupName << '\n'; */
+		for (auto& LootDrop : LootDrops)
+		{
+			Helper::SummonPickup(nullptr, LootDrop.first, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, LootDrop.second, true);
+		}
+#else
 
 		static auto ChestClass = FindObject("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_Athena.Tiered_Chest_Athena_C");
 		static auto ChestClass2 = FindObject("/Game/Building/ActorBlueprints/Containers/Tiered_Chest_6_Parent.Tiered_Chest_6_Parent_C");
@@ -194,7 +210,7 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 				classPrivate = classPrivate->ClassPrivate;
 			}
 		}
-
+#endif
 	} // CONTAINER
 
 	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
