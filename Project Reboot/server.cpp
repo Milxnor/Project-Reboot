@@ -914,7 +914,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 			if (SpawnFloorLoot(SpawnIsland_FloorLoot, "Loot_AthenaFloorLoot_Warmup") != 0)
 			{
-				// if (SpawnFloorLoot(BRIsland_FloorLoot, "Loot_AthenaFloorLoot") != 0)
+				if (SpawnFloorLoot(BRIsland_FloorLoot, "Loot_AthenaFloorLoot") != 0)
 				{
 					Defines::bShouldSpawnFloorLoot = false;
 					std::cout << "Finished spawning floor loot!\n";
