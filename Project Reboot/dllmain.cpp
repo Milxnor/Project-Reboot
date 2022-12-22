@@ -121,6 +121,9 @@ DWORD WINAPI Initialize(LPVOID)
 
     static auto CheckPawnOverlapAddress = Memory::FindPattern("48 8B C4 48 89 58 08 48 89 70 10 57 48 81 EC ? ? ? ? 48 8B BA ? ? ? ? 48 8B DA 0F 29 70 E8 48 8B F1 0F");
 
+    if (!CheckPawnOverlapAddress)
+        CheckPawnOverlapAddress = Memory::FindPattern("48 8B C4 57 48 81 EC ? ? ? ? 4C 8B 82 ? ? ? ? 48 8B F9 0F 29 70 E8 0F 29 78 D8 44 0F 29 40 ? F3"); // s4
+
     std::cout << "CheckPawnOverlapAddress: " << CheckPawnOverlapAddress << '\n';
 
     MH_CreateHook((PVOID)CheckPawnOverlapAddress, retfalse, nullptr); // This only happens with StartPlay/StartMatch and on older versions.

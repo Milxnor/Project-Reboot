@@ -226,6 +226,12 @@ static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f)
 	return DegVal * (M_PI / 180.f);
 }
 
+#define CHECK_PATTERN(addr) if (!addr) \
+{ \
+    MessageBoxA(0, (std::string("Unable to find ") + #addr + " aborting..").c_str(), "Project Reboot", MB_ICONERROR);\
+    FreeLibraryAndExitThread(GetModuleHandleW(0), 0); \
+} \
+
 static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
 {
 	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.

@@ -739,10 +739,7 @@ static bool InitializePatterns()
 	}
 	else
 	{
-		GiveAbilityAndActivateOnceAddress = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 48 8B EC 48 83 EC 70 49 8B 40 10 49 8B D8 48 8B FA"); // s12
-
-		if (!GiveAbilityAndActivateOnceAddress)
-			GiveAbilityAndActivateOnceAddress = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 70 49 8B 40 10 45 33");
+		GiveAbilityAndActivateOnceAddress = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 70 49 8B 40 10 45 33"); // s19
 	}
 
 	auto Base = (uintptr_t)GetModuleHandleW(0);
@@ -754,7 +751,7 @@ static bool InitializePatterns()
 	{
 		std::cout << "nbo tickflush testing dfindre!\n";
 
-		if (Engine_Version >= 421) // stats were added
+		if (Engine_Version >= 421 && Engine_Version < 427) // stats were added
 		{
 			auto StringRef = Memcury::Scanner::FindStringRef(L"STAT_NetTickFlush");
 
@@ -778,6 +775,33 @@ static bool InitializePatterns()
 
 		// std::cout << "No tickflush! Testing pattern!\n";
 		// TickFlushAddress = Memory::FindPattern("E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?", true, 1);
+	}
+
+	if (!StaticFindObjectAddress)
+	{
+		std::cout << "no staicfindobjectadd fining!\n";
+
+		if (Engine_Version < 427)
+		{
+			auto StringRef = Memcury::Scanner::FindStringRef(L"Illegal call to StaticFindObject() while serializing object data!");
+
+			auto addy = StringRef.Get();
+
+			std::cout << "StaticAddy: " << addy << '\n';
+
+			if (addy)
+			{
+				for (int i = 400; i >= 0; i--)
+				{
+					// LOG("[{}] 0x{:x} 0x{:x}", i, (int)*(uint8_t*)Addr - i, (int)*(uint8_t*)(Addr - i), (int)*(uint8_t*)(Addr - i + 1));
+
+					if (*(uint8_t*)(uint8_t*)(addy - i) == 0x48 && *(uint8_t*)(uint8_t*)(addy - i + 1) == 0x89 && *(uint8_t*)(uint8_t*)(addy - i + 2) == 0x5C)
+					{
+						StaticFindObjectAddress = addy - i;
+					}
+				}
+			}
+		}
 	}
 
 	std::cout << std::format("SpawnActorAddress: 0x{:x}\n", (uintptr_t)SpawnActorAddr - Base);
@@ -814,8 +838,9 @@ static bool InitializePatterns()
 		std::cout << std::format("SendClientAdjustmentAddress: 0x{:x}\n", (uintptr_t)SendClientAdjustmentAddress - Base);
 	}
 
-	if (!InitHostAddress || !ProcessEventAddress || !ObjectsAddress)
-		return false;
+	CHECK_PATTERN(ObjectsAddress);
+	CHECK_PATTERN(InitHostAddress);
+	CHECK_PATTERN(ProcessEventAddress);
 
 	Defines::InitHost = decltype(Defines::InitHost)(InitHostAddress);
 	StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddress);

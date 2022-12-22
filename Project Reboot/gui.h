@@ -359,7 +359,7 @@ void MainUI()
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
 				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
 				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
-				ImGui::Checkbox("Respawning", &Defines::bRespawning);
+				// ImGui::Checkbox("Respawning", &Defines::bRespawning);
 				// ImGui::Checkbox("Test 2", &Defines::test2);
 				// ImGui::SliderFloat("test1", &Defines::test1, 0.f, 1.f);
 

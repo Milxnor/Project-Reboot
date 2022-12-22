@@ -973,6 +973,13 @@ UObject* GetHealthSet(UObject* Pawn)
 
 void Helper::SetHealth(UObject* Pawn, float Health)
 {
+	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+	static auto PS_CurrentHealthOffset = PlayerState->GetOffset("CurrentHealth", false, false, false);
+
+	if (PS_CurrentHealthOffset != 0)
+		*(float*)(__int64(PlayerState) + PS_CurrentHealthOffset) = Health;
+
 	auto HealthSet = GetHealthSet(Pawn);
 
 	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
@@ -994,6 +1001,13 @@ void Helper::SetHealth(UObject* Pawn, float Health)
 
 void Helper::SetMaxHealth(UObject* Pawn, float MaxHealth)
 {
+	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+	static auto PS_MaxHealthOffset = PlayerState->GetOffset("MaxHealth", false, false, false);
+
+	if (PS_MaxHealthOffset != 0)
+		*(float*)(__int64(PlayerState) + PS_MaxHealthOffset) = MaxHealth;
+
 	static auto MaximumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Maximum");
 
 	auto HealthSet = GetHealthSet(Pawn);

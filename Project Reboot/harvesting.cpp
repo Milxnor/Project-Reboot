@@ -28,9 +28,7 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 	if (bDestroyed)
 		return;
 
-	// float ResourcesToGive = 0;
-
-	float ResourcesToGive = 0;
+	/* float */ int ResourcesToGive = 0;
 
 	if (!bIsCar)
 	{
@@ -41,10 +39,10 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 			return;
 	}
 
-	auto MaxResourcesToSpawn = 6;
-	ResourcesToGive = (int)GetRandomDouble(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
+	float MaxResourcesToSpawn = 6;
+	ResourcesToGive = round(GetRandomDouble(MaxResourcesToSpawn / 2.f, MaxResourcesToSpawn));
 
-	ResourcesToGive += bHitWeakspot ? (int)GetRandomDouble(3, 5) : 0;
+	ResourcesToGive += bHitWeakspot ? round(GetRandomDouble(3, 5)) : 0;
 
 	std::cout << "ResourcesToGive: " << ResourcesToGive << '\n';
 

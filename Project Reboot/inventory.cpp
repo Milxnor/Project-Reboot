@@ -332,7 +332,12 @@ UObject* Inventory::GiveItem(UObject* Controller, UObject* ItemDefinition, EFort
 
 		static auto FortResourceItemDefinition = FindObject("/Script/FortniteGame.FortResourceItemDefinition");
 
-		if (ItemDefinition->IsA(FortResourceItemDefinition))
+		static auto bAllowMultipleStacksOffset = ItemDefinition->GetOffset("bAllowMultipleStacks");
+		static auto bAllowMultipleStacksFieldMask = GetFieldMask(ItemDefinition->GetProperty("bAllowMultipleStacks"));
+
+		// if (ItemDefinition->IsA(FortResourceItemDefinition))
+
+		if (ReadBitfield(Get<PlaceholderBitfield>(ItemDefinition, bAllowMultipleStacksOffset), bAllowMultipleStacksFieldMask));
 			bDontCreateNewStack = true;
 
 		auto ItemEntry = UFortItem::GetItemEntry(ItemInstance);
@@ -1064,7 +1069,7 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	FFortItemEntryStateValue* StateValue = Alloc<FFortItemEntryStateValue>(FortItemEntryStateValueSize);
 	*StateValue->GetIntValue() = 1;
 	*StateValue->GetStateType() = 2;
-
+	
 	FFortItemEntry::ModifyStateValue(Controller, UFortItem::GetItemEntry(Instance), StateValue, true);
 
 	*bPickedUp = true;

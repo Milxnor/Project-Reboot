@@ -61,7 +61,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		AddHook("/Script/FortniteGame.FortMatchAnalytics.OnGamePhaseChanged", OnGamePhaseChanged);
 
-		auto toythrowability = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Abilities/Toys/Shared/GAB_ToyThrow_Base.GAB_ToyThrow_Base_C");
+		// auto toythrowability = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Abilities/Toys/Shared/GAB_ToyThrow_Base.GAB_ToyThrow_Base_C");
 		// AddHook("/Game/Abilities/Toys/Shared/GAB_ToyThrow_Base.GAB_ToyThrow_Base_C.NotifyAbilityToSpawnToy", spawntoynotify);
 
 		// AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
@@ -332,64 +332,66 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		GiveFortAbilitySet(Pawn, AbilitySet);
 	}
 
-	/*
+	auto CurrentPlaylist = Helper::GetPlaylist();
 
-	auto GameMode = Helper::GetGameMode();
-	static auto CoreGameModeModifiersOffset = GameMode->GetOffset("CoreGameModeModifiers");
-
-	if (CoreGameModeModifiersOffset != 0)
+	if (!IsBadReadPtr(CurrentPlaylist) && !IsBadReadPtr(*CurrentPlaylist))
 	{
-		auto CoreGameModeModifiers = Get<TArray<UObject*>>(GameMode, CoreGameModeModifiersOffset);
+		static auto LTMModifiersOffset = (*CurrentPlaylist)->GetOffset("ModifierList", false, false, false);
 
-		std::cout << "CoreGameModeModifiers->Num(): " << CoreGameModeModifiers->Num() << '\n';
-
-		for (int i = 0; i < CoreGameModeModifiers->Num(); i++)
+		if (LTMModifiersOffset != 0)
 		{
-			auto CoreGameModeModifier = CoreGameModeModifiers->At(i);
+			auto LTMModifiers = Get<TArray<TSoftObjectPtr>>(*CurrentPlaylist, LTMModifiersOffset);
 
-			// std::cout << std::format("[{}] {}\n", i, CoreGameModeModifier->GetFullName());
+			//std::cout << "LTMModifiers->Num(): " << LTMModifiers->Num() << '\n';
 
-			static auto PersistentAbilitySetsOffset = CoreGameModeModifier->GetOffset("PersistentAbilitySets");
-			auto PersistentAbilitySets = Get<TArray<__int64>>(CoreGameModeModifier, PersistentAbilitySetsOffset);
-
-			static auto FortAbilitySetDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortAbilitySetDeliveryInfo"));
-
-			for (int p = 0; p < PersistentAbilitySets->Num(); p++)
+			for (int i = 0; i < LTMModifiers->Num(); i++)
 			{
-				auto DeliveryInfo = PersistentAbilitySets->AtPtr(p, FortAbilitySetDeliveryInfoSize);
+				static auto LTMModifierClass = FindObject("/Script/FortniteGame.FortGameplayModifierItemDefinition");
+				auto LTMModifierSoftObject = LTMModifiers->At(i);
+				auto LTMModifier = LTMModifierSoftObject.Get(LTMModifierClass);
 
-				static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "DeliveryRequirements");
-				void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
+				// std::cout << std::format("[{}] {}\n", i, CoreGameModeModifier->GetFullName());
 
-				static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
-				static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
+				static auto PersistentAbilitySetsOffset = LTMModifier->GetOffset("PersistentAbilitySets");
+				auto PersistentAbilitySets = Get<TArray<__int64>>(LTMModifier, PersistentAbilitySetsOffset);
 
-				std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
+				static auto FortAbilitySetDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortAbilitySetDeliveryInfo"));
 
-				if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
+				for (int p = 0; p < PersistentAbilitySets->Num(); p++)
 				{
-					static auto AbilitySetsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "AbilitySets");
-					auto AbilitySets = Get<TArray<TSoftObjectPtr>>(DeliveryInfo, AbilitySetsOffset);
+					auto DeliveryInfo = PersistentAbilitySets->AtPtr(p, FortAbilitySetDeliveryInfoSize);
 
-					for (int z = 0; z < AbilitySets->Num(); z++)
+					static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "DeliveryRequirements");
+					void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
+
+					static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
+					static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
+
+					std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
+
+					if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
 					{
-						static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
+						static auto AbilitySetsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "AbilitySets");
+						auto AbilitySets = Get<TArray<TSoftObjectPtr>>(DeliveryInfo, AbilitySetsOffset);
 
-						auto& AbilitySetSoft = AbilitySets->At(z);
+						for (int z = 0; z < AbilitySets->Num(); z++)
+						{
+							static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
 
-						auto CurrentAbilitySet = AbilitySetSoft.Get(FortAbilitySetClass);
+							auto& AbilitySetSoft = AbilitySets->At(z);
 
-						std::cout << "CurrentAbilitySet: " << CurrentAbilitySet << " AbilitySetSoft.ObjectID.AssetPathName.ToString(): " << AbilitySetSoft.ObjectID.AssetPathName.ToString() << '\n';
+							auto CurrentAbilitySet = AbilitySetSoft.Get(FortAbilitySetClass);
 
-						if (CurrentAbilitySet)
-							GiveFortAbilitySet(Pawn, CurrentAbilitySet);
+							std::cout << "CurrentAbilitySet: " << CurrentAbilitySet << " AbilitySetSoft.ObjectID.AssetPathName.ToString(): " << AbilitySetSoft.ObjectID.AssetPathName.ToString() << '\n';
+
+							if (CurrentAbilitySet)
+								GiveFortAbilitySet(Pawn, CurrentAbilitySet);
+						}
 					}
 				}
 			}
 		}
 	}
-
-	*/
 
 	/* auto Boss = LoadObject(Helper::GetBGAClass(), "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss_Meowscles_Jr.BP_MangPlayerPawn_Boss_Meowscles_Jr_C");
 
@@ -555,6 +557,8 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
 			GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+
+			std::cout << "OnRep_GamePhase!\n";
 		}
 	}
 
@@ -646,7 +650,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		if (Playlist)
 		{
-			static auto MinPlayersOffset = Playlist->GetOffset("MinPlayers");
+			// static auto MinPlayersOffset = Playlist->GetOffset("MinPlayers");
 			// *Get<int>(Playlist, MinPlayersOffset) = 1;
 
 			if (Fortnite_Version >= 13)
@@ -866,6 +870,9 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	auto TeamsLeftBefore = *TeamsLeft;
 	auto AlivePlayers = (TArray<UObject*>*)(__int64(GameMode) + AlivePlayersOffset);
 
+	static auto PlaceOffset = preoffsets::Place;
+	auto DeadPS_Place = Get<int>(DeadPlayerState, PlaceOffset);
+
 	if (!Defines::bIsPlayground && !Defines::bRespawning) // && OldPhase > EAthenaGamePhase::Warmup)
 	{
 		*Get<bool>(DeadController, bMarkedAliveOffset) = false;
@@ -912,101 +919,103 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 				(*TeamsLeft)--;
 			}
 		}
+
+		*DeadPS_Place = TeamsLeftBefore;
 	}
 
 	std::cout << "beforePlayersLeft: " << beforePlayersLeft << '\n';
 
 	auto KillerController = KillerPawn ? Helper::GetControllerFromPawn(KillerPawn) : nullptr;
 
-	static auto PlaceOffset = preoffsets::Place;
-	auto DeadPS_Place = Get<int>(DeadPlayerState, PlaceOffset);
-	*DeadPS_Place = TeamsLeftBefore;
-	
 	std::cout << "TeamsLeft: " << *TeamsLeft << '\n';
-
-	static auto TeamScorePlacementOffset = preoffsets::TeamScorePlacement; // DeadPlayerState->GetOffsetSlow("TeamScorePlacement");
-
-	if (TeamScorePlacementOffset != 0)
+	
+	if (!Defines::bIsPlayground && !Defines::bRespawning) // && OldPhase > EAthenaGamePhase::Warmup
 	{
-		auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
+		static auto TeamScorePlacementOffset = preoffsets::TeamScorePlacement; // DeadPlayerState->GetOffsetSlow("TeamScorePlacement");
 
-		*TeamScorePlacement = TeamsLeftBefore; // IDK
-
-		static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
-		DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
-	}
-
-	struct FAthenaRewardResult
-	{
-		int                                                LevelsGained;                                             // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		int                                                BookLevelsGained;                                         // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		int                                                TotalSeasonXpGained;                                      // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		int                                                TotalBookXpGained;                                        // 0x000C(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		int                                                PrePenaltySeasonXpGained;                                 // 0x0010(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		unsigned char                                      UnknownData00[0x4];                                       // 0x0014(0x0004) MISSED OFFSET
-		TArray<__int64>       XpMultipliers;                                            // 0x0018(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
-		TArray<__int64>                   Rewards;                                                  // 0x0028(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
-		float                                              AntiAddictionMultiplier;                                  // 0x0038(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		unsigned char                                      UnknownData01[0x4];                                       // 0x003C(0x0004) MISSED OFFSET
-	};
-
-	// 	void ClientSendEndBattleRoyaleMatchForPlayer(bool bSuccess, const struct FAthenaRewardResult& Result);
-
-	static auto ClientSendEndBattleRoyaleMatchForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendEndBattleRoyaleMatchForPlayer");
-	int TotalSeasonXpGained = INT32_MAX; // This is the only one that u can see
-	struct { bool bSuccess; FAthenaRewardResult res; } parm{ true, FAthenaRewardResult(1500, 1200, TotalSeasonXpGained, 1400) }; // MatchReport->EndOfMatchResults
-
-	DeadController->ProcessEvent(ClientSendEndBattleRoyaleMatchForPlayer, &parm); // lil xp thingy
-
-	struct FAthenaMatchStats
-	{
-		FString                                     StatBucket;                                               // 0x0000(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-		FString                                     MatchID;                                                  // 0x0010(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-		FString                                     MatchEndTime;                                             // 0x0020(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-		FString                                     MatchPlatform;                                            // 0x0030(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-		int                                                Stats[0x14];                                              // 0x0040(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-		TArray<__int64>                  WeaponStats;                                              // 0x0090(0x0010) (ZeroConstructor, NativeAccessSpecifierPrivate)
-	};
-
-	FAthenaMatchStats Stats{};
-	Stats.Stats[3] = 100; // Elimations I think
-
-	auto teamStats = FAthenaMatchTeamStats();
-	teamStats.Place = *DeadPS_Place;
-	teamStats.TotalPlayers = PlayersLeftPtr ? (*PlayersLeftPtr) + 1 : 100; // i believe this is supposed to be how many players were at aircraft
-
-	if (false) // 7.40
-	{
-		static auto MatchReportOffset = DeadController->GetOffset("MatchReport");
-		auto MatchReport = Get<UObject*>(DeadController, MatchReportOffset);
-
-		std::cout << "MatchReport: " << *MatchReport << '\n';
-
-		if (*MatchReport) // null yay!!
+		if (TeamScorePlacementOffset != 0)
 		{
-			static auto MatchStatsOffset = (*MatchReport)->GetOffsetSlow("MatchStats");
-			auto MatchStats = *Get<FAthenaMatchStats>(*MatchReport, MatchStatsOffset);
+			auto TeamScorePlacement = Get<int>(DeadPlayerState, TeamScorePlacementOffset);
 
-			static auto TeamStatsOffset = (*MatchReport)->GetOffsetSlow("TeamStats");
-			auto TeamStats = Get<FAthenaMatchTeamStats>(*MatchReport, TeamStatsOffset);
+			*TeamScorePlacement = TeamsLeftBefore; // IDK
 
-			static auto bHasTeamStatsOffset = (*MatchReport)->GetOffsetSlow("bHasTeamStats");
-			auto bHasTeamStats = Get<bool>(*MatchReport, bHasTeamStatsOffset);
-
-			*bHasTeamStats = true;
-
-			std::cout << "MatchStats.Stats[2]: " << MatchStats.Stats[2] << '\n';
-
-			Stats = MatchStats;
-			teamStats = *TeamStats;
+			static auto OnRep_TeamScorePlacement = FindObject<UFunction>("/Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamScorePlacement");
+			DeadPlayerState->ProcessEvent(OnRep_TeamScorePlacement);
 		}
+
+		struct FAthenaRewardResult
+		{
+			int                                                LevelsGained;                                             // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			int                                                BookLevelsGained;                                         // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			int                                                TotalSeasonXpGained;                                      // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			int                                                TotalBookXpGained;                                        // 0x000C(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			int                                                PrePenaltySeasonXpGained;                                 // 0x0010(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData00[0x4];                                       // 0x0014(0x0004) MISSED OFFSET
+			TArray<__int64>       XpMultipliers;                                            // 0x0018(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
+			TArray<__int64>                   Rewards;                                                  // 0x0028(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
+			float                                              AntiAddictionMultiplier;                                  // 0x0038(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData01[0x4];                                       // 0x003C(0x0004) MISSED OFFSET
+		};
+
+		// 	void ClientSendEndBattleRoyaleMatchForPlayer(bool bSuccess, const struct FAthenaRewardResult& Result);
+
+		static auto ClientSendEndBattleRoyaleMatchForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendEndBattleRoyaleMatchForPlayer");
+		int TotalSeasonXpGained = INT32_MAX; // This is the only one that u can see
+		struct { bool bSuccess; FAthenaRewardResult res; } parm{ true, FAthenaRewardResult(1500, 1200, TotalSeasonXpGained, 1400) }; // MatchReport->EndOfMatchResults
+
+		DeadController->ProcessEvent(ClientSendEndBattleRoyaleMatchForPlayer, &parm); // lil xp thingy
+
+		struct FAthenaMatchStats
+		{
+			FString                                     StatBucket;                                               // 0x0000(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			FString                                     MatchID;                                                  // 0x0010(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			FString                                     MatchEndTime;                                             // 0x0020(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			FString                                     MatchPlatform;                                            // 0x0030(0x0010) (ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			int                                                Stats[0x14];                                              // 0x0040(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			TArray<__int64>                  WeaponStats;                                              // 0x0090(0x0010) (ZeroConstructor, NativeAccessSpecifierPrivate)
+		};
+
+		FAthenaMatchStats Stats{};
+		Stats.Stats[3] = 100; // Elimations I think
+
+		auto teamStats = FAthenaMatchTeamStats();
+		teamStats.Place = *DeadPS_Place;
+		teamStats.TotalPlayers = PlayersLeftPtr ? (*PlayersLeftPtr) + 1 : 100; // i believe this is supposed to be how many players were at aircraft
+
+		if (false) // 7.40
+		{
+			static auto MatchReportOffset = DeadController->GetOffset("MatchReport");
+			auto MatchReport = Get<UObject*>(DeadController, MatchReportOffset);
+
+			std::cout << "MatchReport: " << *MatchReport << '\n';
+
+			if (*MatchReport) // null yay!!
+			{
+				static auto MatchStatsOffset = (*MatchReport)->GetOffsetSlow("MatchStats");
+				auto MatchStats = *Get<FAthenaMatchStats>(*MatchReport, MatchStatsOffset);
+
+				static auto TeamStatsOffset = (*MatchReport)->GetOffsetSlow("TeamStats");
+				auto TeamStats = Get<FAthenaMatchTeamStats>(*MatchReport, TeamStatsOffset);
+
+				static auto bHasTeamStatsOffset = (*MatchReport)->GetOffsetSlow("bHasTeamStats");
+				auto bHasTeamStats = Get<bool>(*MatchReport, bHasTeamStatsOffset);
+
+				*bHasTeamStats = true;
+
+				std::cout << "MatchStats.Stats[2]: " << MatchStats.Stats[2] << '\n';
+
+				Stats = MatchStats;
+				teamStats = *TeamStats;
+			}
+		}
+
+		static auto ClientSendMatchStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendMatchStatsForPlayer");
+		// DeadController->ProcessEvent(ClientSendMatchStatsForPlayer, &Stats); // For now, because the size of the struct changes and im too lazy to allocate it
+
+		static auto ClientSendTeamStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendTeamStatsForPlayer");
+		DeadController->ProcessEvent(ClientSendTeamStatsForPlayer, &teamStats); // "You came x out of y Players"
+
 	}
-
-	static auto ClientSendMatchStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendMatchStatsForPlayer");
-	// DeadController->ProcessEvent(ClientSendMatchStatsForPlayer, &Stats); // For now, because the size of the struct changes and im too lazy to allocate it
-
-	static auto ClientSendTeamStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendTeamStatsForPlayer");
-	DeadController->ProcessEvent(ClientSendTeamStatsForPlayer, &teamStats); // "You came x out of y Players"
 
 	auto DeathLocation = Helper::GetActorLocation(DeadPawn);
 
@@ -1712,24 +1721,6 @@ bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Paramet
 	return false;
 }
 
-struct FGameplayAbilityRepAnimMontage
-{
-public:
-	UObject* AnimMontage;                                       // 0x0(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	float                                        PlayRate;                                          // 0x8(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	float                                        Position;                                          // 0xC(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	float                                        BlendTime;                                         // 0x10(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8_t                                        NextSectionID;                                     // 0x14(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8_t                                        IsStopped : 1;                                     // Mask : 0x1 0x15(0x1)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8_t                                        ForcePlayBit : 1;                                  // Mask : 0x2 0x15(0x1)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8_t                                        SkipPositionCorrection : 1;                        // Mask : 0x4 0x15(0x1)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8_t                                        bSkipPlayRate : 1;                                 // Mask : 0x8 0x15(0x1)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8_t                                        Pad_2417[0x2];                                     // Fixing Size After Last Property  [ Dumper-7 ]
-	PadHex18                        PredictionKey;                                     // 0x18(0x18)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-};
-
-static UObject* AnimMontageToUse = nullptr;
-
 bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 {
 	if (!Parameters)
@@ -1743,7 +1734,7 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	if (!EmoteAsset)
 		return false;
 
-	std::cout << "EmoteAsset: " << EmoteAsset->GetFullName() << '\n';
+	// std::cout << "EmoteAsset: " << EmoteAsset->GetFullName() << '\n';
 
 	auto Pawn = Helper::GetPawnFromController(Controller);
 
@@ -1757,11 +1748,11 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	auto AnimationSoft = Get<TSoftObjectPtr>(EmoteAsset, AnimationOffset);
 	auto Animation = AnimationSoft->Get(AnimMontageClass); */
 
-	/* if (!GiveAbilityAndActivateOnceAddress)
+	if (!GiveAbilityAndActivateOnceAddress)
 	{
 		std::cout << "No GiveAbilityAndActivateOnceAddress!\n";
 		return false;
-	} */
+	}
 
 	UObject* AbilityToUse = nullptr;
 
@@ -1790,7 +1781,7 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	if (!AbilityToUse)
 		return false;
 
-	std::cout << "AbilityToUse: " << AbilityToUse->GetFullName() << '\n';
+	// std::cout << "AbilityToUse: " << AbilityToUse->GetFullName() << '\n';
 
 	/* auto newSpec = Abilities::GenerateNewSpec(AbilityToUse, EmoteAsset);
 
@@ -1815,7 +1806,7 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 
 	bool Emote_bMoveForwardOnly = Emote_bMoveForwardOnlyOffset ? ReadBitfield(Get<PlaceholderBitfield>(EmoteAsset, Emote_bMoveForwardOnlyOffset), Emote_bMoveForwardOnlyFieldMask) : true;
 
-	std::cout << "Emote_bMovingEmote: " << Emote_bMovingEmote << '\n';
+	// std::cout << "Emote_bMovingEmote: " << Emote_bMovingEmote << '\n';
 
 	static auto Pawn_bMovingEmoteOffset = Pawn->GetOffset("bMovingEmote");
 	static auto Pawn_bMovingEmoteFieldMask = GetFieldMask(Pawn->GetProperty("bMovingEmote"));
@@ -1831,9 +1822,9 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 		SetBitfield(Pawn_bMovingEmoteForwardOnly, Pawn_bMovingEmoteForwardOnlyFieldMask, Emote_bMoveForwardOnly);
 	}
 
-	std::cout << "Pawn_bMovingEmoteForwardOnlyFieldMask: " << (int)Pawn_bMovingEmoteFieldMask << '\n';
-	std::cout << "Emote_bMoveForwardOnly: " << Emote_bMoveForwardOnly << '\n';
-	std::cout << "Emote_bMovingEmote: " << Emote_bMovingEmote << '\n';
+	// std::cout << "Pawn_bMovingEmoteForwardOnlyFieldMask: " << (int)Pawn_bMovingEmoteFieldMask << '\n';
+	// std::cout << "Emote_bMoveForwardOnly: " << Emote_bMoveForwardOnly << '\n';
+	// std::cout << "Emote_bMovingEmote: " << Emote_bMovingEmote << '\n';
 
 	SetBitfield(Pawn_bMovingEmote, Pawn_bMovingEmoteFieldMask, Emote_bMovingEmote);
 
@@ -1994,7 +1985,7 @@ bool onendabilitydance(UObject* Ability, UFunction*, void* Parameters)
 
 	if (Pawn)
 	{
-		std::cout << "got pawn!\n";
+		// std::cout << "got pawn!\n";
 
 		static auto Pawn_bMovingEmoteOffset = Pawn->GetOffset("bMovingEmote");
 		PlaceholderBitfield* Pawn_bMovingEmote = Get<PlaceholderBitfield>(Pawn, Pawn_bMovingEmoteOffset);
@@ -2011,7 +2002,7 @@ bool onendabilitydance(UObject* Ability, UFunction*, void* Parameters)
 
 		static auto Pawn_bMovingEmoteFieldMask = GetFieldMask(Pawn->GetProperty("bMovingEmote"));
 
-		std::cout << "bMovingEmoteFieldMask: " << (int)Pawn_bMovingEmoteFieldMask << '\n';
+		// std::cout << "bMovingEmoteFieldMask: " << (int)Pawn_bMovingEmoteFieldMask << '\n';
 
 		SetBitfield(Pawn_bMovingEmote, Pawn_bMovingEmoteFieldMask, false);
 
