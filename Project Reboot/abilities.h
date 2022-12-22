@@ -1,15 +1,20 @@
 #pragma once
 
+#include <functional>
+
 #include "structs.h"
+
+void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func);
 
 namespace Abilities
 {
 	inline UObject* GameplayAbilitySpecClass = nullptr;
 
     void ClientActivateAbilityFailed(UObject* ASC, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey);
-	void* GenerateNewSpec(UObject* DefaultObject);
-    UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability);
-    void* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass);
+	void* GenerateNewSpec(UObject* DefaultObject, UObject* SourceObject = nullptr);
+    std::vector<UObject*> DoesASCHaveAbility(UObject* ASC, UObject* Ability);
+    void* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, UObject* SourceObject = nullptr);
+    void GiveAbilityAndActivateOnce(UObject* Pawn, UObject* Class, UObject* SourceObject = nullptr, __int64* EventData = nullptr);
 
     // HOOKS
 
@@ -17,3 +22,7 @@ namespace Abilities
     bool ServerTryActivateAbilityWithEventData(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters);
     bool ServerAbilityRPCBatch(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters);
 }
+
+UObject** GetAbilityFromSpec(void* Spec);
+__int64* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySpecHandle Handle);
+void GiveFortAbilitySet(UObject* Pawn, UObject* FortAbilitySet);

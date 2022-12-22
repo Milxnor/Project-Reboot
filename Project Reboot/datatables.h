@@ -7,7 +7,20 @@ namespace DataTables
 	template <typename RowDataType = uint8_t>
 	static TMap<FName, RowDataType*> GetRowMap(UObject* DataTable)
 	{
-		static auto RowStructOffset = DataTable->GetOffset("RowStruct");
+		static auto RowStructOffset = FindOffsetStruct("Class /Script/Engine.DataTable", "RowStruct");
+
+		/* static auto CurveTableClass = FindObject("/Script/Engine.CurveTable");
+
+		if (DataTable->IsA(CurveTableClass))
+		{
+			return *(TMap<FName, RowDataType*>*)(__int64(DataTable));
+		}
+		else
+		{
+			static auto RowStructOffset = DataTable->GetOffset("RowStruct");
+			return *(TMap<FName, RowDataType*>*)(__int64(DataTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
+		} */
+
 		return *(TMap<FName, RowDataType*>*)(__int64(DataTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
 	}
 

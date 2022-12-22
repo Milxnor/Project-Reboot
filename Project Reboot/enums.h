@@ -17,6 +17,16 @@ struct DVector // lmao
 	double X;
 	double Y;
 	double Z;
+
+	DVector operator*(const double A)
+	{
+		return DVector{ this->X * A, this->Y * A, this->Z * A };
+	}
+
+	DVector operator+(const DVector& A)
+	{
+		return DVector{ this->X + A.X, this->Y + A.Y, this->Z + A.Z };
+	}
 };
 
 struct FColor
@@ -199,6 +209,70 @@ enum class EFortWeaponUpgradeCosts : uint8_t
 	EFortWeaponUpgradeCosts_MAX = 28,
 };
 
+enum class EChannelCloseReason : uint8_t
+{
+	Destroyed,
+	Dormancy,
+	LevelUnloaded,
+	Relevancy,
+	TearOff,
+	/* reserved */
+	MAX = 15		// this value is used for serialization, modifying it may require a network version change
+};
+
+template <class  T>
+static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f))
+{
+	return DegVal * (M_PI / 180.f);
+}
+
+#define CHECK_PATTERN(addr) if (!addr) \
+{ \
+    MessageBoxA(0, (std::string("Unable to find ") + #addr + " aborting..").c_str(), "Project Reboot", MB_ICONERROR);\
+    FreeLibraryAndExitThread(GetModuleHandleW(0), 0); \
+} \
+
+static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
+{
+	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.
+	float quotient = (0.31830988618f * 0.5f) * Value;
+	if (Value >= 0.0f)
+	{
+		quotient = (float)((int)(quotient + 0.5f));
+	}
+	else
+	{
+		quotient = (float)((int)(quotient - 0.5f));
+	}
+	float y = Value - (2.0f * M_PI) * quotient;
+
+	// Map y to [-pi/2,pi/2] with sin(y) = sin(Value).
+	float sign;
+	if (y > 1.57079632679f)
+	{
+		y = M_PI - y;
+		sign = -1.0f;
+	}
+	else if (y < -1.57079632679f)
+	{
+		y = -M_PI - y;
+		sign = -1.0f;
+	}
+	else
+	{
+		sign = +1.0f;
+	}
+
+	float y2 = y * y;
+
+	// 11-degree minimax approximation
+	*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
+
+	// 10-degree minimax approximation
+	float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
+	*ScalarCos = sign * p;
+}
+
 struct FRotator
 {
 	float Pitch;
@@ -241,6 +315,23 @@ struct FRotator
 
 		return Angle;
 	}
+
+	FVector Vector() const
+	{
+		float CP, SP, CY, SY;
+		SinCos(&SP, &CP, DegreesToRadians(Pitch));
+		SinCos(&SY, &CY, DegreesToRadians(Yaw));
+		FVector V = FVector(CP * CY, CP * SY, SP);
+
+		return V;
+	}
+};
+
+struct DRotator // lmao
+{
+	double Pitch;
+	double Yaw;
+	double Roll;
 };
 
 enum ESpawnActorCollisionHandlingMethod
@@ -314,6 +405,15 @@ enum class EFortCustomGender : uint8_t
 	EFortCustomGender_MAX = 4
 };
 
+enum class EReachLocationValidationMode : uint8_t
+{
+	None = 0,
+	Storm = 1,
+	Leash = 2,
+	SoftLeash = 3,
+	EReachLocationValidationMode_MAX = 4
+};
+
 enum class EAthenaGamePhase : uint8_t
 {
 	None = 0,
@@ -358,6 +458,25 @@ struct FAthenaMatchTeamStats
 {
 	int                                                Place;                                                    // 0x0000(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	int                                                TotalPlayers;                                             // 0x0004(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+
+enum EChannelType
+{
+	CHTYPE_None = 0,  // Invalid type.
+	CHTYPE_Control = 1,  // Connection control.
+	CHTYPE_Actor = 2,  // Actor-update channel.
+
+	// @todo: Remove and reassign number to CHTYPE_Voice (breaks net compatibility)
+	CHTYPE_File = 3,  // Binary file transfer.
+
+	CHTYPE_Voice = 4,  // VoIP data channel
+	CHTYPE_MAX = 8,  // Maximum.
+};
+
+enum class EChannelCreateFlags : uint32_t
+{
+	None = (1 << 0),
+	OpenedLocally = (1 << 1)
 };
 
 template<class TEnum>
@@ -418,12 +537,44 @@ struct FGuid
 	}
 };
 
+enum class ESetChannelActorFlags : uint32_t
+{
+	None = 0,
+	SkipReplicatorCreation = (1 << 0),
+	SkipMarkActive = (1 << 1),
+};
+
 struct PadHex18 { char Pad[0x18]; };
 struct PadHex10 { char Pad[0x10]; };
+struct PadHex78 { char Pad[0x78]; };
 struct PadHexC0 { char Pad[0xC0]; };
 struct PadHexC8 { char Pad[0xC8]; };
 struct PadHexE0 { char Pad[0xE0]; };
 struct PadHexE8 { char Pad[0xE8]; };
+
+struct FSimpleCurveKey
+{
+public:
+	float                                        Time;                                              // 0x0(0x4)(Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        Value;                                             // 0x4(0x4)(Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+
+struct FRichCurveKey
+{
+	// TEnumAsByte<ERichCurveInterpMode>                  InterpMode;                                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	// TEnumAsByte<ERichCurveTangentMode>                 TangentMode;                                              // 0x0001(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	// TEnumAsByte<ERichCurveTangentWeightMode>           TangentWeightMode;                                        // 0x0002(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	unsigned char                                      InterpMode;                                       // 0x0003(0x0001) MISSED OFFSET
+	unsigned char                                      TangentMode;                                       // 0x0003(0x0001) MISSED OFFSET
+	unsigned char                                      TangentWeightMode;                                       // 0x0003(0x0001) MISSED OFFSET
+	unsigned char                                      UnknownData00[0x1];                                       // 0x0003(0x0001) MISSED OFFSET
+	float                                              Time;                                                     // 0x0004(0x0004) (Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                              Value;                                                    // 0x0008(0x0004) (Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                              ArriveTangent;                                            // 0x000C(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                              ArriveTangentWeight;                                      // 0x0010(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                              LeaveTangent;                                             // 0x0014(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                              LeaveTangentWeight;                                       // 0x0018(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
 
 struct FGameplayAbilitySpecHandle
 {
@@ -449,6 +600,11 @@ struct FGameplayAbilitySpecHandle
 	}
 };
 
+struct FTimerHandle
+{
+	uint64_t Handle;
+};
+
 enum class EFortResourceType : uint8_t
 {
 	Wood = 0,
@@ -457,6 +613,12 @@ enum class EFortResourceType : uint8_t
 	Permanite = 3,
 	None = 4,
 	EFortResourceType_MAX = 5
+};
+
+struct FMarkerID
+{
+	int                                                PlayerId;                                                 // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	int                                                InstanceID;                                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
 
 struct PlaceholderBitfield
@@ -506,6 +668,13 @@ static int GetRandomInt(int Min, int Max)
 struct FDateTime
 {
 	__int64 Ticks;
+};
+
+enum class ECurveTableMode : unsigned char
+{
+	Empty,
+	SimpleCurves,
+	RichCurves
 };
 
 static bool IsBadReadPtr(void* p)
@@ -588,53 +757,6 @@ struct DTransform
 	DVector Scale3D = DVector{ 1, 1, 1 };
 	char pad_2C[0x4];
 };
-
-static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
-{
-	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.
-	float quotient = (0.31830988618f * 0.5f) * Value;
-	if (Value >= 0.0f)
-	{
-		quotient = (float)((int)(quotient + 0.5f));
-	}
-	else
-	{
-		quotient = (float)((int)(quotient - 0.5f));
-	}
-	float y = Value - (2.0f * M_PI) * quotient;
-
-	// Map y to [-pi/2,pi/2] with sin(y) = sin(Value).
-	float sign;
-	if (y > 1.57079632679f)
-	{
-		y = M_PI - y;
-		sign = -1.0f;
-	}
-	else if (y < -1.57079632679f)
-	{
-		y = -M_PI - y;
-		sign = -1.0f;
-	}
-	else
-	{
-		sign = +1.0f;
-	}
-
-	float y2 = y * y;
-
-	// 11-degree minimax approximation
-	*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
-
-	// 10-degree minimax approximation
-	float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
-	*ScalarCos = sign * p;
-}
-
-template <class  T>
-static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f))
-{
-	return DegVal * (M_PI / 180.f);
-}
 
 static bool RandomBoolWithWeight(float Weight, float Min = 0.f, float Max = 1.f)
 {

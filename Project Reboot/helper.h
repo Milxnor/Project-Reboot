@@ -11,6 +11,7 @@ namespace Helper
 	namespace Easy
 	{
 		UObject* SpawnActor(UObject* Class, FVector Location, FRotator Rotation = FRotator(), UObject* Owner = nullptr);
+		UObject* SpawnActorDynamic(UObject* Class, BothVector Location, BothRotator Rotation = BothRotator(), UObject* Owner = nullptr);
 		UObject* SpawnObject(UObject* Class, UObject* Outer);
 	}
 
@@ -32,7 +33,10 @@ namespace Helper
 	UObject* GetControllerFromPawn(UObject* Pawn);
 	UObject* GetPawnFromController(UObject* Controller);
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor);
-	UObject* SpawnPawn(UObject* Controller, FVector Location, bool bAssignCharacterParts = false);
+	bool ApplyCID(UObject* Pawn, UObject* CID);
+	UObject* GetRandomCID();
+	float GetMaxHealth(UObject* BuildingActor);
+	UObject* SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts = false);
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);
 	void SetOwner(UObject* Actor, UObject* Owner);
 	UObject* GetAbilitySystemComponent(UObject* Pawn);
@@ -45,21 +49,30 @@ namespace Helper
 	int* GetTeamIndex(UObject* PlayerState);
 	FVector GetActorLocation(UObject* Actor);
 	FRotator GetActorRotation(UObject* Actor);
+	BothVector GetActorLocationDynamic(UObject* Actor);
+	BothRotator GetActorRotationDynamic(UObject* Actor);
 	__int64* GetEntryFromPickup(UObject* Pickup);
 	UObject* GetOwnerOfComponent(UObject* Component);
 	UObject* GetOwner(UObject* Actor);
 	int GetMaxBullets(UObject* Definition);
-	UObject* GetPickaxeDef(UObject* Controller);
+	UObject* GetPawnFromPlayerState(UObject* PlayerState);
+	UObject* GetPickaxeDef(UObject* Controller, bool bGetNew = false);
 	int* GetPlayersLeft();
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 	UObject* GetGameData();
+	UObject* GetGameDataBR();
+	UObject* GetGameDataCosmetics();
 	void SetSnowIndex(int SnowIndex);
 	void ExportTexture2DToFile(UObject* Texture, FString Path, FString FileName);
 	FString GetEngineVersion();
 	std::string GetNetCL();
 	std::string GetEngineVer();
 	std::string GetFortniteVersion();
+	FRotator GetControlRotation(UObject* Controller);
+	UObject* GetAbilitySetFromAGID(UObject* AGID);
+	FActiveGameplayEffectHandle ApplyGameplayEffect(UObject* Pawn, UObject* GEClass);
 	void RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks = 1);
+	UObject* GetRandomObjectOfClass(UObject* Class, bool bUseCache = true, bool bSaveToCache = true);
 
 	void SetHealth(UObject* Pawn, float Health);
 	void SetMaxHealth(UObject* Pawn, float MaxHealth);
@@ -70,9 +83,16 @@ namespace Helper
 	FVector GetActorRightVector(UObject* Actor);
 	FVector GetCorrectLocation(UObject* Actor);
 
+	BothVector GetActorForwardVectorDynamic(UObject* Actor);
+	BothVector GetActorRightVectorDynamic(UObject* Actor);
+	BothVector GetCorrectLocationDynamic(UObject* Actor);
+
+	void* GetCosmeticLoadoutForPC(UObject* PC);
+	void* GetCosmeticLoadoutForPawn(UObject* Pawn);
+
 	std::vector<UObject*> GetAllObjectsOfClass(UObject* Class);
 	UObject* GetPlayerStart();
-	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bMaxAmmo = false, int Ammo = 0);
+	UObject* SummonPickup(UObject* Pawn, UObject* Definition, BothVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bMaxAmmo = false, int Ammo = 0);
 
 	namespace Conversion
 	{

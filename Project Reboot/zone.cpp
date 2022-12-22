@@ -10,7 +10,7 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 
 		auto Params = (ASafeZoneIndicator_C_OnSafeZoneStateChange_Params*)Parameters;
 
-		static auto NextCenterOffset = FindOffsetStruct2("/Script/FortniteGame.FortSafeZoneIndicator", "NextCenter", false, true);
+		static auto NextCenterOffset = Indicator->GetOffsetSlow("NextCenter");
 		auto NextCenter = (FVector*)(__int64(Indicator) + NextCenterOffset);
 
 		auto AuthGameMode = Helper::GetGameMode();
@@ -22,10 +22,27 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 
 		auto GameState = Helper::GetGameState();
 
-		static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
-		auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+		UObject* Aircraft = nullptr;
 
-		auto Aircraft = Aircrafts->At(0);
+		static auto AircraftsOffset = GameState->GetOffset("Aircrafts", false, false, false);
+
+		if (AircraftsOffset != 0)
+		{
+			auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+
+			if (Aircrafts->Num() == 0)
+			{
+				std::cout << "There are no aircrafts!\n";
+				return false;
+			}
+
+			Aircraft = Aircrafts->At(0);
+		}
+		else
+		{
+			static auto AircraftOffset = GameState->GetOffset("Aircraft");
+			Aircraft = *Get<UObject*>(GameState, AircraftOffset);
+		}
 
 		if (!Aircraft)
 			return false;
@@ -38,15 +55,15 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 		{
 			LastResetNum = Defines::AmountOfRestarts;
 			AircraftLocation = Helper::GetActorLocation(Aircraft);
+
+			static auto bAircraftIsLockedOffset = GameState->GetOffset("bAircraftIsLocked");
+			Get<PlaceholderBitfield>(GameState, bAircraftIsLockedOffset)->First = false;
 		}
 
-		FString StartShrinkSafeZone;
-		StartShrinkSafeZone.Set(L"startshrinksafezone");
+		FString StartShrinkSafeZone = L"startshrinksafezone";
+		FString SkipShrinkSafeZone = L"skipshrinksafezone";
 
-		FString SkipShrinkSafeZone;
-		SkipShrinkSafeZone.Set(L"skipshrinksafezone");
-
-		static auto NextRadiusOffset = Indicator->GetOffset("NextRadius");
+		static auto NextRadiusOffset = Indicator->GetOffsetSlow("NextRadius");
 		auto NextRadius = (float*)(__int64(Indicator) + NextRadiusOffset);
 
 		std::cout << "SafeZonePhase: " << SafeZonePhase << '\n';
@@ -55,7 +72,7 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 
 		if (SafeZonePhase == 0) {
 			Helper::ExecuteConsoleCommand(SkipShrinkSafeZone);
-			static auto RadiusOffset = Indicator->GetOffset("Radius");
+			static auto RadiusOffset = Indicator->GetOffsetSlow("Radius");
 			*(float*)(__int64(Indicator) + RadiusOffset) = 20000;
 
 			*NextRadius = 20000;
@@ -107,8 +124,8 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 			*NextCenter = nextCenter;
 		}
 
-		StartShrinkSafeZone.Free();
-		SkipShrinkSafeZone.Free();
+		// StartShrinkSafeZone.Free();
+		// SkipShrinkSafeZone.Free();
 	}
 
 	return false;

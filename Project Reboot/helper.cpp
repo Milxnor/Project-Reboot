@@ -50,6 +50,29 @@ UObject* Helper::Easy::SpawnActor(UObject* Class, FVector Location, FRotator Rot
 	}
 }
 
+UObject* Helper::Easy::SpawnActorDynamic(UObject* Class, BothVector Location, BothRotator Rotation, UObject* Owner)
+{
+	FActorSpawnParametersNew SpawnParametersNew{};
+	SpawnParametersNew.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	SpawnParametersNew.Owner = Owner;
+
+	FActorSpawnParameters SpawnParameters{};
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	SpawnParameters.Owner = Owner;
+
+	if (Fortnite_Season >= 20)
+	{
+		return SpawnActorO(Helper::GetWorld(), Class, &Location.dV, &Rotation.dR, &SpawnParametersNew);
+	}
+	else
+	{
+		if (Engine_Version >= 500)
+			return SpawnActorO(Helper::GetWorld(), Class, &Location.fV, &Rotation.fR, &SpawnParametersNew);
+		else
+			return SpawnActorO(Helper::GetWorld(), Class, &Location.fV, &Rotation.fR, &SpawnParameters);
+	}
+}
+
 UObject* Helper::Easy::SpawnObject(UObject* Class, UObject* Outer)
 {
 	if (!Class || !Outer)
@@ -104,10 +127,18 @@ std::pair<UObject*, int> Helper::GetAmmoForDefinition(UObject* Definition)
 	static auto GetAmmoWorldItemDefinition_BP = FindObject<UFunction>("/Script/FortniteGame.FortWorldItemDefinition.GetAmmoWorldItemDefinition_BP");
 	UObject* AmmoDef;
 	Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
+	
+	static auto FortWorldItemDefinitionClass = FindObject("/Script/FortniteGame.FortWorldItemDefinition");
 
-	static auto DropCountOffset = AmmoDef->GetOffset("DropCount");
+	int DropCount = 0;
 
-	auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
+	// if (AmmoDef->IsA(FortWorldItemDefinitionClass))
+	if (AmmoDef)
+	{
+		static auto DropCountOffset = AmmoDef->GetOffset("DropCount");
+
+		DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
+	}
 
 	return std::make_pair(AmmoDef, DropCount);
 }
@@ -214,15 +245,15 @@ float Helper::GetDistanceTo(UObject* Actor, UObject* OtherActor)
 	return GetDistanceTo_Params.distance;
 }
 
-void ApplyCID(UObject* Pawn, UObject* CID)
+bool Helper::ApplyCID(UObject* Pawn, UObject* CID)
 {
 	// CID->ItemVariants
 	// CID->DefaultBackpack
 
 	// CID->Hero->Specialization
 
-	if (!CID)
-		return;
+	if (!CID || !StaticLoadObjectO) 
+		return false;
 
 	static auto CCPClass = FindObject("/Script/FortniteGame.CustomCharacterPart");
 
@@ -231,7 +262,7 @@ void ApplyCID(UObject* Pawn, UObject* CID)
 	auto HeroDefinition = *(UObject**)(__int64(CID) + HeroDefinitionOffset);
 
 	if (!HeroDefinition)
-		return;
+		return false;
 
 	static auto SpecializationsOffset = HeroDefinition->GetOffset("Specializations");
 	auto HeroSpecializations = (TArray<TSoftObjectPtr>*)(__int64(HeroDefinition) + SpecializationsOffset);
@@ -239,8 +270,10 @@ void ApplyCID(UObject* Pawn, UObject* CID)
 	if (!HeroSpecializations)
 	{
 		std::cout << "No HeroSpecializations!\n";
-		return;
+		return false;
 	}
+
+	bool bSuceeded = false;
 
 	for (int j = 0; j < HeroSpecializations->Num(); j++)
 	{
@@ -250,13 +283,16 @@ void ApplyCID(UObject* Pawn, UObject* CID)
 
 		auto Specialization = StaticLoadObject(SpecializationClass, nullptr, SpecializationName);
 
+		if (!Specialization)
+			continue;
+
 		static auto CharacterPartsOffset = Specialization->GetOffset("CharacterParts");
 		auto CharacterParts = (TArray<TSoftObjectPtr>*)(__int64(Specialization) + CharacterPartsOffset);
 
 		if (!CharacterParts)
 		{
 			std::cout << "No CharacterParts!\n";
-			return;
+			return false;
 		}
 
 		for (int i = 0; i < CharacterParts->Num(); i++)
@@ -268,12 +304,15 @@ void ApplyCID(UObject* Pawn, UObject* CID)
 				static auto CharacterPartTypeOffset = CharacterPart->GetOffset("CharacterPartType");
 				auto PartType = *(TEnumAsByte<EFortCustomPartType>*)(__int64(CharacterPart) + CharacterPartTypeOffset);
 				Helper::ChoosePart(Pawn, PartType, CharacterPart);
+				bSuceeded = true;
 			}
 		}
 	}
+
+	return bSuceeded;
 }
 
-UObject* GetRandomCID()
+UObject* Helper::GetRandomCID()
 {
 	static auto CIDClass = FindObject("/Script/FortniteGame.AthenaCharacterItemDefinition");
 
@@ -283,7 +322,7 @@ UObject* GetRandomCID()
 
 	while (!skin || skin->GetFullName().contains("Default") || skin->GetFullName().contains("Test"))
 	{
-		auto random = rand() % (AllObjects.size());
+		auto random = (int)GetRandomFloat(1, AllObjects.size() - 1);
 		random = random <= 0 ? 1 : random; // we love default objects
 		skin = AllObjects.at(random);
 	}
@@ -291,17 +330,25 @@ UObject* GetRandomCID()
 	return skin;
 }
 
-UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCharacterParts)
+float Helper::GetMaxHealth(UObject* BuildingActor)
+{
+	static auto GetMaxHealth = FindObject<UFunction>("/Script/FortniteGame.BuildingActor.GetMaxHealth");
+	float MaxHealth = 0.f;
+	BuildingActor->ProcessEvent(GetMaxHealth, &MaxHealth);
+
+	return MaxHealth;
+}
+
+UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts)
 {
 	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
 
-	auto Pawn = Helper::Easy::SpawnActor(PawnClass, Location);
+	auto Pawn = Helper::Easy::SpawnActorDynamic(PawnClass, Location);
 
 	if (!Pawn)
 		return Pawn;
 
 	static auto Possess = FindObject<UFunction>("/Script/Engine.Controller.Possess");
-
 	Controller->ProcessEvent(Possess, &Pawn);
 
 	if (bAssignCharacterParts)
@@ -326,13 +373,12 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 	if (ClientOnPawnSpawned)
 		Controller->ProcessEvent(ClientOnPawnSpawned); // IDK
 
-	// SetHealth(Pawn, 100);
-	// SetShield(Pawn, 0);
-
 	if (Engine_Version <= 420)
 	{
 		SetMaxHealth(Pawn, 100);
 		SetMaxShield(Pawn, 100);
+		SetHealth(Pawn, 100);
+		SetShield(Pawn, 0);
 	}
 
 	if (Fortnite_Season >= 16)
@@ -346,11 +392,41 @@ UObject* Helper::SpawnPawn(UObject* Controller, FVector Location, bool bAssignCh
 
 void Helper::ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
 {
-	struct { TEnumAsByte<EFortCustomPartType> Part; UObject* ChosenCharacterPart; } SCP_params{ Part, ChosenCharacterPart };
+	/* if (Fortnite_Version == 19.10)
+	{
+		struct FCustomCharacterData
+		{
+			unsigned char                                      WasPartReplicatedFlags;                                   // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
+			int                                                RequiredVariantPartFlags;                                 // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			UObject* Parts[0x7];                                               // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			UObject* Charms[0x4];                                              // 0x0040(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			TArray<UObject*>                VariantRequiredCharacterParts;                            // 0x0060(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
+			bool                                               bReplicationFailed;                                       // 0x0070(0x0001) (ZeroConstructor, Transient, IsPlainOldData, RepSkip, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			unsigned char                                      UnknownData01[0x7];                                       // 0x0071(0x0007) MISSED OFFSET
+		};
 
-	static auto ServerChoosePart = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawn.ServerChoosePart");
+		auto PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
 
-	Pawn->ProcessEvent(ServerChoosePart, &SCP_params);
+		if (PlayerState)
+		{
+			auto CharacterDataOffset = PlayerState->GetOffset("CharacterData");
+			auto CharacterData = Get<FCustomCharacterData>(PlayerState, CharacterDataOffset);
+
+			CharacterData->Parts[(int)Part.Get()] = ChosenCharacterPart;
+
+			static auto OnRep_CharacterData = FindObject<UFunction>("/Script/FortniteGame.FortPlayerState.OnRep_CharacterData");
+			PlayerState->ProcessEvent(OnRep_CharacterData);
+		}
+	}
+	else */
+	{
+		struct { TEnumAsByte<EFortCustomPartType> Part; UObject* ChosenCharacterPart; } SCP_params{ Part, ChosenCharacterPart };
+
+		static auto ServerChoosePart = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawn.ServerChoosePart");
+
+		Pawn->ProcessEvent(ServerChoosePart, &SCP_params);
+	}
 }
 
 void Helper::SetOwner(UObject* Actor, UObject* Owner)
@@ -429,7 +505,13 @@ TArray<UObject*> Helper::GetAllActorsOfClass(UObject* Class)
 
 bool Helper::IsInAircraft(UObject* Controller)
 {
-	return false;
+	static auto IsInAircraftFn = FindObject<UFunction>("/Script/FortniteGame.FortPlayerController.IsInAircraft") ? FindObject<UFunction>("/Script/FortniteGame.FortPlayerController.IsInAircraft")
+		: FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.IsInAircraft");
+
+	bool bIsInAircraft = false;
+	Controller->ProcessEvent(IsInAircraftFn, &bIsInAircraft);
+
+	return bIsInAircraft;
 }
 
 UObject* Helper::GetCurrentWeapon(UObject* Pawn)
@@ -471,6 +553,32 @@ FRotator Helper::GetActorRotation(UObject* Actor)
 	Actor->ProcessEvent(K2_GetActorRotation, &loc);
 
 	return loc;
+}
+
+BothVector Helper::GetActorLocationDynamic(UObject* Actor)
+{
+	if (Fortnite_Season < 20)
+		return BothVector(GetActorLocation(Actor));
+
+	static auto K2_GetActorLocationFN = FindObject<UFunction>("/Script/Engine.Actor.K2_GetActorLocation");
+
+	DVector loc;
+	Actor->ProcessEvent(K2_GetActorLocationFN, &loc);
+
+	return BothVector(loc);
+}
+
+BothRotator Helper::GetActorRotationDynamic(UObject* Actor)
+{
+	if (Fortnite_Season < 20)
+		return BothRotator(GetActorRotation(Actor));
+
+	static auto K2_GetActorRotation = FindObject<UFunction>("/Script/Engine.Actor.K2_GetActorRotation");
+
+	DRotator loc;
+	Actor->ProcessEvent(K2_GetActorRotation, &loc);
+
+	return BothRotator(loc);
 }
 
 __int64* Helper::GetEntryFromPickup(UObject* Pickup)
@@ -557,18 +665,48 @@ int Helper::GetMaxBullets(UObject* Definition)
 	return 0;
 }
 
-UObject* Helper::GetPickaxeDef(UObject* Controller)
+UObject* Helper::GetPawnFromPlayerState(UObject* PlayerState)
 {
-	static UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+	static auto PawnPrivateOffset = PlayerState->GetOffset("PawnPrivate");
+	auto PawnPrivate = *Get<UObject*>(PlayerState, PawnPrivateOffset);
 
-	return PickaxeDef;
+	return PawnPrivate;
+}
+
+UObject* Helper::GetPickaxeDef(UObject* Controller, bool bGetNew)
+{
+	UObject* toRet = nullptr;
+
+	if (bGetNew)
+	{
+		static auto PickaxeClass = FindObject("/Script/FortniteGame.AthenaPickaxeItemDefinition");
+		auto randPickaxeDef = GetRandomObjectOfClass(PickaxeClass);
+		
+		if (randPickaxeDef)
+		{
+			static auto WeaponDefinitionOffset = randPickaxeDef->GetOffset("WeaponDefinition");
+			toRet = *Get<UObject*>(randPickaxeDef, WeaponDefinitionOffset);
+		}
+	}
+	else
+	{
+		auto ItemInstances = Inventory::GetItemInstances(Controller);
+
+		if (ItemInstances->Num() >= 6)
+		{
+			auto PickaxeInstance = ItemInstances->At(1); // cursed probs // loop through all inventoryt and find  first melee
+			toRet = IsBadReadPtr(PickaxeInstance) ? nullptr : *UFortItem::GetDefinition(PickaxeInstance);
+		}
+	}
+
+	return toRet;
 }
 
 int* Helper::GetPlayersLeft()
 {
 	auto GameState = GetGameState();
 
-	static auto PlayersLeftOffset = GameState->GetOffset("PlayersLeft");
+	static auto PlayersLeftOffset = FindOffsetStruct2("Class /Script/FortniteGame.FortGameStateAthena", "PlayersLeft");
 
 	return Get<int>(GameState, PlayersLeftOffset);
 }
@@ -629,13 +767,35 @@ UObject* Helper::GetGameData()
 	return GameDataOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataOffset);
 }
 
+UObject* Helper::GetGameDataBR()
+{
+	auto Engine = GetEngine();
+
+	static auto AssetManagerOffset = Engine->GetOffset("AssetManager");
+	UObject* AssetManager = *Get<UObject*>(Engine, AssetManagerOffset);
+
+	static auto GameDataBROffset = AssetManager->GetOffset("GameDataBR");
+	return GameDataBROffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataBROffset);
+}
+
+UObject* Helper::GetGameDataCosmetics()
+{
+	auto Engine = GetEngine();
+
+	static auto AssetManagerOffset = Engine->GetOffset("AssetManager");
+	UObject* AssetManager = *Get<UObject*>(Engine, AssetManagerOffset);
+
+	static auto GameDataCosmeticsOffset = AssetManager->GetOffset("GameDataCosmetics");
+	return GameDataCosmeticsOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataCosmeticsOffset);
+}
+
 void Helper::SetSnowIndex(int SnowIndex)
 {
 	if (Fortnite_Season == 19)
 	{
 		auto sjt9ase9i = FindObject("/SpecialSurfaceCoverage/Maps/SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.PersistentLevel.BP_Artemis_S19Progression_C_0");
 
-		std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
+		// std::cout << "sjt9ase9i: " << sjt9ase9i << '\n';
 
 		if (sjt9ase9i)
 		{
@@ -705,6 +865,55 @@ std::string Helper::GetFortniteVersion()
 	return EngineVer;
 }
 
+FRotator Helper::GetControlRotation(UObject* Controller)
+{
+	static auto GetControlRotation = FindObject<UFunction>("/Script/Engine.Controller.GetControlRotation");
+	FRotator ControlRotation;
+	Controller->ProcessEvent(GetControlRotation, &ControlRotation);
+	return ControlRotation;
+}
+
+UObject* Helper::GetAbilitySetFromAGID(UObject* AGID)
+{
+	static auto AbilitySetOffset = AGID->GetOffset("AbilitySet");
+	static bool bIsSoftObjectPtr = true;
+
+	std::cout << "bIsSoftObjectPtr: " << bIsSoftObjectPtr << '\n';
+
+	if (bIsSoftObjectPtr)
+	{
+		static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
+
+		auto AbilitySetSoft = Get<TSoftObjectPtr>(AGID, AbilitySetOffset);
+		auto AbilitySet = AbilitySetSoft->Get(FortAbilitySetClass);
+
+		return AbilitySet;
+	}
+	else
+	{
+		static auto AbilitySet = Get<UObject*>(AGID, AbilitySetOffset);
+		return *AbilitySet;
+	}
+}
+
+FActiveGameplayEffectHandle Helper::ApplyGameplayEffect(UObject* Pawn, UObject* GEClass)
+{
+	static auto BP_ApplyGameplayEffectToSelf = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.BP_ApplyGameplayEffectToSelf");
+
+	struct
+	{
+		UObject* GameplayEffect;
+		float Level;
+		FGameplayEffectContextHandle EffectContext;
+		FActiveGameplayEffectHandle Return;
+	} BP_ApplyGameplayEffectToSelf_Params{GEClass, 1.0, FGameplayEffectContextHandle()};
+
+	auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+	ASC->ProcessEvent(BP_ApplyGameplayEffectToSelf, &BP_ApplyGameplayEffectToSelf_Params);
+
+	return BP_ApplyGameplayEffectToSelf_Params.Return;
+}
+
 void Helper::RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks)
 {
 	static auto fn = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.RemoveActiveGameplayEffectBySourceEffect");
@@ -716,6 +925,39 @@ void Helper::RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks)
 	struct { UObject* GameplayEffect; UObject* InstigatorAbilitySystemComponent; int StacksToRemove; } UAbilitySystemComponent_RemoveActiveGameplayEffectBySourceEffect_Params{GEClass, ASC, Stacks};
 
 	ASC->ProcessEvent(fn, &UAbilitySystemComponent_RemoveActiveGameplayEffectBySourceEffect_Params);
+}
+
+UObject* Helper::GetRandomObjectOfClass(UObject* Class, bool bUseCache, bool bSaveToCache)
+{
+	std::vector<UObject*> AllObjects;
+	static std::unordered_map<UObject*, std::vector<UObject*>> objectLists;
+
+	if (bUseCache)
+	{
+		auto pos = objectLists.find(Class);
+
+		if (pos != objectLists.end())
+			AllObjects = objectLists.at(Class);
+	}
+
+	if (AllObjects.empty())
+	{
+		AllObjects = GetAllObjectsOfClass(Class);
+
+		if (bSaveToCache)
+			objectLists.emplace(Class, AllObjects);
+	}
+
+	UObject* RandObject = nullptr;
+
+	while (!RandObject || RandObject->GetFullName().contains("Default"))
+	{
+		auto random = (int)GetRandomFloat(1, AllObjects.size() - 1); // idk if the -1 is needed
+		random = random <= 0 ? 1 : random; // we love default objects
+		RandObject = AllObjects.at(random);
+	}
+
+	return RandObject;
 }
 
 UObject* GetHealthSet(UObject* Pawn)
@@ -731,6 +973,13 @@ UObject* GetHealthSet(UObject* Pawn)
 
 void Helper::SetHealth(UObject* Pawn, float Health)
 {
+	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+	static auto PS_CurrentHealthOffset = PlayerState->GetOffset("CurrentHealth", false, false, false);
+
+	if (PS_CurrentHealthOffset != 0)
+		*(float*)(__int64(PlayerState) + PS_CurrentHealthOffset) = Health;
+
 	auto HealthSet = GetHealthSet(Pawn);
 
 	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
@@ -752,6 +1001,13 @@ void Helper::SetHealth(UObject* Pawn, float Health)
 
 void Helper::SetMaxHealth(UObject* Pawn, float MaxHealth)
 {
+	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+	static auto PS_MaxHealthOffset = PlayerState->GetOffset("MaxHealth", false, false, false);
+
+	if (PS_MaxHealthOffset != 0)
+		*(float*)(__int64(PlayerState) + PS_MaxHealthOffset) = MaxHealth;
+
 	static auto MaximumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Maximum");
 
 	auto HealthSet = GetHealthSet(Pawn);
@@ -781,6 +1037,7 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 		*(float*)(__int64(PlayerState) + PS_CurrentShieldOffset) = Shield;
 
 	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+	static auto MinimumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Minimum");
 	static auto BaseValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "BaseValue");
 
 	auto HealthSet = GetHealthSet(Pawn);
@@ -793,6 +1050,7 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
 		*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
 		*(float*)(__int64(ShieldData) + BaseValueOffset) = Shield;
+		*(float*)(__int64(ShieldData) + MinimumOffset) = Shield;
 	}
 
 	if (CurrentShieldOffset != 0)
@@ -800,6 +1058,7 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
 		*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
 		*(float*)(__int64(CurrentShieldData) + BaseValueOffset) = Shield;
+		*(float*)(__int64(CurrentShieldData) + MinimumOffset) = Shield;
 	}
 
 	static UFunction* OnRep_Shield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Shield");
@@ -878,13 +1137,78 @@ FVector Helper::GetCorrectLocation(UObject* Actor)
 	return Location + RightVector * 70.0f + FVector{ 0, 0, 50 };
 }
 
+BothVector Helper::GetActorForwardVectorDynamic(UObject* Actor)
+{
+	if (Fortnite_Season < 20)
+		return BothVector(GetActorForwardVector(Actor));
+
+	static auto GetActorForwardVectorFN = FindObject<UFunction>("/Script/Engine.Actor.GetActorForwardVector");
+
+	DVector loc;
+	Actor->ProcessEvent(GetActorForwardVectorFN, &loc);
+
+	return BothVector(loc);
+}
+
+BothVector Helper::GetActorRightVectorDynamic(UObject* Actor)
+{
+	if (Fortnite_Season < 20)
+		return BothVector(GetActorRightVector(Actor));
+
+	static auto GetActorRightVectorFN = FindObject<UFunction>("/Script/Engine.Actor.GetActorRightVector");
+
+	DVector loc;
+	Actor->ProcessEvent(GetActorRightVectorFN, &loc);
+
+	return BothVector(loc);
+}
+
+BothVector Helper::GetCorrectLocationDynamic(UObject* Actor)
+{
+	auto Location = Helper::GetActorLocationDynamic(Actor);
+	auto RightVector = Helper::GetActorRightVectorDynamic(Actor);
+
+	return Fortnite_Season < 20 ? BothVector(Location.fV + RightVector.fV * 70.0f + FVector{ 0, 0, 50 }) :
+		BothVector(Location.dV + RightVector.dV * 70.0f + DVector{ 0, 0, 50 });
+}
+
+void* Helper::GetCosmeticLoadoutForPC(UObject* PC)
+{
+	static auto CosmeticLoadoutPCOffset = PC->GetOffset("CosmeticLoadoutPC", false, false, false);
+
+	if (CosmeticLoadoutPCOffset != 0)
+	{
+		return Get<void>(PC, CosmeticLoadoutPCOffset);
+	}
+	else
+	{
+		static auto CustomizationLoadoutOffset = PC->GetOffset("CustomizationLoadout");
+		return Get<void>(PC, CustomizationLoadoutOffset);
+	}
+}
+
+void* Helper::GetCosmeticLoadoutForPawn(UObject* Pawn)
+{
+	static auto CosmeticLoadoutOffset = Pawn->GetOffset("CosmeticLoadout", false, false, false);
+
+	if (CosmeticLoadoutOffset != 0)
+	{
+		return Get<void>(Pawn, CosmeticLoadoutOffset);
+	}
+	else
+	{
+		static auto CustomizationLoadoutOffset = Pawn->GetOffset("CustomizationLoadout");
+		return Get<void>(Pawn, CustomizationLoadoutOffset);
+	}
+}
+
 std::vector<UObject*> Helper::GetAllObjectsOfClass(UObject* Class) // bool bIncludeDefault
 {
 	std::vector<UObject*> Objects;
 
-	for (int32_t i = 0; i < (NewObjects ? NewObjects->Num() : NewObjects->Num()); i++)
+	for (int32_t i = 0; i < (NewObjects ? NewObjects->Num() : OldObjects->Num()); i++)
 	{
-		auto Object = NewObjects ? NewObjects->GetObjectById(i) : NewObjects->GetObjectById(i);
+		auto Object = NewObjects ? NewObjects->GetObjectById(i) : OldObjects->GetObjectById(i);
 
 		if (!Object) 
 			continue;
@@ -927,11 +1251,14 @@ UObject* Helper::GetPlayerStart()
 	return ActorToUse;
 }
 
-UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count, bool bMaxAmmo, int Ammo)
+UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, BothVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count, bool bMaxAmmo, int Ammo)
 {
+	if (!Definition)
+		return nullptr;
+
 	static UObject* PickupClass = FindObject("/Script/FortniteGame.FortPickupAthena");
 
-	auto Pickup = Helper::Easy::SpawnActor(PickupClass, Location, FRotator());
+	auto Pickup = Helper::Easy::SpawnActorDynamic(PickupClass, Location);
 
 	if (Pickup)
 	{
@@ -976,11 +1303,36 @@ UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, FVector Locati
 
 		static auto TossPickupFn = FindObject<UFunction>("/Script/FortniteGame.FortPickup.TossPickup");
 
-		struct { FVector FinalLocation; UObject* ItemOwner; int OverrideMaxStackCount; bool bToss; EFortPickupSourceTypeFlag InPickupSourceTypeFlags; EFortPickupSpawnSource InPickupSpawnSource; }
-		TPParams{ Location, Pawn, 6, true, PickupSource, SpawnSource };
+		if (Fortnite_Season < 20)
+		{
+			if (Fortnite_Version >= 14.60)
+			{
+				struct
+				{
+					FVector                                     FinalLocation;                                            // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					UObject* ItemOwner;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					int                                                OverrideMaxStackCount;                                    // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                               bToss;                                                    // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                               bShouldCombinePickupsWhenTossCompletes;                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					EFortPickupSourceTypeFlag                          InPickupSourceTypeFlags;                                  // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					EFortPickupSpawnSource                             InPickupSpawnSource;                                      // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				} AFortPickup_TossPickup_Params{ Location.fV, Pawn, 6, true, true, PickupSource, SpawnSource };
 
-		if (TossPickupFn)
+				Pickup->ProcessEvent(TossPickupFn, &AFortPickup_TossPickup_Params);
+			}
+			else
+			{
+				struct { FVector FinalLocation; UObject* ItemOwner; int OverrideMaxStackCount; bool bToss; EFortPickupSourceTypeFlag InPickupSourceTypeFlags; EFortPickupSpawnSource InPickupSpawnSource; }
+				TPParams{ Location.fV, Pawn, 6, true, PickupSource, SpawnSource };
+				Pickup->ProcessEvent(TossPickupFn, &TPParams);
+			}
+		}
+		else
+		{
+			struct { DVector FinalLocation; UObject* ItemOwner; int OverrideMaxStackCount; bool bToss; EFortPickupSourceTypeFlag InPickupSourceTypeFlags; EFortPickupSpawnSource InPickupSpawnSource; }
+			TPParams{ Location.dV, Pawn, 6, true, PickupSource, SpawnSource };
 			Pickup->ProcessEvent(TossPickupFn, &TPParams);
+		}
 
 		// drop physics
 

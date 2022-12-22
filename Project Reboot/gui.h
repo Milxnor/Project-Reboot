@@ -36,6 +36,11 @@
 #define SETTINGS_TAB 8
 #define CREDITS_TAB 9
 
+#define MAIN_PLAYERTAB 1
+#define INVENTORY_PLAYERTAB 2
+#define LOADOUT_PLAYERTAB 4
+#define FUN_PLAYERTAB 5
+
 // THE BASE CODE IS FROM IMGUI GITHUB
 
 static LPDIRECT3D9              g_pD3D = NULL;
@@ -174,18 +179,33 @@ bool ButtonCentered(std::string text, bool bNewLine = true) {
 	return res;
 }
 
+void InputVector(std::string baseText, BothVector* vec)
+{
+	if (Fortnite_Season < 20)
+	{
+		ImGui::InputFloat((baseText + " X").c_str(), &vec->fV.X);
+		ImGui::InputFloat((baseText + " Y").c_str(), &vec->fV.Y);
+		ImGui::InputFloat((baseText + " Z").c_str(), &vec->fV.Z);
+	}
+	else
+	{
+		ImGui::InputDouble((baseText + " X").c_str(), &vec->dV.X);
+		ImGui::InputDouble((baseText + " Y").c_str(), &vec->dV.Y);
+		ImGui::InputDouble((baseText + " Z").c_str(), &vec->dV.Z);
+	}
+}
+
 static int Width = 640;
 static int Height = 480;
 
-void MainUI()
+static int Tab = 1;
+static int PlayerTab = -1;
+static bool bIsEditingInventory = false;
+static bool bInformationTab = false;
+static int playerTabTab = MAIN_PLAYERTAB;
+
+void MainTabs()
 {
-	static int Tab = 1;
-	static int PlayerTab = 2435892;
-	static bool bIsEditingInventory = false;
-	static bool bInformationTab = false;
-
-	auto bLoaded = Server::BeaconHost && !Defines::bIsRestarting; // Looting::bInitialized;
-
 	if (ImGui::BeginTabBar(""))
 	{
 		if (ImGui::BeginTabItem(ICON_FA_GAMEPAD " Game"))
@@ -272,6 +292,43 @@ void MainUI()
 
 		ImGui::EndTabBar();
 	}
+}
+
+void PlayerTabs()
+{
+	if (ImGui::BeginTabBar(""))
+	{
+		if (ImGui::BeginTabItem("Main"))
+		{
+			playerTabTab = MAIN_PLAYERTAB;
+			ImGui::EndTabItem();
+		}
+
+		if (ImGui::BeginTabItem(("Inventory")))
+		{
+			playerTabTab = INVENTORY_PLAYERTAB;
+			ImGui::EndTabItem();
+		}
+
+		if (ImGui::BeginTabItem(("Cosmetics")))
+		{
+			playerTabTab = LOADOUT_PLAYERTAB;
+			ImGui::EndTabItem();
+		}
+
+		if (ImGui::BeginTabItem(("Fun")))
+		{
+			playerTabTab = FUN_PLAYERTAB;
+			ImGui::EndTabItem();
+		}
+
+		ImGui::EndTabBar();
+	}
+}
+
+void MainUI()
+{
+	auto bLoaded = Server::BeaconHost && !Defines::bIsRestarting; // Looting::bInitialized;
 
 	std::vector<UObject*> AllControllers;
 
@@ -293,6 +350,8 @@ void MainUI()
 
 	if (PlayerTab == -1)
 	{
+		MainTabs();
+
 		if (Tab == GAME_TAB)
 		{
 			if (bLoaded)
@@ -300,6 +359,34 @@ void MainUI()
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
 				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
 				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
+				// ImGui::Checkbox("Respawning", &Defines::bRespawning);
+				// ImGui::Checkbox("Test 2", &Defines::test2);
+				// ImGui::SliderFloat("test1", &Defines::test1, 0.f, 1.f);
+
+				/* if (ImGui::Button("Bot Fool"))
+				{
+					std::cout << "eeer!\n";
+					auto GameMode = Helper::GetGameMode();
+					static auto AISettingsOffset = GameMode->GetOffset("AISettings");
+					auto AISettings = *Get<UObject*>(GameMode, AISettingsOffset);
+					static auto AIServicesOffset = AISettings->GetOffset("AIServices");
+
+					static auto funna = FindObject("/Script/FortniteGame.AthenaAIServicePlayerBots");
+					auto newplayerbots = Helper::Easy::SpawnObject(funna, AISettings);
+
+					static auto funna1 = FindObject("/Script/FortniteGame.AthenaAIServiceLoot");
+					auto newloot = Helper::Easy::SpawnObject(funna1, AISettings);
+
+					static auto funna2 = FindObject("/Script/FFortniteGame.AthenaAIServiceVehicle");
+					auto newvehicle = Helper::Easy::SpawnObject(funna2, AISettings);
+
+					Get<TArray<UObject*>>(AISettings, AIServicesOffset)->Add(newplayerbots);
+					Get<TArray<UObject*>>(AISettings, AIServicesOffset)->Add(newloot);
+					Get<TArray<UObject*>>(AISettings, AIServicesOffset)->Add(newvehicle);
+
+					static auto AIDirectorOffset = GameMode->GetOffset("AIDirector");
+					(*Get<UObject*>(GameMode, AIDirectorOffset))->ProcessEvent(FindObject<UFunction>("/Script/FortniteGame.FortAIDirector.Activate"));
+				} */
 
 				static std::string ConsoleCommand;
 
@@ -320,7 +407,7 @@ void MainUI()
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
 
-				if (Fortnite_Version >= 14.60 && ImGui::Button("Summon Vehicles"))
+				if ((Fortnite_Version >= 12.41 && Fortnite_Season < 20) && ImGui::Button("Summon Vehicles"))
 				{
 					Defines::bShouldSpawnVehicles = true;
 				}
@@ -328,6 +415,11 @@ void MainUI()
 				if (ImGui::Button("Restart"))
 				{
 					Server::Restart();
+				}
+
+				if (ImGui::Button("toggle FloorLoot"))
+				{
+					Defines::bShouldSpawnFloorLoot = !Defines::bShouldSpawnFloorLoot;
 				}
 
 				if (Fortnite_Season == 19)
@@ -339,6 +431,35 @@ void MainUI()
 					{
 						Helper::SetSnowIndex(SnowIndex);
 					}
+				}
+
+				else if (Fortnite_Season == 13)
+				{
+					static UObject* WL = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2"); // Is this 13.40 specific?
+					static auto last = Defines::AmountOfRestarts;
+
+					if (!WL || Defines::AmountOfRestarts != last)
+					{
+						last = Defines::AmountOfRestarts;
+						WL = FindObject("/Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2");
+					}
+
+					if (WL)
+					{
+
+						static auto MaxWaterLevelOffset = WL->GetOffset("MaxWaterLevel");
+
+						static int MaxWaterLevel = *Get<int>(WL, MaxWaterLevelOffset);
+						static int WaterLevel = 0;
+
+						ImGui::SliderInt("WaterLevel", &WaterLevel, 0, MaxWaterLevel);
+
+						if (ImGui::Button("Set Water Level"))
+						{
+							Calendar::SetWaterLevel(WaterLevel);
+							// ApolloSetup->UpdateMinimapData(ApolloSetup->MinimapTextures.At(WaterLevel), ApolloSetup->MinimapDiscoveryMasks.At(WaterLevel));
+						}
+					}			
 				}
 
 				if (ImGui::Button("Fill all vending machines"))
@@ -461,6 +582,11 @@ void MainUI()
 					BuildingItemCollectorActorActors.Free();
 				}
 
+				if (ImGui::Button("Start Bus Countdown"))
+				{
+					*WarmupCountdownEndTime = TimeSeconds + 9;
+				}
+
 				/* if (ImGui::Button("test looting"))
 				{
 					auto LootDrops = Looting::PickLootDrops("Loot_AthenaFloorLoot_Warmup");
@@ -572,12 +698,12 @@ void MainUI()
 
 		else if (Tab == EVENT_TAB)
 		{
-			if (ImGui::Button("loadevent"))
+			if (ImGui::Button("Load Event (click first, wait a second then Start Event)"))
 			{
 				Events::LoadEvent();
 			}
 
-			if (ImGui::Button("startevent"))
+			if (ImGui::Button("Start Event"))
 			{
 				Events::StartEvent();
 			}
@@ -587,15 +713,8 @@ void MainUI()
 				Events::StartNewYears();
 			}
 
-			if (Fortnite_Version == 14.60 && ImGui::Button("Show carrier"))
+			if (false && Fortnite_Version == 14.60 && ImGui::Button("Show carrier"))
 			{
-				struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ Helper::GetGameState(), *Helper::GetPlaylist(),
-					FGameplayTagContainer() };
-
-				auto fnc = FindObject<UFunction>("/Junior/Blueprints/BP_CarrierLoader.BP_CarrierLoader_C.OnReady_13D45E9346036B11F782F9922BC368EC");
-				auto loader = FindObject("/Junior/Levels/Junior_Map.Junior_Map.PersistentLevel.BP_CarrierLoader_2");
-
-				loader->ProcessEvent(fnc, &bbparms);
 			}
 
 			if (Fortnite_Version == 8.51)
@@ -618,6 +737,8 @@ void MainUI()
 
 		else if (Tab == DUMP_TAB)
 		{
+			ImGui::Text("These will all be in your Win64 folder!");
+
 			static std::string ahh = std::format("Fortnite Version {}\n\n", std::to_string(Fortnite_Version));
 
 			if (ImGui::Button("Dump Objects"))
@@ -709,24 +830,35 @@ void MainUI()
 					WeaponsFile << ahh;
 					static auto FortWeaponItemDefinitionClass = FindObjectSlow("Class /Script/FortniteGame.FortWeaponItemDefinition", false);
 
-					auto AllObjects = Helper::GetAllObjectsOfClass(FortWeaponItemDefinitionClass);
+					static auto GetWeaponItemDefinition = FindObject<UFunction>("/Script/FortniteGame.FortGadgetItemDefinition.GetWeaponItemDefinition");
 
-					for (int i = 0; i < AllObjects.size(); i++)
+					auto auahd = [&WeaponsFile](UObject* Class) {
+						auto AllObjects = Helper::GetAllObjectsOfClass(Class);
+
+						for (int i = 0; i < AllObjects.size(); i++)
+						{
+							auto Object = AllObjects.at(i);
+
+							static auto DisplayNameOffset = Object->GetOffset("DisplayName");
+							FString ItemDefinitionFStr = Helper::Conversion::TextToString(*Get<FText>(Object, DisplayNameOffset));
+
+							if (!ItemDefinitionFStr.Data.Data)
+								continue;
+
+							std::string ItemDefinitionName = ItemDefinitionFStr.ToString();
+
+							// check if it contains gallery or playset?
+
+							WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetPathName());
+						}
+					};
+
+					auahd(FortWeaponItemDefinitionClass);
+
+					if (GetWeaponItemDefinition)
 					{
-						auto Object = AllObjects.at(i);
-
-						// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
-						static auto DisplayNameOffset = Object->GetOffset("DisplayName");
-						FString ItemDefinitionFStr = Helper::Conversion::TextToString(*Get<FText>(Object, DisplayNameOffset));
-
-						if (!ItemDefinitionFStr.Data.Data)
-							continue;
-
-						std::string ItemDefinitionName = ItemDefinitionFStr.ToString();
-
-						// check if it contains gallery or playset?
-
-						WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetPathName());
+						static auto FortGadgetItemDefinitionClass = FindObjectSlow("Class /Script/FortniteGame.FortGadgetItemDefinition", false);
+						auahd(FortGadgetItemDefinitionClass);
 					}
 				}
 				else
@@ -739,7 +871,6 @@ void MainUI()
 	{
 		auto World = Helper::GetWorld();
 
-		if (World) // Ima die
 		{
 			static auto NetDriverOffset = World->GetOffset("NetDriver");
 			auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
@@ -772,11 +903,13 @@ void MainUI()
 
 		if (PlayerTab < AllControllers.size())
 		{
+			PlayerTabs();
+
 			auto CurrentController = AllControllers.at(PlayerTab);
 			auto CurrentPawn = Helper::GetPawnFromController(CurrentController);
 			auto CurrentPlayerState = Helper::GetPlayerStateFromController(CurrentController);
 	
-			if (!bIsEditingInventory)
+			if (CurrentPlayerState)
 			{
 				FString NameFStr;
 
@@ -789,120 +922,219 @@ void MainUI()
 
 				ImGui::Text(("Viewing " + Name).c_str());
 
-				static std::string WID;
-				static std::string KickReason = "You have been kicked!";
-				static int stud = 0;
-
-				ImGui::InputText("WID To Give", &WID);
-
-				if (CurrentPawn)
+				if (playerTabTab == MAIN_PLAYERTAB)
 				{
-					auto CurrentWeapon = Helper::GetCurrentWeapon(CurrentPawn);
-					static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
+					static std::string WID;
+					static std::string KickReason = "You have been kicked!";
+					static int stud = 0;
 
-					auto AmmoCountPtr = (int*)(__int64(CurrentWeapon) + AmmoCountOffset);
+					ImGui::InputText("WID To Give", &WID);
+					ImGui::InputText("Kick Reason", &KickReason);
 
-					if (ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? AmmoCountPtr : &stud))
-					{
-						/* if (CurrentWeapon)
-						{
-							FFortItemEntry::SetLoadedAmmo(Inventory::GetEntryFromWeapon(CurrentController, CurrentWeapon), CurrentController, *AmmoCountPtr);
-						} */
-					}
-				}
-
-				if (ImGui::Button("Spawn Llama"))
-				{
 					if (CurrentPawn)
 					{
-						static auto LlamaClass = FindObject("/Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C");
+						auto CurrentWeapon = Helper::GetCurrentWeapon(CurrentPawn);
+						static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
 
-						std::cout << "LlamaClass: " << LlamaClass << '\n';
+						auto AmmoCountPtr = (int*)(__int64(CurrentWeapon) + AmmoCountOffset);
 
-						if (LlamaClass)
+						if (ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? AmmoCountPtr : &stud))
 						{
-							auto Llama = Helper::Easy::SpawnActor(LlamaClass, Helper::GetActorLocation(CurrentPawn));
+							/* if (CurrentWeapon)
+							{
+								FFortItemEntry::SetLoadedAmmo(Inventory::GetEntryFromWeapon(CurrentController, CurrentWeapon), CurrentController, *AmmoCountPtr);
+							} */
+						}
+
+						if (ImGui::Button("Spawn Pickup with WID"))
+						{
+							std::string cpywid = WID;
+
+							if (cpywid.find(".") == std::string::npos)
+								cpywid = std::format("{}.{}", cpywid, cpywid);
+
+							if (cpywid.find(" ") != std::string::npos)
+								cpywid = cpywid.substr(cpywid.find(" ") + 1);
+
+							auto wid = FindObjectSlow(cpywid);
+
+							if (wid)
+								Helper::SummonPickup(CurrentPawn, wid, Helper::GetActorLocationDynamic(CurrentPawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset);
+							else
+								std::cout << "Unable to find WID!\n";
+						}
+
+						if (ImGui::Button("Print GameplayTags"))
+						{
+							static auto GameplayTagsOffset = CurrentPawn->GetOffset("GameplayTags");
+							auto GameplayTags = Get<FGameplayTagContainer>(CurrentPawn, GameplayTagsOffset);
+
+							std::cout << "GameplayTags: " << GameplayTags->ToStringSimple(true) << '\n';
+						}
+					}
+
+					if (ImGui::Button("Give Item"))
+					{
+						if (!WID.empty())
+						{
+							std::string cpywid = WID;
+
+							if (cpywid.find(".") == std::string::npos)
+								cpywid = std::format("{}.{}", cpywid, cpywid);
+
+							if (cpywid.find(" ") != std::string::npos)
+								cpywid = cpywid.substr(cpywid.find(" ") + 1);
+
+							auto wid = FindObjectSlow(cpywid);
+
+							if (wid)
+								Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1, true, Helper::GetMaxBullets(wid));
+							else
+								std::cout << "Unable to find WID!\n";
+						}
+					}
+
+					if (ImGui::Button("Spawn Llama"))
+					{
+						if (CurrentPawn)
+						{
+							static auto LlamaClass = FindObject("/Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C");
+
+							std::cout << "LlamaClass: " << LlamaClass << '\n';
+
+							if (LlamaClass)
+							{
+								auto Llama = Helper::Easy::SpawnActor(LlamaClass, Helper::GetActorLocation(CurrentPawn));
+							}
+						}
+					}
+
+					if (ImGui::Button("Kick"))
+					{
+						std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
+						FString Reason;
+						Reason.Set(wstr.c_str());
+
+						static auto ClientReturnToMainMenu = FindObject<UFunction>("/Script/Engine.PlayerController.ClientReturnToMainMenu");
+						CurrentController->ProcessEvent(ClientReturnToMainMenu, &Reason);
+					}
+				}
+				else if (playerTabTab == INVENTORY_PLAYERTAB)
+				{
+					// for (int i = 6; i < fmax(ItemInstances->Num(), 11); i++)
+				}
+				else if (playerTabTab == LOADOUT_PLAYERTAB)
+				{
+					auto CosmeticLoadoutPC = Helper::GetCosmeticLoadoutForPC(CurrentController);
+
+					// static auto CharacterOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Character");
+					// auto actualCharacterPtr = Get<UObject*>(CosmeticLoadoutPC, CharacterOffset);
+
+					// static std::string CharacterFullName = (*actualCharacterPtr)->GetPathName();
+					// ImGui::InputText("Character", &CharacterFullName);
+
+					static auto GliderOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAthenaLoadout", "Glider");
+					auto actualGliderPtr = Get<UObject*>(CosmeticLoadoutPC, GliderOffset);
+
+					static std::string GliderFullName = (*actualGliderPtr)->GetPathName();
+					ImGui::InputText("Glider", &GliderFullName);
+
+					if (ImGui::Button("Apply"))
+					{
+						// auto newCharacter = FindObject(CharacterFullName);
+						auto newGlider = FindObject(GliderFullName);
+
+						// if (!newCharacter)
+							// std::cout << "[WARNING] Unable to find inputted character!\n";
+
+						if (!newGlider)
+							std::cout << "[WARNING] Unable to find inputted glider!\n";
+
+						// *actualCharacterPtr = newCharacter;
+						*actualGliderPtr = newGlider;
+
+						if (CurrentPawn)
+						{
+							auto CosmeticLoadoutPawn = Helper::GetCosmeticLoadoutForPawn(CurrentPawn);
+
+							// *Get<UObject*>(CosmeticLoadoutPawn, CharacterOffset) = *actualCharacterPtr;
+							*Get<UObject*>(CosmeticLoadoutPawn, GliderOffset) = *actualGliderPtr;
+
+							/* if (*actualCharacterPtr)
+							{
+								Helper::ApplyCID(CurrentPawn, *actualCharacterPtr);
+							} */
 						}
 					}
 				}
-
-				if (ImGui::Button("Give Item"))
+				else if (playerTabTab == FUN_PLAYERTAB)
 				{
-					if (!WID.empty())
+					static auto LaunchCharacterJump = FindObject<UFunction>("/Script/FortniteGame.FortPawn.LaunchCharacterJump");
+
+					if (LaunchCharacterJump)
 					{
-						std::string cpywid;
+						static BothVector velocity;
+						InputVector("Velocity", &velocity);
 
-						if (WID.find(".") == std::string::npos)
-							cpywid = std::format("{}.{}", WID, WID);
+						bool bIgnoreFallDamage = true;
 
-						auto wid = FindObjectSlow(cpywid);
-
-						if (wid)
-							Inventory::GiveItem(CurrentController, wid, Inventory::WhatQuickBars(wid), 1);
-						else
-							std::cout << "Unable to find WID!\n";
-					}
-				}
-
-				ImGui::InputText("Kick Reason", &KickReason);
-
-				if (ImGui::Button("Kick"))
-				{
-					std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
-					FString Reason;
-					Reason.Set(wstr.c_str());
-
-					static auto ClientReturnToMainMenu = FindObject<UFunction>("/Script/Engine.PlayerController.ClientReturnToMainMenu");
-					CurrentController->ProcessEvent(ClientReturnToMainMenu, &Reason);
-				}
-
-				if (ImGui::Button("Edit Inventory"))
-				{
-					bIsEditingInventory = true;
-				}
-			}
-			else
-			{
-				if (false)
-				{
-					std::vector<UObject*> PrimaryQuickbarInstances;
-
-					auto ItemInstances = Inventory::GetItemInstances(CurrentController);
-
-					for (int i = 0; i < ItemInstances->Num(); i++)
-					{
-						auto ItemInstance = ItemInstances->At(i);
-
-						if (!ItemInstance)
-							continue;
-
-						auto Def = *UFortItem::GetDefinition(ItemInstance);
-
-						if (Def && Inventory::WhatQuickBars(Def) == EFortQuickBars::Primary)
+						if (ImGui::Button("Launch"))
 						{
-							PrimaryQuickbarInstances.push_back(ItemInstance);
+							if (Fortnite_Season < 20)
+							{
+								struct { FVector LaunchVelocity; bool bXYOverride; bool bZOverride; bool bIgnoreFallDamage; bool bPlayFeedbackEvent; } AFortPawn_LaunchCharacterJump_Params{
+									velocity.fV, true, true, bIgnoreFallDamage, false
+								};
 
-							static auto DisplayNameOffset = Def->GetOffset("DisplayName");
-							auto DisplayNameFText = Get<FText>(Def, DisplayNameOffset);
-							auto DisplayNameFStr = Helper::Conversion::TextToString(*DisplayNameFText);
+								CurrentPawn->ProcessEvent(LaunchCharacterJump, &AFortPawn_LaunchCharacterJump_Params);
+							}
+							else
+							{
+								struct { DVector LaunchVelocity; bool bXYOverride; bool bZOverride; bool bIgnoreFallDamage; bool bPlayFeedbackEvent; } AFortPawn_LaunchCharacterJump_Params{
+									velocity.dV, true, true, bIgnoreFallDamage, false
+								};
 
-							if (!DisplayNameFStr.Data.Data)
-								continue;
+								CurrentPawn->ProcessEvent(LaunchCharacterJump, &AFortPawn_LaunchCharacterJump_Params);
+							}
+						}
 
-							auto DisplayNameStr = DisplayNameFStr.ToString();
+						static std::string ClassOfActorClass = "/Script/Engine.BlueprintGeneratedClass";
+						ImGui::InputText("Class of the ActorClass", &ClassOfActorClass);
 
-							auto Count = *UFortItem::GetCount(ItemInstance);
+						static std::string ActorClassToSpawn;
+						ImGui::InputText("Actor Class to spawn at player", &ActorClassToSpawn);
 
-							TextCentered(std::format("{} {}", Count, DisplayNameStr));
+						if (ImGui::Button("Spawn BlueprintClass"))
+						{
+							if (CurrentPawn)
+							{
+								auto ClassOfActorClassObj = FindObject(ClassOfActorClass);
+
+								if (ClassOfActorClassObj)
+								{
+									ActorSpawnStruct newSpawn;
+									newSpawn.ClassOfClass = ClassOfActorClassObj;
+									newSpawn.ClassToSpawn = ActorClassToSpawn;
+									newSpawn.SpawnLocation = Helper::GetActorLocationDynamic(CurrentPawn);
+
+									Defines::ActorsToSpawn.push_back(newSpawn);
+								}
+								else
+								{
+									std::cout << "Unable to find class of actor class!\n";
+								}
+							}
 						}
 					}
 				}
-
-				if (ImGui::Button("Back"))
-				{
-					bIsEditingInventory = false;
-				}
 			}
+		}
+
+		ImGui::NewLine();
+
+		if (ImGui::Button("Back"))
+		{
+			PlayerTab = -1;
 		}
 	}
 }
@@ -921,6 +1153,8 @@ void PregameUI()
 	if (!Defines::bIsPlayground && !Defines::bIsGoingToPlayMainEvent)
 		ImGui::InputText("Playlist", &Defines::Playlist);
 
+	ImGui::Checkbox("Lategame", &Defines::bIsLateGame);
+
 	if (ImGui::Checkbox("Going to play event", &Defines::bIsGoingToPlayMainEvent))
 	{
 		if (Fortnite_Version != 5.30 && Fortnite_Version != 5.41) // TODO: Figure out why it makes the server crash after a player joins on 5.30, 5.41 and possibly other versions.
@@ -936,6 +1170,8 @@ void PregameUI()
 		// Defines::bWipeInventoryOnAircraft = Defines::bIsPlayground; // even if its playground it still clears
 		Defines::Playlist = Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
 			: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+
+		Defines::bRespawning = Defines::bIsPlayground;
 	}
 }
 

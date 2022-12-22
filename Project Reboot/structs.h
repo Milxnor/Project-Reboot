@@ -33,8 +33,8 @@ struct TArray
 	int32_t ArrayNum = 0;
 	int32_t ArrayMax = 0;
 
-	inline ElementType At(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
-	inline ElementType at(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
+	inline ElementType& At(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
+	inline ElementType& at(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
 	inline ElementType* AtPtr(int i, int Size = sizeof(ElementType)) const { return (ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
 
 	inline int Num() const { return ArrayNum; }
@@ -59,6 +59,20 @@ struct TArray
 		return -1;
 	};
 
+	int Add(ElementType* New, int Size = sizeof(ElementType))
+	{
+		Reserve(1, Size);
+
+		if (Data)
+		{
+			memcpy_s((ElementType*)(__int64(Data) + (ArrayNum * Size)), Size, (void*)New, Size);
+			++ArrayNum;
+			return ArrayNum; // - 1;
+		}
+
+		return -1;
+	};
+
 	std::vector<ElementType> ToVector()
 	{
 		std::vector<ElementType> vector;
@@ -69,14 +83,15 @@ struct TArray
 		return vector;
 	}
 
-	bool RemoveAt(const int Index/*, int Size = sizeof(ElementType)*/) // NOT MINE
+	bool RemoveAt(const int Index, int Size = sizeof(ElementType)) // NOT MINE
 	{
 		if (Index < ArrayNum)
 		{
 			if (Index != ArrayNum - 1)
 			{
 				// memcpy_s((ElementType*)(__int64(Data) + (Index * Size)), Size, (ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
-				Data[Index] = Data[ArrayNum - 1];
+				// Data[Index] = Data[ArrayNum - 1];
+				memcpy_s((void*)(ElementType*)(__int64(Data) + (Index * Size)), Size, (void*)(ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
 			}
 
 			--ArrayNum;
@@ -166,6 +181,9 @@ struct UObject
 	std::string GetFullName();
 
 	void ProcessEvent(struct UFunction* Function, void* Parameters = nullptr);
+
+	void* GetProperty(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false, bool bWarnIfNotFound = true);
+	void* GetPropertySlow(const std::string& MemberName, bool bPrint = false, bool bWarnIfNotFound = true);
 
 	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false, bool bWarnIfNotFound = true);
 	int GetOffsetSlow(const std::string& MemberName, bool bPrint = false, bool bWarnIfNotFound = true);
@@ -392,12 +410,12 @@ template <typename ObjectType = UObject>
 ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, UObject* InOuter = nullptr); // Calls StaticFindObject
 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
-int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false);
+int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false, bool bWarnIfNotFound = true);
 
+void* FindPropStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false, bool bWarnIfNotFound = true);
 UObject* LoadObject(UObject* Class, const std::string& Name);
 
 int GetEnumValue(UObject* Enum, const std::string& EnumMemberName);
-// OTHER
 
 template<typename ElementType>
 union TSparseArrayElementOrFreeListLink
@@ -800,7 +818,10 @@ namespace FastTArray
 
 struct FGameplayTag
 {
+	static const int npos = -1;
 	FName                                       TagName;                                                  // 0x0000(0x0008) (Edit, ZeroConstructor, EditConst, IsPlainOldData)
+
+	bool operator==(const FGameplayTag& OtherTag) { return TagName.ComparisonIndex == OtherTag.TagName.ComparisonIndex;  }
 };
 
 struct FGameplayTagContainer
@@ -831,6 +852,22 @@ struct FGameplayTagContainer
 		return RetString;
 	}
 
+	int HasTag(const std::string& Str)
+	{
+		for (int i = 0; i < GameplayTags.Num(); i++)
+		{
+			if (GameplayTags.At(i).TagName.ToString() == Str)
+				return i;
+		}
+		
+		return FGameplayTag::npos;
+	}
+
+	bool HasTag(FGameplayTag& Tag)
+	{
+		return HasTag(Tag.TagName.ToString());
+	}
+
 	void Reset()
 	{
 		GameplayTags.Free();
@@ -843,17 +880,57 @@ struct FCurveTableRowHandle
 	UObject* CurveTable;
 	FName RowName;
 
-	bool Eval(float* OutVal, FString ContextString)
+	bool Eval(float InVal, float* OutVal)
 	{
+#ifdef balls
 		// EvaluateCurveTableRow
 
-		return false;
+		struct
+		{
+			FCurveTableRowHandle                  CurveTableRowHandle;                               // 0x0(0x10)(Parm, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        InXY;                                              // 0x10(0x4)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        OutXY;                                             // 0x14(0x4)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FString                                ContextString;                                     // 0x18(0x10)(Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                         ReturnValue;                                       // 0x28(0x1)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} UFortKismetLibrary_EvaluateCurveTableRow_Params{*this, InVal};
 
-		__int64 (__fastcall* evalO)(FCurveTableRowHandle* CurveTableRowHandle, __int64 Unused, float* YValue, FString ContextString) = nullptr;
+		if (OutVal)
+			*OutVal = UFortKismetLibrary_EvaluateCurveTableRow_Params.OutXY;
+
+		static auto fn = FindObject<UFunction>("/Script/FortniteGame.FortKismetLibrary.EvaluateCurveTableRow");
+		static auto FKLClass = FindObject("/Script/FortniteGame.Default__FortKismetLibrary");
+
+		FKLClass->ProcessEvent(fn, &UFortKismetLibrary_EvaluateCurveTableRow_Params);
+
+		return UFortKismetLibrary_EvaluateCurveTableRow_Params.ReturnValue;
+#else
+		struct
+		{
+		public:
+			UObject* CurveTable;                                        // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FName                                  RowName;                                           // 0x8(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        InXY;                                              // 0x10(0x4)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t         OutResult;                                         // 0x14(0x1)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                        OutXY;                                             // 0x18(0x4)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FString                                ContextString;                                     // 0x20(0x10)(Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} UDataTableFunctionLibrary_EvaluateCurveTableRow_Params{CurveTable, RowName, InVal};
+
+		static auto DTFL = FindObject("/Script/Engine.Default__DataTableFunctionLibrary");
+		static auto fn = FindObject<UFunction>("/Script/Engine.DataTableFunctionLibrary.EvaluateCurveTableRow");
+
+		DTFL->ProcessEvent(fn, &UDataTableFunctionLibrary_EvaluateCurveTableRow_Params);
+
+		if (OutVal)
+			*OutVal = UDataTableFunctionLibrary_EvaluateCurveTableRow_Params.OutXY;
+
+		return true;
+#endif
+
+		bool (__fastcall* evalO)(FCurveTableRowHandle* CurveTableRowHandle, __int64 Unused, float* YValue, FString ContextString) = nullptr;
 
 		evalO = decltype(evalO)(Memory::FindPattern("4C 8B DC 53 48 83 EC 70 49 8B D8 0F 29 74 24 ? 45 33 C0 48 8D 05 ? ? ? ? 44 38 05 ? ? ? ? 4C"));
 
-		return evalO(this, 0, OutVal, ContextString);
+		return evalO(this, 0, OutVal, FString());
 	}
 };
 
@@ -863,7 +940,7 @@ struct FScalableFloat
 public:
 	float                                        Value;                                             // 0x0(0x4)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	int idk;                    // Fixing Size After Last Property  [ Dumper-7 ]
-	char Curve[0x10]; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FCurveTableRowHandle Curve; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	void* idk2;                              // Fixing Size Of Struct [ Dumper-7 ]
 };
 
@@ -894,4 +971,200 @@ public:
 	float                                        UnclampedBaseValue;                                // 0x1C(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
 	float                                        UnclampedCurrentValue;                             // 0x20(0x4)(BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
 	uint8_t                                        Pad_3AF3[0x4];                                     // Fixing Size Of Struct [ Dumper-7 ]
+};
+
+template<class T = UObject, class TWeakObjectPtrBase = FWeakObjectPtr>
+struct TWeakObjectPtr : public FWeakObjectPtr
+{
+public:
+	inline T* Get() {
+		return (T*)GetObjectByIndex(ObjectIndex);
+	}
+
+	TWeakObjectPtr(int32_t ObjectIndex)
+	{
+		this->ObjectIndex = ObjectIndex;
+		this->ObjectSerialNumber = GetSerialNumber(GetByIndex<UObject>(ObjectIndex));
+	}
+
+	TWeakObjectPtr(UObject* Obj)
+	{
+		this->ObjectIndex = Obj->InternalIndex;
+		this->ObjectSerialNumber = GetSerialNumber(GetByIndex<UObject>(Obj->InternalIndex));
+	}
+
+	TWeakObjectPtr()
+	{
+	}
+};
+
+struct BothVector
+{
+	FVector fV;
+	DVector dV;
+
+	BothVector(float X, float Y, float Z)
+	{
+		fV = FVector(X, Y, Z);
+	}
+
+	BothVector(FVector vec)
+	{
+		fV = vec;
+	}
+
+	BothVector(DVector vec)
+	{
+		dV = vec;
+	}
+
+	BothVector(double X, double Y, double Z)
+	{
+		dV = DVector(X, Y, Z);
+	}
+
+	BothVector() {}
+
+	BothVector operator+(const BothVector& otherVec)
+	{
+		return Fortnite_Season < 20 ? BothVector(fV.X + otherVec.fV.X, fV.Y + otherVec.fV.Y, fV.Z + otherVec.fV.Z) :
+			BothVector(dV.X + otherVec.dV.X, dV.Y + otherVec.dV.Y, dV.Z + otherVec.dV.Z);
+	}
+};
+
+struct BothRotator
+{
+	FRotator fR = FRotator();
+	DRotator dR = DRotator();
+
+	BothRotator(float X, float Y, float Z)
+	{
+		fR = FRotator(X, Y, Z);
+	}
+
+	BothRotator(FRotator rot)
+	{
+		fR = rot;
+	}
+
+	BothRotator(DRotator rot)
+	{
+		dR = rot;
+	}
+
+	BothRotator(double X, double Y, double Z)
+	{
+		dR = DRotator(X, Y, Z);
+	}
+
+	BothRotator() {}
+};
+
+struct ActorSpawnStruct
+{
+	UObject* ClassOfClass;
+	std::string ClassToSpawn;
+	BothVector SpawnLocation;
+	BothRotator SpawnRotation;
+	// std::function<void(UObject*)> OnSpawned;
+};
+
+struct FGameplayEffectContextHandle
+{
+	char UKD_00[0x30];
+};
+
+struct FActiveGameplayEffectHandle
+{
+	int                                                Handle;                                                   // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData)
+	bool                                               bPassedFiltersAndWasExecuted;                             // 0x0004(0x0001) (ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData00[0x3];                                       // 0x0005(0x0003) MISSED OFFSET
+};
+
+
+inline uint8_t GetFieldMask(void* Property)
+{
+	if (!Property)
+		return -1;
+
+	// 3 = sizeof(FieldSize) + sizeof(ByteOffset) + sizeof(ByteMask)
+
+	if (Engine_Version <= 420)
+		return *(uint8_t*)(__int64(Property) + (112 + 3));
+	else if (Engine_Version >= 421 && Engine_Version <= 424)
+		return *(uint8_t*)(__int64(Property) + (112 + 3));
+	else if (Engine_Version >= 425)
+		return *(uint8_t*)(__int64(Property) + (120 + 3));
+
+	return -1;
+}
+
+inline bool ReadBitfield(void* Addr, uint8_t FieldMask)
+{
+	auto Bitfield = (PlaceholderBitfield*)Addr;
+
+	// niceeeee
+
+	if (FieldMask == 0x1)
+		return Bitfield->First;
+	else if (FieldMask == 0x2)
+		return Bitfield->Second;
+	else if (FieldMask == 0x4)
+		return Bitfield->Third;
+	else if (FieldMask == 0x8)
+		return Bitfield->Fourth;
+	else if (FieldMask == 0x10)
+		return Bitfield->Fifth;
+	else if (FieldMask == 0x20)
+		return Bitfield->Sixth;
+	else if (FieldMask == 0x40)
+		return Bitfield->Seventh;
+	else if (FieldMask == 0x80)
+		return Bitfield->Eighth;
+	else if (FieldMask == 0xFF)
+		return *(bool*)Bitfield;
+
+	return false;
+}
+
+inline void SetBitfield(void* Addr, uint8_t FieldMask, bool NewVal)
+{
+	auto Bitfield = (PlaceholderBitfield*)Addr;
+
+	// niceeeee
+
+	if (FieldMask == 0x1)
+		Bitfield->First = NewVal;
+	else if (FieldMask == 0x2)
+		Bitfield->Second = NewVal;
+	else if (FieldMask == 0x4)
+		Bitfield->Third = NewVal;
+	else if (FieldMask == 0x8)
+		Bitfield->Fourth = NewVal;
+	else if (FieldMask == 0x10)
+		Bitfield->Fifth = NewVal;
+	else if (FieldMask == 0x20)
+		Bitfield->Sixth = NewVal;
+	else if (FieldMask == 0x40)
+		Bitfield->Seventh = NewVal;
+	else if (FieldMask == 0x80)
+		Bitfield->Eighth = NewVal;
+	else if (FieldMask == 0xFF)
+		*(bool*)Bitfield = NewVal;
+}
+
+struct FFortItemEntryStateValue
+{
+public:
+	int* GetIntValue()
+	{
+		static auto IntValueOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntryStateValue", "IntValue");
+		return (int*)(__int64(this) + IntValueOffset);
+	}
+
+	uint8_t* GetStateType()
+	{
+		static auto StateTypeOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntryStateValue", "StateType");
+		return (uint8_t*)(__int64(this) + StateTypeOffset);
+	}
 };
