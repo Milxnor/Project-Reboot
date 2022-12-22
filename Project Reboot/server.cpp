@@ -296,9 +296,73 @@ __int64 Server::Hooks::NoReservation(__int64* a1, __int64 a2, char a3, __int64 a
 	return 0;
 }
 
+struct FNetViewer
+{
+	UObject** GetConnection()
+	{
+		static auto Viewer_ConnectionOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "Connection");
+		return (UObject**)(__int64(this) + Viewer_ConnectionOffset);
+	}
+
+	UObject** GetInViewer()
+	{
+		static auto Viewer_InViewerOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "InViewer");
+		return (UObject**)(__int64(this) + Viewer_InViewerOffset);
+	}
+
+	UObject** GetViewTarget()
+	{
+		static auto Viewer_ViewTargetOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewTarget");
+		return (UObject**)(__int64(this) + Viewer_ViewTargetOffset);
+	}
+
+	FVector* GetViewLocation()
+	{
+		static auto Viewer_ViewLocationOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewLocation");
+		return (FVector*)(__int64(this) + Viewer_ViewLocationOffset);
+	}
+
+	FVector* GetViewDir()
+	{
+		static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
+		return (FVector*)(__int64(this) + Viewer_ViewDirOffset);
+	}
+};
+
+FNetViewer* __fastcall NetViewerConstructorDetour2(FNetViewer* NetViewer, UObject* InController)
+{
+	if (InController)
+	{
+		static auto PC_GetViewTarget = FindObject<UFunction>("/Script/Engine.Controller.GetViewTarget");
+		UObject* PCViewTarget = nullptr;
+		InController->ProcessEvent(PC_GetViewTarget, &PCViewTarget);
+
+		*NetViewer->GetViewTarget() = PCViewTarget;
+
+		if (*NetViewer->GetViewTarget())
+		{
+			*NetViewer->GetViewLocation() = Helper::GetActorLocation(*NetViewer->GetViewTarget());
+		}
+
+		FRotator ViewRotation = Helper::GetControlRotation(InController);
+	
+		// GetPlayerViewpoint
+
+		if (PCViewTarget)
+		{
+			*NetViewer->GetViewLocation() = Helper::GetActorLocation(PCViewTarget);
+			ViewRotation = Helper::GetActorRotation(PCViewTarget);
+		}
+
+		*NetViewer->GetViewDir() = ViewRotation.Vector();
+	}
+
+	return NetViewer;
+}
+
 __int64 (__fastcall* NetViewerConstructorO)(__int64 NetViewer, UObject* Connection);
 
-__int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connection)
+FNetViewer* __fastcall NetViewerConstructorDetour(FNetViewer* NetViewer, UObject* Connection)
 {
 	// dude 17.50 Connection != UNetConnection or something
 	
@@ -307,38 +371,37 @@ __int64 __fastcall NetViewerConstructorDetour(__int64 NetViewer, UObject* Connec
 	static auto Connection_OwningActorOffset = FindOffsetStruct("Class /Script/Engine.NetConnection", "OwningActor");
 
 	auto Connection_ViewTarget = *(UObject**)(__int64(Connection) + Connection_ViewTargetOffset);
-	auto Connection_PlayerController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+	auto ViewingController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
 	auto Connection_OwningActor = *(UObject**)(__int64(Connection) + Connection_OwningActorOffset);
-
-	if (!Connection_OwningActor || !(!Connection_PlayerController || (Connection_PlayerController == Connection_OwningActor)))
-		return NetViewer;
 
 	static auto Viewer_ConnectionOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "Connection");
 	*(UObject**)(__int64(NetViewer) + Viewer_ConnectionOffset) = Connection;
 
 	static auto Viewer_InViewerOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "InViewer");
-	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = Connection_PlayerController ? Connection_PlayerController : Connection_OwningActor;
+	*(UObject**)(__int64(NetViewer) + Viewer_InViewerOffset) = ViewingController ? ViewingController : Connection_OwningActor;
+
+	static auto Viewer_ViewLocationOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewLocation");
+	*(FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset) = Helper::GetActorLocation(ViewingController);
 
 	static auto Viewer_ViewTargetOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewTarget");
 	auto Viewer_ViewTarget = (UObject**)(__int64(NetViewer) + Viewer_ViewTargetOffset);
 	*Viewer_ViewTarget = Connection_ViewTarget;
 
-	static auto Viewer_ViewLocationOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewLocation");
-	auto Viewer_ViewLocation = (FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset);
+	if (!Connection_OwningActor)
+		return NetViewer;
 
-	if (*Viewer_ViewTarget)
-		*(FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset) = Helper::GetActorLocation(*Viewer_ViewTarget);
+	if (!(!ViewingController || (ViewingController == Connection_OwningActor)))
+		return NetViewer;
 
-	float CP, SP, CY, SY;
+	*(FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset) = Helper::GetActorLocation(*Viewer_ViewTarget);
 
-	FRotator ViewRotation = (*Viewer_ViewTarget) ? Helper::GetActorRotation(*Viewer_ViewTarget) : FRotator();
+	if (ViewingController)
+	{
+		FRotator ViewRotation = Helper::GetControlRotation(ViewingController);
 
-	SinCos(&SP, &CP, DegreesToRadians(ViewRotation.Pitch));
-	SinCos(&SY, &CY, DegreesToRadians(ViewRotation.Yaw));
-
-	static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
-
-	*(FVector*)(__int64(NetViewer) + Viewer_ViewDirOffset) = FVector(CP * CY, CP * SY, SP);
+		static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
+		*(FVector*)(__int64(NetViewer) + Viewer_ViewDirOffset) = ViewRotation.Vector();
+	}
 
 	return NetViewer;
 }
@@ -507,7 +570,7 @@ void Server::Hooks::Initialize()
 
 	// Maybe: 48 83 EC 28 48 8B 01 FF 90 ? ? ? ? 84 C0
 
-	if (true)
+	// if (false)
 	{
 		if (false)
 		{
@@ -536,9 +599,6 @@ void Server::Hooks::Initialize()
 			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';
 			std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 		}
-	}
-	else
-	{
 	}
 }
 
@@ -623,60 +683,67 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 
 		static auto BGAConsumableSpawnerClass = FindObject("/Script/FortniteGame.BGAConsumableSpawner");
 
-		auto AllActors = Helper::GetAllActorsOfClass(BGAConsumableSpawnerClass);
-
-		std::cout << "Spawning: " << AllActors.Num() << " foraged items!\n";
-
-		for (int i = 0; i < AllActors.Num(); i++)
+		if (BGAConsumableSpawnerClass)
 		{
-			auto AllActor = AllActors.At(i);
+			auto AllActors = Helper::GetAllActorsOfClass(BGAConsumableSpawnerClass);
 
-			if (AllActor)
+			std::cout << "Spawning: " << AllActors.Num() << " foraged items!\n";
+
+			for (int i = 0; i < AllActors.Num(); i++)
 			{
-				static auto SpawnLootTierGroupOffset = AllActor->GetOffset("SpawnLootTierGroup");
-				auto SpawnLootTierGroupFName = Get<FName>(AllActor, SpawnLootTierGroupOffset);
+				auto AllActor = AllActors.At(i);
 
-				auto SpawnLootTierGroup = SpawnLootTierGroupFName->ToString();
-
-				std::cout << "SpawnLootTierGroup: " << SpawnLootTierGroup << '\n';
-
-				auto Location = Helper::GetCorrectLocation(AllActor);
-				auto Rotation = Helper::GetActorRotation(AllActor);
-
-				static auto BGACWID = FindObject("/Script/FortniteGame.BGAConsumableWrapperItemDefinition");
-
-				/*
-
-				auto LootDrops = Looting::PickLootDrops(SpawnLootTierGroup);
-
-				// std::cout << "LootDrops: " << LootDrops.size() << '\n';
-
-				for (auto& LootDrop : LootDrops)
+				if (AllActor)
 				{
-					static auto bgafrift = FindObject("/Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+					static auto SpawnLootTierGroupOffset = AllActor->GetOffset("SpawnLootTierGroup");
+					auto SpawnLootTierGroupFName = Get<FName>(AllActor, SpawnLootTierGroupOffset);
 
-					UObject* ConsumableClass = nullptr;
+					auto SpawnLootTierGroup = SpawnLootTierGroupFName->ToString();
 
-					if (LootDrop.first == bgafrift) // we love rifts
+					std::cout << "SpawnLootTierGroup: " << SpawnLootTierGroup << '\n';
+
+					auto Location = Helper::GetCorrectLocation(AllActor);
+					auto Rotation = Helper::GetActorRotation(AllActor);
+
+					// static auto BGACWID = FindObject("/Script/FortniteGame.BGAConsumableWrapperItemDefinition");
+
+#ifdef TEST_NEW_LOOTING
+					auto LootDrops = Looting::PickLootDrops(SpawnLootTierGroup);
+
+					std::cout << "LootDrops: " << LootDrops.size() << '\n';
+
+					for (auto& LootDrop : LootDrops)
 					{
-						static auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
-						ConsumableClass = riftportal;
-					}
-					else
-					{
+						static auto bgafrift = FindObject("/Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+
+						UObject* ConsumableClass = nullptr;
+
 						static auto ConsumableClassOffset = LootDrop.first->GetOffset("ConsumableClass");
-						ConsumableClass = Get<TSoftObjectPtr>(LootDrop.first, ConsumableClassOffset)->Get(Helper::GetBGAClass());
-					}
+						auto ConsumableClassSoft = Get<TSoftObjectPtr>(LootDrop.first, ConsumableClassOffset);
 
-					if (ConsumableClass)
-					{
-						// std::cout << "found class!\n";
+						if (LootDrop.first == bgafrift) // we love rifts
+						{
+							static auto riftportal = load(Helper::GetBGAClass(), "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+							ConsumableClass = riftportal;
+						}
+						else
+						{
+							ConsumableClass = ConsumableClassSoft->Get(Helper::GetBGAClass());
+						}
 
-						Helper::Easy::SpawnActor(ConsumableClass, Location, Rotation);
+						if (ConsumableClass)
+						{
+							std::cout << "class: " << ConsumableClass->GetFullName() << '\n';
+
+							Helper::Easy::SpawnActor(ConsumableClass, Location, Rotation);
+						}
+						else
+						{
+							std::cout << "unable to find: " << ConsumableClassSoft->ObjectID.AssetPathName.ToString() << '\n';
+						}
 					}
+#endif
 				}
-
-				*/
 			}
 		}
 	}

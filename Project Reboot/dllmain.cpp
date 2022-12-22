@@ -119,6 +119,13 @@ DWORD WINAPI Initialize(LPVOID)
         MH_EnableHook((PVOID)afq);
     }
 
+    static auto CheckPawnOverlapAddress = Memory::FindPattern("48 8B C4 48 89 58 08 48 89 70 10 57 48 81 EC ? ? ? ? 48 8B BA ? ? ? ? 48 8B DA 0F 29 70 E8 48 8B F1 0F");
+
+    std::cout << "CheckPawnOverlapAddress: " << CheckPawnOverlapAddress << '\n';
+
+    MH_CreateHook((PVOID)CheckPawnOverlapAddress, retfalse, nullptr); // This only happens with StartPlay/StartMatch and on older versions.
+    MH_EnableHook((PVOID)CheckPawnOverlapAddress);
+
     // if (false)
     {
         bool bIsSettingGIsClient = true;
@@ -445,8 +452,9 @@ DWORD WINAPI Initialize(LPVOID)
 
     // AddHook("/Script/FortniteGame.BuildingActor.OnDeathServer", OnDeathServer);
 
-    // AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
-
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
+    AddHook("/Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C.K2_OnEndAbility", onendabilitydance);
+    
     // AddHook("/Script/FortniteGame.FortHeldObjectComponent.HandleOwnerAsBuildingActorDestroyed", HandleOwnerAsBuildingActorDestroyed);
 
     // auto sigfgw4y = Memory::FindPattern("4C 8B DC 49 89 5B 20 55 56 57 48 83 EC 60 8A 81 ? ? ? ? 49 8B F8 48 8B DA 48 8B F1 3C 01 75 4A");
@@ -480,6 +488,8 @@ DWORD WINAPI Initialize(LPVOID)
     preoffsets::KillerPlayerState = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
     preoffsets::TeamsLeft = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "TeamsLeft");
     preoffsets::DamageCauser = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "DamageCauser");
+
+    std::cout << "size: " << Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortItemEntryStateValue")) << '\n';
 
     /* auto ahh = Memory::FindPattern("49 8B 04 24 48 8D 55 F8 49 8B CC FF 50 28 84 C0 0F 84 ? ? ? ? 48 89 7D A8 48 89 7D B0 48 89");
 

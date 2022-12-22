@@ -27,6 +27,7 @@ namespace Defines
 	inline bool bInfiniteAmmo = false;
 	inline bool bInfiniteMats = false;
 	inline bool bIsSTW = false; // not implemeneted
+	inline bool bRespawning = false;
 
 	inline int SecondsUntilTravel = 5;
 
@@ -34,8 +35,8 @@ namespace Defines
 
 	inline std::string Playlist = Defines::bIsCreative ? ("/Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2") :
 		Defines::bIsPlayground ? ("/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground") :
-		("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
-		// ("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
+		// ("/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo");
+		("/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo");
 		// ("/Game/Athena/Playlists/DefaultBots/Playlist_Bots_DefaultSolo.Playlist_Bots_DefaultSolo");
 		// ("Playlist_SolidGold_Solo");
 
@@ -93,4 +94,10 @@ namespace Defines
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS13)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexC0 inSpec);
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS14ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE0 inSpec);
 	inline FGameplayAbilitySpecHandle* (*GiveAbilityS17ABOVE)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PadHexE8 inSpec);
+}
+
+template <typename T = void>
+T* Alloc(size_t Bytes)
+{
+	return (T*)FMemory::Realloc(nullptr, Bytes, 0);
 }

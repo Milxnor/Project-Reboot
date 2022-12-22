@@ -214,5 +214,8 @@
     <ClInclude Include="ai.h">
       <Filter>Headers\Gameplay</Filter>
     </ClInclude>
+    <ClInclude Include="memcury.h">
+      <Filter>Headers\Util</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

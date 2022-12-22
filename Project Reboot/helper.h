@@ -35,6 +35,7 @@ namespace Helper
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor);
 	bool ApplyCID(UObject* Pawn, UObject* CID);
 	UObject* GetRandomCID();
+	float GetMaxHealth(UObject* BuildingActor);
 	UObject* SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts = false);
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);
 	void SetOwner(UObject* Actor, UObject* Owner);
@@ -60,12 +61,15 @@ namespace Helper
 	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false);
 	UObject* GetGameData();
 	UObject* GetGameDataBR();
+	UObject* GetGameDataCosmetics();
 	void SetSnowIndex(int SnowIndex);
 	void ExportTexture2DToFile(UObject* Texture, FString Path, FString FileName);
 	FString GetEngineVersion();
 	std::string GetNetCL();
 	std::string GetEngineVer();
 	std::string GetFortniteVersion();
+	FRotator GetControlRotation(UObject* Controller);
+	UObject* GetAbilitySetFromAGID(UObject* AGID);
 	FActiveGameplayEffectHandle ApplyGameplayEffect(UObject* Pawn, UObject* GEClass);
 	void RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks = 1);
 	UObject* GetRandomObjectOfClass(UObject* Class, bool bUseCache = true, bool bSaveToCache = true);

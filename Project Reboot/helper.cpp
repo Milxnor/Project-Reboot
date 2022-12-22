@@ -330,6 +330,15 @@ UObject* Helper::GetRandomCID()
 	return skin;
 }
 
+float Helper::GetMaxHealth(UObject* BuildingActor)
+{
+	static auto GetMaxHealth = FindObject<UFunction>("/Script/FortniteGame.BuildingActor.GetMaxHealth");
+	float MaxHealth = 0.f;
+	BuildingActor->ProcessEvent(GetMaxHealth, &MaxHealth);
+
+	return MaxHealth;
+}
+
 UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts)
 {
 	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
@@ -685,7 +694,7 @@ UObject* Helper::GetPickaxeDef(UObject* Controller, bool bGetNew)
 
 		if (ItemInstances->Num() >= 6)
 		{
-			auto PickaxeInstance = ItemInstances->At(5); // cursed probs // loop through all inventoryt and find  first melee
+			auto PickaxeInstance = ItemInstances->At(1); // cursed probs // loop through all inventoryt and find  first melee
 			toRet = IsBadReadPtr(PickaxeInstance) ? nullptr : *UFortItem::GetDefinition(PickaxeInstance);
 		}
 	}
@@ -769,6 +778,17 @@ UObject* Helper::GetGameDataBR()
 	return GameDataBROffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataBROffset);
 }
 
+UObject* Helper::GetGameDataCosmetics()
+{
+	auto Engine = GetEngine();
+
+	static auto AssetManagerOffset = Engine->GetOffset("AssetManager");
+	UObject* AssetManager = *Get<UObject*>(Engine, AssetManagerOffset);
+
+	static auto GameDataCosmeticsOffset = AssetManager->GetOffset("GameDataCosmetics");
+	return GameDataCosmeticsOffset == 0 ? nullptr : *Get<UObject*>(AssetManager, GameDataCosmeticsOffset);
+}
+
 void Helper::SetSnowIndex(int SnowIndex)
 {
 	if (Fortnite_Season == 19)
@@ -843,6 +863,37 @@ std::string Helper::GetFortniteVersion()
 	auto EngineVer = GetEngineVersion().ToString();
 	EngineVer = EngineVer.substr(EngineVer.find_last_of('-') + 1);
 	return EngineVer;
+}
+
+FRotator Helper::GetControlRotation(UObject* Controller)
+{
+	static auto GetControlRotation = FindObject<UFunction>("/Script/Engine.Controller.GetControlRotation");
+	FRotator ControlRotation;
+	Controller->ProcessEvent(GetControlRotation, &ControlRotation);
+	return ControlRotation;
+}
+
+UObject* Helper::GetAbilitySetFromAGID(UObject* AGID)
+{
+	static auto AbilitySetOffset = AGID->GetOffset("AbilitySet");
+	static bool bIsSoftObjectPtr = true;
+
+	std::cout << "bIsSoftObjectPtr: " << bIsSoftObjectPtr << '\n';
+
+	if (bIsSoftObjectPtr)
+	{
+		static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
+
+		auto AbilitySetSoft = Get<TSoftObjectPtr>(AGID, AbilitySetOffset);
+		auto AbilitySet = AbilitySetSoft->Get(FortAbilitySetClass);
+
+		return AbilitySet;
+	}
+	else
+	{
+		static auto AbilitySet = Get<UObject*>(AGID, AbilitySetOffset);
+		return *AbilitySet;
+	}
 }
 
 FActiveGameplayEffectHandle Helper::ApplyGameplayEffect(UObject* Pawn, UObject* GEClass)
@@ -1188,6 +1239,9 @@ UObject* Helper::GetPlayerStart()
 
 UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, BothVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count, bool bMaxAmmo, int Ammo)
 {
+	if (!Definition)
+		return nullptr;
+
 	static UObject* PickupClass = FindObject("/Script/FortniteGame.FortPickupAthena");
 
 	auto Pickup = Helper::Easy::SpawnActorDynamic(PickupClass, Location);
@@ -1237,9 +1291,27 @@ UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, BothVector Loc
 
 		if (Fortnite_Season < 20)
 		{
-			struct { FVector FinalLocation; UObject* ItemOwner; int OverrideMaxStackCount; bool bToss; EFortPickupSourceTypeFlag InPickupSourceTypeFlags; EFortPickupSpawnSource InPickupSpawnSource; }
-			TPParams{ Location.fV, Pawn, 6, true, PickupSource, SpawnSource };
-			Pickup->ProcessEvent(TossPickupFn, &TPParams);
+			if (Fortnite_Version >= 14.60)
+			{
+				struct
+				{
+					FVector                                     FinalLocation;                                            // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					UObject* ItemOwner;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					int                                                OverrideMaxStackCount;                                    // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                               bToss;                                                    // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                               bShouldCombinePickupsWhenTossCompletes;                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					EFortPickupSourceTypeFlag                          InPickupSourceTypeFlags;                                  // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					EFortPickupSpawnSource                             InPickupSpawnSource;                                      // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				} AFortPickup_TossPickup_Params{ Location.fV, Pawn, 6, true, true, PickupSource, SpawnSource };
+
+				Pickup->ProcessEvent(TossPickupFn, &AFortPickup_TossPickup_Params);
+			}
+			else
+			{
+				struct { FVector FinalLocation; UObject* ItemOwner; int OverrideMaxStackCount; bool bToss; EFortPickupSourceTypeFlag InPickupSourceTypeFlags; EFortPickupSpawnSource InPickupSpawnSource; }
+				TPParams{ Location.fV, Pawn, 6, true, PickupSource, SpawnSource };
+				Pickup->ProcessEvent(TossPickupFn, &TPParams);
+			}
 		}
 		else
 		{

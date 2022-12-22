@@ -212,6 +212,7 @@
     <ClInclude Include="inventory.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="loot.h" />
+    <ClInclude Include="memcury.h" />
     <ClInclude Include="patterns.h" />
     <ClInclude Include="processevent.h" />
     <ClInclude Include="replication.h" />

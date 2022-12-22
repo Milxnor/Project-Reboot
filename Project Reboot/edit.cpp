@@ -32,7 +32,7 @@ bool Editing::ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction
 		{
 			auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-			*GetEditingPlayer(BuildingToEdit) = BuildingToEdit;
+			*GetEditingPlayer(BuildingToEdit) = PlayerState;
 			*GetEditActor(EditTool) = BuildingToEdit;
 		}
 	}

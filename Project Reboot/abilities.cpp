@@ -1,6 +1,7 @@
 #include "abilities.h"
 #include "helper.h"
 #include <functional>
+#include "patterns.h"
 
 void Abilities::ClientActivateAbilityFailed(UObject* ASC, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey)
 {
@@ -10,11 +11,11 @@ void Abilities::ClientActivateAbilityFailed(UObject* ASC, FGameplayAbilitySpecHa
     ASC->ProcessEvent(fn, &UAbilitySystemComponent_ClientActivateAbilityFailed_Params);
 }
 
-void* Abilities::GenerateNewSpec(UObject* DefaultObject)
+void* Abilities::GenerateNewSpec(UObject* DefaultObject, UObject* SourceObject)
 {
 	static auto SizeOfGameplayAbilitySpec = Helper::GetSizeOfClass(GameplayAbilitySpecClass);
 
-	auto GameplayAbilitySpec = malloc(SizeOfGameplayAbilitySpec);
+	auto GameplayAbilitySpec = Alloc(SizeOfGameplayAbilitySpec);
 
     if (!GameplayAbilitySpec)
         return nullptr;
@@ -31,11 +32,13 @@ void* Abilities::GenerateNewSpec(UObject* DefaultObject)
     static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
     static auto AbilityOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
     static auto LevelOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
+    static auto SourceObjectOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "SourceObject");
     static auto InputIDOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
 
     std::cout << "AbilityOffset: " << AbilityOffset << '\n';
 
 	*(FGameplayAbilitySpecHandle*)(__int64(GameplayAbilitySpec) + HandleOffset) = Handle;
+    *(UObject**)(__int64(GameplayAbilitySpec) + SourceObjectOffset) = SourceObject;
 	*(UObject**)(__int64(GameplayAbilitySpec) + AbilityOffset) = DefaultObject;
 	*(int*)(__int64(GameplayAbilitySpec) + LevelOffset) = 1;
 	*(int*)(__int64(GameplayAbilitySpec) + InputIDOffset) = -1;
@@ -126,8 +129,6 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         return;
     }
 
-    UObject* InstancedAbility = nullptr;
-
     static auto InputPressedOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputPressed");
 
     auto inad = (char*)(__int64(Spec) + InputPressedOffset);
@@ -140,9 +141,9 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     bool res = false;
 
     if (Engine_Version == 426 && Fortnite_Season < 17)
-        res = Defines::InternalTryActivateAbilityFTS(ASC, Handle, *(PadHex10*)PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
+        res = Defines::InternalTryActivateAbilityFTS(ASC, Handle, *(PadHex10*)PredictionKey, nullptr, nullptr, TriggerEventData);
     else
-        res = Defines::InternalTryActivateAbility(ASC, Handle, *(PadHex18*)PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
+        res = Defines::InternalTryActivateAbility(ASC, Handle, *(PadHex18*)PredictionKey, nullptr, nullptr, TriggerEventData);
 
     if (!res)
     {
@@ -181,7 +182,7 @@ std::vector<UObject*> Abilities::DoesASCHaveAbility(UObject* ASC, UObject* Abili
     return AbilitiesToReturn;
 }
 
-void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass)
+void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, UObject* SourceObject)
 {
     auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(TargetPawn);
 
@@ -190,7 +191,7 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
     UObject* DefaultObject = nullptr;
 
-    if (!GameplayAbilityClass->GetFullName().contains("Class "))
+    if (GameplayAbilityClass->GetName().contains("Default__"))
         DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
     else
     {
@@ -230,7 +231,7 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
 
     static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
 
-    void* NewSpec = GenerateNewSpec(DefaultObject);
+    void* NewSpec = GenerateNewSpec(DefaultObject, SourceObject);
 
     if (!NewSpec)
         return nullptr;
@@ -256,6 +257,76 @@ void* Abilities::GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbil
         Defines::GiveAbilityOld(AbilitySystemComponent, Handle, *(PadHex78*)NewSpec);
 
     return NewSpec;
+}
+
+void Abilities::GiveAbilityAndActivateOnce(UObject* ASC, UObject* Class, UObject* SourceObject, __int64* EventData) // https://github.com/EpicGames/UnrealEngine/blob/5c73d9fb0afbacff0d0c9f9c5d8a0b5cc1e0119c/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L251
+{
+    if (!GiveAbilityAndActivateOnceAddress)
+        return;
+
+    unsigned int* (*GiveAbilityAndActivateOnce)(UObject* ASC, int* outHandle, PadHexE8 Spec) = decltype(GiveAbilityAndActivateOnce)(GiveAbilityAndActivateOnceAddress);
+    unsigned int* (*GiveAbilityAndActivateOnceNew)(UObject* ASC, int* outHandle, PadHexE8 Spec, __int64* GameplayEventData) = decltype(GiveAbilityAndActivateOnceNew)(GiveAbilityAndActivateOnceAddress);
+
+    if (!Class)
+        return;
+
+    if (!Class->GetName().contains("Default__"))
+       Class = GetDefaultObject(Class);
+
+    if (!Class)
+        return;
+
+    int outHandle = 0;
+
+    auto NewSpec = GenerateNewSpec(Class, SourceObject);
+
+    if (Engine_Version < 500)
+    {
+        GiveAbilityAndActivateOnce(ASC, &outHandle, *(PadHexE8*)NewSpec);
+    }
+    else
+    {
+        GiveAbilityAndActivateOnceNew(ASC, &outHandle, *(PadHexE8*)NewSpec, EventData);
+    }
+
+    return;
+
+    /*
+
+    // we should set bActivateOnce if it exists before granting it
+
+    auto Spec = Abilities::GrantGameplayAbility(Pawn, Class, SourceObject);
+
+    if (!Spec)
+        return nullptr;
+
+    auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+
+    bool res = false;
+
+    static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
+    static auto RemoveAfterActivationOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "RemoveAfterActivation");
+    static auto RemoveAfterActivationFieldMask = 0x2;
+
+    auto Handle = (FGameplayAbilitySpecHandle*)(__int64(Spec) + HandleOffset);
+
+    SetBitfield(Spec, RemoveAfterActivationFieldMask, true);
+    std::cout << "RemoveAfterActivation: " << ReadBitfield(Spec, RemoveAfterActivationFieldMask) << '\n';
+
+    if (Engine_Version == 426 && Fortnite_Season < 17)
+        res = Defines::InternalTryActivateAbilityFTS(ASC, *Handle, PadHex10(), nullptr, nullptr, EventData);
+    else
+        res = Defines::InternalTryActivateAbility(ASC, *Handle, PadHex18(), nullptr, nullptr, EventData);
+
+    if (!res)
+    {
+        // ClearAbility
+        return nullptr;
+    }
+
+    return Handle;
+
+    */
 }
 
 bool Abilities::ServerTryActivateAbility(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
@@ -327,4 +398,45 @@ bool Abilities::ServerAbilityRPCBatch(UObject* AbilitySystemComponent, UFunction
     InternalServerTryActivateAbility(AbilitySystemComponent, *AbilitySpecHandle, *InputPressed, PredictionKey, nullptr);
 
     return false;
+}
+
+void GiveFortAbilitySet(UObject* Pawn, UObject* FortAbilitySet)
+{
+    if (!FortAbilitySet)
+        return;
+
+    static auto GameplayAbilitiesOffset = FortAbilitySet->GetOffset("GameplayAbilities");
+    auto Abilities = Get<TArray<UObject*>>(FortAbilitySet, GameplayAbilitiesOffset);
+
+    for (int i = 0; i < Abilities->Num(); i++)
+    {
+        auto Ability = Abilities->At(i);
+
+        if (!Ability)
+            continue;
+
+        Abilities::GrantGameplayAbility(Pawn, Ability);
+    }
+
+    static auto GrantedGameplayEffectsOffset = FortAbilitySet->GetOffset("GrantedGameplayEffects");
+
+    if (GrantedGameplayEffectsOffset != 0)
+    {
+        struct FGameplayEffectApplicationInfoHard
+        {
+            UObject* GameplayEffectClass;                                           // 0x0000(0x0008) (Edit, ZeroConstructor, DisableEditOnInstance, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+            float                                              Level;                                                    // 0x0008(0x0004) (Edit, ZeroConstructor, DisableEditOnInstance, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+            unsigned char                                      UnknownData00[0x4];                                       // 0x000C(0x0004) MISSED OFFSET
+        };
+
+        auto GrantedGameplayEffects = Get<TArray<FGameplayEffectApplicationInfoHard>>(FortAbilitySet, GrantedGameplayEffectsOffset);
+
+        for (int i = 0; i < GrantedGameplayEffects->Num(); i++)
+        {
+            auto& GameplayEffectInfo = GrantedGameplayEffects->At(i);
+
+            auto GameplayEffectToGrant = GameplayEffectInfo.GameplayEffectClass;
+            Helper::ApplyGameplayEffect(Pawn, GameplayEffectToGrant);
+        }
+    }
 }

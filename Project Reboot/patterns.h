@@ -3,6 +3,7 @@
 #include <regex>
 
 #include "definitions.h"
+#include "memcury.h"
 #include "mem.h"
 
 inline FString(*GetEngineVersion)();
@@ -36,6 +37,7 @@ inline uint64_t CallPreReplicationAddress = 0;
 inline uint64_t SetChannelActorAddress = 0;
 inline uint64_t SendClientAdjustmentAddress = 0;
 inline uint64_t CloseActorChannel = 0;
+inline uint64_t GiveAbilityAndActivateOnceAddress = 0;
 
 inline uint64_t GIsClientAddr = 0;
 
@@ -707,6 +709,42 @@ static bool InitializePatterns()
 		SendClientAdjustmentAddress = Memory::FindPattern(SendClientAdjustmentPattern);
 	}
 
+	if (Engine_Version < 427)
+	{
+		auto StringRef = Memcury::Scanner::FindStringRef(L"GiveAbilityAndActivateOnce called on ability %s that is non instanced or won't execute on server, not allowed!");
+
+		if (StringRef.Get())
+		{
+			// GiveAbilityAndActivateOnceAddress = StringRef.FindFunctionBoundary().Get();
+
+			// if (false)
+			{
+				auto Addr = StringRef.Get();
+
+				for (int i = 400; i >= 0; i--)
+				{
+					// LOG("[{}] 0x{:x} 0x{:x}", i, (int)*(uint8_t*)Addr - i, (int)*(uint8_t*)(Addr - i), (int)*(uint8_t*)(Addr - i + 1));
+
+					if (*(uint8_t*)(uint8_t*)(Addr - i) == 0x48 && *(uint8_t*)(uint8_t*)(Addr - i + 1) == 0x89 && *(uint8_t*)(uint8_t*)(Addr - i + 2) == 0x5C)
+					{
+						GiveAbilityAndActivateOnceAddress = Addr - i;
+					}
+				}
+			}
+		}
+		else
+		{
+			std::cout << "Unable to find stringref for GiveAbilityAndActivateOnce!\n";
+		}
+	}
+	else
+	{
+		GiveAbilityAndActivateOnceAddress = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 48 8B EC 48 83 EC 70 49 8B 40 10 49 8B D8 48 8B FA"); // s12
+
+		if (!GiveAbilityAndActivateOnceAddress)
+			GiveAbilityAndActivateOnceAddress = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 70 49 8B 40 10 45 33");
+	}
+
 	auto Base = (uintptr_t)GetModuleHandleW(0);
 
 	std::cout << "MCP REL: " << Memory::FindPattern(NoMCPPattern, true, 1) << '\n';
@@ -714,8 +752,32 @@ static bool InitializePatterns()
 
 	if (!TickFlushAddress)
 	{
-		std::cout << "No tickflush! Testing pattern!\n";
-		TickFlushAddress = Memory::FindPattern("E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?", true, 1);
+		std::cout << "nbo tickflush testing dfindre!\n";
+
+		if (Engine_Version >= 421) // stats were added
+		{
+			auto StringRef = Memcury::Scanner::FindStringRef(L"STAT_NetTickFlush");
+
+			auto addy = StringRef.Get();
+
+			std::cout << "Addy: " << addy << '\n';
+
+			if (addy)
+			{
+				for (int i = 400; i >= 0; i--)
+				{
+					// LOG("[{}] 0x{:x} 0x{:x}", i, (int)*(uint8_t*)Addr - i, (int)*(uint8_t*)(Addr - i), (int)*(uint8_t*)(Addr - i + 1));
+
+					if (*(uint8_t*)(uint8_t*)(addy - i) == 0x4C && *(uint8_t*)(uint8_t*)(addy - i + 1) == 0x8B)
+					{
+						TickFlushAddress = addy - i;
+					}
+				}
+			}
+		}
+
+		// std::cout << "No tickflush! Testing pattern!\n";
+		// TickFlushAddress = Memory::FindPattern("E8 ? ? ? ? 83 BE ? ? ? ? ? 0F 8E ? ? ? ? 48 8B 86 ? ? ? ?", true, 1);
 	}
 
 	std::cout << std::format("SpawnActorAddress: 0x{:x}\n", (uintptr_t)SpawnActorAddr - Base);
@@ -741,7 +803,7 @@ static bool InitializePatterns()
 	std::cout << std::format("FreeAddress: 0x{:x}\n", (uintptr_t)FreeAddress - Base);
 	std::cout << std::format("HandleReloadCostAddress: 0x{:x}\n", (uintptr_t)HandleReloadCostAddress - Base);
 	std::cout << std::format("CanActivateAbilityAddress: 0x{:x}\n", (uintptr_t)CanActivateAbilityAddress - Base);
-	// std::cout << std::format("ActorGetNetModeAddress: 0x{:x}\n", (uintptr_t)ActorGetNetModeAddress - Base);
+	std::cout << std::format("GiveAbilityAndActivateOnceAddress: 0x{:x}\n", (uintptr_t)GiveAbilityAndActivateOnceAddress - Base);
 
 	if (bUseLegacyReplication)
 	{

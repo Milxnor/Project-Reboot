@@ -359,6 +359,7 @@ void MainUI()
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
 				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
 				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
+				ImGui::Checkbox("Respawning", &Defines::bRespawning);
 				// ImGui::Checkbox("Test 2", &Defines::test2);
 				// ImGui::SliderFloat("test1", &Defines::test1, 0.f, 1.f);
 
@@ -386,15 +387,6 @@ void MainUI()
 					static auto AIDirectorOffset = GameMode->GetOffset("AIDirector");
 					(*Get<UObject*>(GameMode, AIDirectorOffset))->ProcessEvent(FindObject<UFunction>("/Script/FortniteGame.FortAIDirector.Activate"));
 				} */
-
-				if (ImGui::Button("Test"))
-				{
-					auto Playlist = *Helper::GetPlaylist();
-					static auto LootPackagesOffset = Playlist->GetOffset("LootPackages");
-					auto LootPackages = Get<TSoftObjectPtr>(Playlist, LootPackagesOffset);
-
-					std::cout << "Lootpackages: " << LootPackages->ObjectID.AssetPathName.ToString() << '\n';
-				}
 
 				static std::string ConsoleCommand;
 
@@ -937,6 +929,7 @@ void MainUI()
 					static int stud = 0;
 
 					ImGui::InputText("WID To Give", &WID);
+					ImGui::InputText("Kick Reason", &KickReason);
 
 					if (CurrentPawn)
 					{
@@ -952,20 +945,31 @@ void MainUI()
 								FFortItemEntry::SetLoadedAmmo(Inventory::GetEntryFromWeapon(CurrentController, CurrentWeapon), CurrentController, *AmmoCountPtr);
 							} */
 						}
-					}
 
-					if (ImGui::Button("Spawn Llama"))
-					{
-						if (CurrentPawn)
+						if (ImGui::Button("Spawn Pickup with WID"))
 						{
-							static auto LlamaClass = FindObject("/Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C");
+							std::string cpywid = WID;
 
-							std::cout << "LlamaClass: " << LlamaClass << '\n';
+							if (cpywid.find(".") == std::string::npos)
+								cpywid = std::format("{}.{}", cpywid, cpywid);
 
-							if (LlamaClass)
-							{
-								auto Llama = Helper::Easy::SpawnActor(LlamaClass, Helper::GetActorLocation(CurrentPawn));
-							}
+							if (cpywid.find(" ") != std::string::npos)
+								cpywid = cpywid.substr(cpywid.find(" ") + 1);
+
+							auto wid = FindObjectSlow(cpywid);
+
+							if (wid)
+								Helper::SummonPickup(CurrentPawn, wid, Helper::GetActorLocationDynamic(CurrentPawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset);
+							else
+								std::cout << "Unable to find WID!\n";
+						}
+
+						if (ImGui::Button("Print GameplayTags"))
+						{
+							static auto GameplayTagsOffset = CurrentPawn->GetOffset("GameplayTags");
+							auto GameplayTags = Get<FGameplayTagContainer>(CurrentPawn, GameplayTagsOffset);
+
+							std::cout << "GameplayTags: " << GameplayTags->ToStringSimple(true) << '\n';
 						}
 					}
 
@@ -990,7 +994,20 @@ void MainUI()
 						}
 					}
 
-					ImGui::InputText("Kick Reason", &KickReason);
+					if (ImGui::Button("Spawn Llama"))
+					{
+						if (CurrentPawn)
+						{
+							static auto LlamaClass = FindObject("/Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C");
+
+							std::cout << "LlamaClass: " << LlamaClass << '\n';
+
+							if (LlamaClass)
+							{
+								auto Llama = Helper::Easy::SpawnActor(LlamaClass, Helper::GetActorLocation(CurrentPawn));
+							}
+						}
+					}
 
 					if (ImGui::Button("Kick"))
 					{
@@ -1150,6 +1167,8 @@ void PregameUI()
 		// Defines::bWipeInventoryOnAircraft = Defines::bIsPlayground; // even if its playground it still clears
 		Defines::Playlist = Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
 			: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+
+		Defines::bRespawning = Defines::bIsPlayground;
 	}
 }
 

@@ -220,6 +220,53 @@ enum class EChannelCloseReason : uint8_t
 	MAX = 15		// this value is used for serialization, modifying it may require a network version change
 };
 
+template <class  T>
+static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f))
+{
+	return DegVal * (M_PI / 180.f);
+}
+
+static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
+{
+	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.
+	float quotient = (0.31830988618f * 0.5f) * Value;
+	if (Value >= 0.0f)
+	{
+		quotient = (float)((int)(quotient + 0.5f));
+	}
+	else
+	{
+		quotient = (float)((int)(quotient - 0.5f));
+	}
+	float y = Value - (2.0f * M_PI) * quotient;
+
+	// Map y to [-pi/2,pi/2] with sin(y) = sin(Value).
+	float sign;
+	if (y > 1.57079632679f)
+	{
+		y = M_PI - y;
+		sign = -1.0f;
+	}
+	else if (y < -1.57079632679f)
+	{
+		y = -M_PI - y;
+		sign = -1.0f;
+	}
+	else
+	{
+		sign = +1.0f;
+	}
+
+	float y2 = y * y;
+
+	// 11-degree minimax approximation
+	*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
+
+	// 10-degree minimax approximation
+	float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
+	*ScalarCos = sign * p;
+}
+
 struct FRotator
 {
 	float Pitch;
@@ -261,6 +308,16 @@ struct FRotator
 		}
 
 		return Angle;
+	}
+
+	FVector Vector() const
+	{
+		float CP, SP, CY, SY;
+		SinCos(&SP, &CP, DegreesToRadians(Pitch));
+		SinCos(&SY, &CY, DegreesToRadians(Yaw));
+		FVector V = FVector(CP * CY, CP * SY, SP);
+
+		return V;
 	}
 };
 
@@ -552,6 +609,12 @@ enum class EFortResourceType : uint8_t
 	EFortResourceType_MAX = 5
 };
 
+struct FMarkerID
+{
+	int                                                PlayerId;                                                 // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	int                                                InstanceID;                                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+
 struct PlaceholderBitfield
 {
 	uint8_t First : 1;
@@ -599,6 +662,13 @@ static int GetRandomInt(int Min, int Max)
 struct FDateTime
 {
 	__int64 Ticks;
+};
+
+enum class ECurveTableMode : unsigned char
+{
+	Empty,
+	SimpleCurves,
+	RichCurves
 };
 
 static bool IsBadReadPtr(void* p)
@@ -681,53 +751,6 @@ struct DTransform
 	DVector Scale3D = DVector{ 1, 1, 1 };
 	char pad_2C[0x4];
 };
-
-static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
-{
-	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.
-	float quotient = (0.31830988618f * 0.5f) * Value;
-	if (Value >= 0.0f)
-	{
-		quotient = (float)((int)(quotient + 0.5f));
-	}
-	else
-	{
-		quotient = (float)((int)(quotient - 0.5f));
-	}
-	float y = Value - (2.0f * M_PI) * quotient;
-
-	// Map y to [-pi/2,pi/2] with sin(y) = sin(Value).
-	float sign;
-	if (y > 1.57079632679f)
-	{
-		y = M_PI - y;
-		sign = -1.0f;
-	}
-	else if (y < -1.57079632679f)
-	{
-		y = -M_PI - y;
-		sign = -1.0f;
-	}
-	else
-	{
-		sign = +1.0f;
-	}
-
-	float y2 = y * y;
-
-	// 11-degree minimax approximation
-	*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
-
-	// 10-degree minimax approximation
-	float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
-	*ScalarCos = sign * p;
-}
-
-template <class  T>
-static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f))
-{
-	return DegVal * (M_PI / 180.f);
-}
 
 static bool RandomBoolWithWeight(float Weight, float Min = 0.f, float Max = 1.f)
 {

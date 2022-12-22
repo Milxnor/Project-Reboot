@@ -26,6 +26,8 @@ bool OnAircraftExitedDropZone(UObject* GameMode, UFunction*, void* Parameters);
 bool PlayerCanRestart(UObject* GameMode, UFunction*, void* Parameters);
 static bool UFuncRetTrue(UObject*, UFunction*, void* Parameters) { return true; }
 bool ServerUpdateStateSync(UObject* Vehicle, UFunction*, void* Parameters);
+bool onendabilitydance(UObject* Ability, UFunction*, void* Parameters);
+bool spawntoynotify(UObject* Ability, UFunction*, void* Parameters);
 // static bool ClientWasKicked(UObject* Controller, UFunction*, void* Parameters) { return true; }
 
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func);

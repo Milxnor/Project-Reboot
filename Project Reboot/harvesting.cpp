@@ -1,13 +1,18 @@
 #include "harvesting.h"
 #include "helper.h"
 #include "inventory.h"
+#include "datatables.h"
 
 void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 {
 	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
 
+	// std::cout << "CurrentWeapon: " << CurrentWeapon->GetFullName() << '\n';
+
 	if (!CurrentWeapon || Helper::GetWeaponData(CurrentWeapon) != Helper::GetPickaxeDef(Controller))
 		return;
+
+	// std::cout << "ret!\n";
 
 	static auto ResourceTypeOffset = BuildingActor->GetOffset("ResourceType");
 	static auto CarClass = FindObject("/Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C");
@@ -23,6 +28,10 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 	if (bDestroyed)
 		return;
 
+	// float ResourcesToGive = 0;
+
+	float ResourcesToGive = 0;
+
 	if (!bIsCar)
 	{
 		static auto BuildingResourceAmountOverrideOffset = BuildingActor->GetOffset("BuildingResourceAmountOverride");
@@ -30,20 +39,14 @@ void Harvest(UObject* Controller, UObject* BuildingActor, float Damage)
 
 		if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed build
 			return;
-
-		float skidda = 0;
-		BuildingResourceAmountOverride->Eval(Defines::test1, &skidda);
-		std::cout << "skidda: " << skidda << '\n';
-		auto idk = (float)((int)(float)((float)(skidda * 2.0) - 0.5) >> 1);
-		std::cout << "idk: " << idk << '\n';
-		auto ret = fmaxf(idk, 0.0);
-		std::cout << "RETURNS: " << (unsigned int)-((int)(float)(-0.5 - (float)(ret + ret)) >> 1) << '\n';
 	}
 
 	auto MaxResourcesToSpawn = 6;
-	auto ResourcesToGive = (int)GetRandomDouble(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
+	ResourcesToGive = (int)GetRandomDouble(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
 
 	ResourcesToGive += bHitWeakspot ? (int)GetRandomDouble(3, 5) : 0;
+
+	std::cout << "ResourcesToGive: " << ResourcesToGive << '\n';
 
 	// std::cout << "ResourcesToGive: " << ResourcesToGive << '\n';
 
@@ -139,13 +142,31 @@ bool Harvesting::OnDamageServer(UObject* BuildingActor, UFunction* Function, voi
 		auto Damage = (float*)(__int64(Parameters) + DamageOffset);
 
 		if (!InstigatedBy || !DamageCauser || !Damage)
+		{
+			// std::cout << "fail5!\n";
 			return false;
+		}
 
 		if (!Helper::IsPlayerController(InstigatedBy))
+		{
+			// std::cout << "fail4!\n";
 			return false;
+		}
+
+		// static auto PlayerControllerClass = FindObject("/Game/Athena/Athena_PlayerController.Athena_PlayerController_C");
 
 		if (!DamageCauser->IsA(FortWeaponPickaxeAthenaClass) && !DamageCauser->IsA(MeleeClass))
+		{			
+			/* UObject* Super = DamageCauser->ClassPrivate;
+
+			while (Super)
+			{
+				std::cout << "Super Name: " << Super->GetFullName() << '\n';
+				Super = *(UObject**)(__int64(Super) + SuperStructOffset);
+			} */
+
 			return false;
+		}
 
 		Harvest(InstigatedBy, BuildingActor, *Damage);
 	}
@@ -164,10 +185,12 @@ bool Harvesting::BlueprintCanAttemptGenerateResources(UObject* BuildingActor, UF
 
 	auto Controller = Params->InstigatorController;
 
+	// std::cout << "Controller: " << Controller->GetFullName() << '\n';
+
 	if (!Controller || !Helper::IsPlayerController(Controller))
 		return false;
 
-	Harvest(Controller, BuildingActor, 0.f);
+	Harvest(Controller, BuildingActor, 50.f);
 
 	return false;
 }

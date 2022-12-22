@@ -211,7 +211,7 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 			}
 		}
 #endif
-	} // CONTAINER
+	} // END CONTAINER
 
 	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
 
@@ -219,56 +219,146 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 	{
 		std::cout << "revive!\n";
 
-		return false;
-
 		// static auto skidda = FindObject<UFunction>("/Game/Abilities/NPC/Generic/GAB_AthenaDBNO.GAB_AthenaDBNO_C.OnFinish_4C169D40441E45B462D83CBBA67F6E45");
 
 		auto DBNOPawn = ReceivingActor;
+		auto DBNOController = Helper::GetControllerFromPawn(DBNOPawn);
 		auto DBNOPawnASC = Helper::GetAbilitySystemComponent(DBNOPawn);
 
-		/* static auto skidad = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.TryActivateAbilityByClass");
+		auto InstigatorController = Controller;
+		auto InstigatorPawn = Helper::GetPawnFromController(InstigatorController);
 
-		struct {
-			UObject* InAbilityToActivate;                               // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			bool                                         bAllowRemoteActivation;                            // 0x8(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			bool                                         ReturnValue;
-		} para{ FindObject("/Game/Abilities/NPC/Generic/GAB_AthenaDBNORevive.GAB_AthenaDBNORevive_C"), true };
+		/* static auto GAB_AthenaDBNOReviveClass = FindObject("/Game/Abilities/NPC/Generic/GAB_AthenaDBNORevive.Default__GAB_AthenaDBNORevive_C");
 
-		DeadPawnASC->ProcessEvent(skidad, &para);
+		static auto GameplayEventDataStruct = FindObject("/Script/GameplayAbilities.GameplayEventData");
+		static auto GameplayEventDataSize = Helper::GetSizeOfClass(GameplayEventDataStruct);
 
-		*/
+		__int64* EventData = (__int64*)Alloc(GameplayEventDataSize);
 
-		/* auto skadgfv = Abilities::DoesASCHaveAbility(DeadPawnASC, FindObject("/Game/Abilities/NPC/Generic/GAB_AthenaDBNO.Default__GAB_AthenaDBNO_C"));
+		if (!EventData)
+			return false; */
 
-		std::cout << "skadgf.size(): " << skadgfv.size() << '\n';
+		static auto GAB_AthenaDBNOClass = FindObject("/Game/Abilities/NPC/Generic/GAB_AthenaDBNO.Default__GAB_AthenaDBNO_C");
 
-		if (skadgfv.size() >= 2) */
-		{
-			auto palyerstatename = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(DBNOPawnASC))->GetName();
-			std::cout << "palyerstatename: " << palyerstatename << '\n';
-			auto skadgf = FindObjectSlow(std::format("{}.GAB_AthenaDBNO_C_", palyerstatename)); // skadgfv[1];
-			std::cout << "skadgf: " << skadgf << '\n';
+		static auto ClientCancelAbility = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.ClientCancelAbility");
+		static auto ClientEndAbility = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.ClientEndAbility");
+		static auto ServerEndAbility = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.ServerEndAbility");
 
-			if (skadgf)
+		void* spec = nullptr;
+
+		auto compareAbilities = [&spec](__int64* Spec) {
+			auto CurrentAbility = GetAbilityFromSpec(Spec);
+
+			if ((*CurrentAbility)->ClassPrivate == GAB_AthenaDBNOClass->ClassPrivate)
 			{
-				std::cout << "name: " << skadgf->GetFullName() << '\n';
-
-				static auto aa = FindObject<UFunction>("/Script/GameplayAbilities.GameplayAbility.K2_CancelAbility");
-				skadgf->ProcessEvent(aa);
-
-				/*
-				struct
-				{
-				public:
-					FGameplayAbilitySpecHandle            AbilityToCancel;                                   // 0x0(0x4)(Parm, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					FGameplayAbilityActivationInfo        ActivationInfo;                                    // 0x8(0x20)(Parm, NoDestructor, NativeAccessSpecifierPublic)
-				} UAbilitySystemComponent_ServerCancelAbility_Params{skadgf->CurrentActivationInfo};
-				*/
+				spec = Spec;
+				// AbilityToReturn = *CurrentAbility;
+				return;
 			}
-		}
+		};
+
+		LoopSpecs(DBNOPawnASC, compareAbilities);
+
+		std::cout << spec << '\n';
+
+		if (!spec)
+			return false;
+
+		static auto GameplayAbilityActivationInfoSize = Helper::GetSizeOfClass(FindObject("/Script/GameplayAbilities.GameplayAbilityActivationInfo"));
+		static auto PredictionKeySize = Helper::GetSizeOfClass(FindObject("/Script/GameplayAbilities.PredictionKey"));
+
+		int ParamsSize = sizeof(FGameplayAbilitySpecHandle) + GameplayAbilityActivationInfoSize + PredictionKeySize;
+
+		auto CancelParams = Alloc(ParamsSize);
+
+		if (!CancelParams)
+			return false;
+
+		RtlSecureZeroMemory(CancelParams, ParamsSize);
+
+		static auto HandleOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
+
+		static auto AbilityToCancelOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ClientCancelAbility", "AbilityToCancel", true, true);
+		static auto Param_ActivationInfoOffset = FindOffsetStruct2("/Script/GameplayAbilities.AbilitySystemComponent.ClientCancelAbility", "ActivationInfo", true, true);
+
+		*Get<FGameplayAbilitySpecHandle>(CancelParams, AbilityToCancelOffset) = *Get<FGameplayAbilitySpecHandle>(spec, HandleOffset);
+
+		// static auto CurrentActivationInfoOffset = (*GetAbilityFromSpec(spec))->GetOffset("CurrentActivationInfo");
+		// auto CurrentActivationInfo = Get<void>(*GetAbilityFromSpec(spec), CurrentActivationInfoOffset);
+
+		static auto Spec_ActivationInfoOffset = FindOffsetStruct2("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "ActivationInfo");
+		auto ActivationInfo = Get<void>(spec, Spec_ActivationInfoOffset);
+
+		memcpy_s(Get<void>(CancelParams, Param_ActivationInfoOffset), GameplayAbilityActivationInfoSize, ActivationInfo, GameplayAbilityActivationInfoSize);
+
+		DBNOPawnASC->ProcessEvent(ClientCancelAbility, CancelParams);
+		DBNOPawnASC->ProcessEvent(ClientEndAbility, CancelParams);
+		DBNOPawnASC->ProcessEvent(ServerEndAbility, CancelParams);
+
+		static auto bIsDBNOOffset = DBNOPawn->GetOffsetSlow("bIsDBNO");
+		static auto bIsDBNOFieldMask = GetFieldMask(DBNOPawn->GetPropertySlow("bIsDBNO"));
+
+		std::cout << "bIsDBNOFieldMask: " << (int)bIsDBNOFieldMask << '\n';
+
+		auto bIsDBNO = Get<PlaceholderBitfield>(DBNOPawn, bIsDBNOOffset);
+		SetBitfield(bIsDBNO, bIsDBNOFieldMask, false);
+
+		static auto OnRep_bIsDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPawn.OnRep_IsDBNO");
+		DBNOPawn->ProcessEvent(OnRep_bIsDBNO);
 
 		static auto clientonpoa = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived");
 		Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(clientonpoa, &Controller);
+
+		Helper::SetHealth(DBNOPawn, 30);
+
+		/* static auto GameplayTagsOffset = DBNOPawn->GetOffset("GameplayTags");
+		auto GameplayTags = Get<FGameplayTagContainer>(DBNOPawn, GameplayTagsOffset);
+
+		static auto EventReviveTagOffset = DBNOPawn->GetOffset("EventReviveTag");
+		auto EventReviveTag = Get<FGameplayTag>(DBNOPawn, EventReviveTagOffset);
+
+		std::cout << "EventReviveTag: " << EventReviveTag->TagName.ToString() << '\n';
+
+		FString DBNOaaa = L"Gameplay.Action.Player.DBNO";
+		FString DBNOAthenaaaa = L"Gameplay.Action.Player.DBNOAthena";
+
+		FGameplayTag DBNOTag{};
+		DBNOTag.TagName = Helper::Conversion::StringToName(DBNOaaa);
+
+		FGameplayTag DBNOAthenaTag{};
+		DBNOAthenaTag.TagName = Helper::Conversion::StringToName(DBNOAthenaaaa);
+
+		static auto RemoveGameplayTag = FindObject<UFunction>("/Script/GameplayTags.BlueprintGameplayTagLibrary.RemoveGameplayTag");
+		static auto BlueprintGameplayTagLibrary = FindObject("/Script/GameplayTags.Default__BlueprintGameplayTagLibrary");
+
+		struct
+		{
+			FGameplayTagContainer                       TagContainer;                                             // (Parm, OutParm, ReferenceParm)
+			FGameplayTag                                Tag;                                                      // (Parm)
+			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+		} UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params1{*GameplayTags, DBNOTag};
+
+		BlueprintGameplayTagLibrary->ProcessEvent(RemoveGameplayTag, &UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params1);
+
+		struct
+		{
+			FGameplayTagContainer                       TagContainer;                                             // (Parm, OutParm, ReferenceParm)
+			FGameplayTag                                Tag;                                                      // (Parm)
+			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+		} UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params2{ *GameplayTags, DBNOAthenaTag };
+
+		BlueprintGameplayTagLibrary->ProcessEvent(RemoveGameplayTag, &UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params2);
+
+		static auto ReviveFromDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawn.ReviveFromDBNO");
+		DBNOPawn->ProcessEvent(ReviveFromDBNO, &InstigatorController);
+
+		static auto ForceReviveFromDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawnAthena.ForceReviveFromDBNO");
+		DBNOPawn->ProcessEvent(ForceReviveFromDBNO, &InstigatorController);
+
+		static auto TeammateReviveGameplayEffectOffset = DBNOPawn->GetOffset("TeammateReviveGameplayEffect");
+		auto TeammateReviveGameplayEffect = *Get<UObject*>(DBNOPawn, TeammateReviveGameplayEffectOffset);
+
+		Helper::ApplyGameplayEffect(DBNOPawn, TeammateReviveGameplayEffect); */
 	}
 
 	if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // AB_Athena_Wumba_C

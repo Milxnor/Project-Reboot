@@ -148,6 +148,57 @@ void* GetNextOfChild(void* Child)
 		return ((UField*)Child)->Next;
 }
 
+void* FindPropStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint, bool bContain, bool bWarnIfNotFound)
+{
+	UObject* CurrentClass = nullptr;
+
+	if (!bContain)
+		CurrentClass = FindObjectSlow(StructName, false);
+	else
+		CurrentClass = FindObject(StructName);
+
+	if (bPrint)
+		std::cout << "CurrentClass: " << CurrentClass << '\n';
+
+	if (CurrentClass)
+	{
+		auto Property = *(void**)(__int64(CurrentClass) + ChildPropertiesOffset);
+
+		if (bPrint)
+			std::cout << "Property: " << Property << '\n';
+
+		if (Property)
+		{
+			auto PropName = GetNameOfChild(Property);
+
+			while (Property)
+			{
+				if (bPrint)
+					std::cout << "PropName: " << PropName << '\n';
+
+				if (PropName == MemberName)
+				{
+					return Property;
+				}
+				else
+				{
+					Property = GetNextOfChild(Property);
+
+					if (Property)
+					{
+						PropName = GetNameOfChild(Property);
+					}
+				}
+			}
+		}
+	}
+
+	if (bWarnIfNotFound)
+		std::cout << "Unable to find2 " << MemberName << '\n';
+
+	return 0;
+}
+
 UObject* LoadObject(UObject* Class, const std::string& Name) // dont trust ret
 {
 	UObject* Object = FindObject(Name);
@@ -253,15 +304,15 @@ UObject* GetDefaultObject(UObject* Class)
 
 	path = path.substr(path.find_first_of(" ") + 1);
 
-	auto DefaultAbilityName = std::format("{1} {0}Default__{1}", path, ending);
+	auto DefaultAbilityName = std::format("{0}Default__{1}", path, ending);
 
 	return FindObject(DefaultAbilityName);
 }
 
-int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool bPrint, bool bWarnIfNotFound)
+void* UObject::GetProperty(const std::string& MemberName, bool bIsSuperStruct, bool bPrint, bool bWarnIfNotFound)
 {
 	if (Engine_Version >= 425) // fprop dont think work with this
-		return GetOffsetSlow(MemberName, bPrint, bWarnIfNotFound);
+		return GetPropertySlow(MemberName, bPrint, bWarnIfNotFound);
 
 	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
 
@@ -291,11 +342,10 @@ int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool 
 		return 0;
 	}
 
-	auto offsetPtr = (uint32_t*)(__int64(Property) + Offset_InternalOffset);
-	return offsetPtr ? *offsetPtr : 0;
+	return Property;
 }
 
-int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint, bool bWarnIfNotFound)
+void* UObject::GetPropertySlow(const std::string& MemberName, bool bPrint, bool bWarnIfNotFound)
 {
 	for (auto CurrentClass = ClassPrivate; CurrentClass; CurrentClass = *(UObject**)(__int64(CurrentClass) + SuperStructOffset))
 	{
@@ -310,7 +360,7 @@ int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint, bool bWar
 
 			if (PropName == MemberName) // somehow it didnt work without this?!?!?!?!?!?!?!?!!?!!?!?!?!?
 			{
-				return *(int*)(__int64(Property) + Offset_InternalOffset);
+				return Property;
 			}
 
 			while (Property)
@@ -320,7 +370,7 @@ int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint, bool bWar
 
 				if (PropName == MemberName)
 				{
-					return *(int*)(__int64(Property) + Offset_InternalOffset);
+					return Property;
 				}
 
 				Property = GetNextOfChild(Property);
@@ -331,6 +381,26 @@ int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint, bool bWar
 
 	if (bWarnIfNotFound)
 		std::cout << "Failed to find0 " << MemberName << '\n';
+
+	return nullptr;
+}
+
+int UObject::GetOffset(const std::string& MemberName, bool bIsSuperStruct, bool bPrint, bool bWarnIfNotFound)
+{
+	auto Property = GetProperty(MemberName, bIsSuperStruct, bPrint, bWarnIfNotFound);
+
+	if (Property)
+		return *(int*)(__int64(Property) + Offset_InternalOffset);
+
+	return 0;
+}
+
+int UObject::GetOffsetSlow(const std::string& MemberName, bool bPrint, bool bWarnIfNotFound)
+{
+	auto Property = GetPropertySlow(MemberName, bPrint, bWarnIfNotFound);
+
+	if (Property)
+		return *(int*)(__int64(Property) + Offset_InternalOffset);
 
 	return 0;
 }

@@ -60,7 +60,8 @@ namespace FFortItemEntry
 	}
 
 	void SetLoadedAmmo(__int64* Entry, UObject* Controller, int NewLoadedAmmo);
-	
+	void ModifyStateValue(UObject* Controller, __int64* Entry, FFortItemEntryStateValue* StateValue, bool bAdd = true, bool bMarkDirty = true);
+
 	int GetStructSize();
 }
 
@@ -112,7 +113,7 @@ namespace Inventory
 	// FUNCTIONS
 
 	void Update(UObject* Controller, bool bAddOrRemove = false, FFastArraySerializerItem* ModifiedItem = nullptr);
-	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true, int LoadedAmmo = -1);
+	UObject* GiveItem(UObject* Controller, UObject* ItemDefinition, EFortQuickBars Bars, int Slot, int Count = 1, bool bUpdate = true, int LoadedAmmo = -1, bool* bDidStack = nullptr);
 	UObject* EquipWeapon(UObject* Controller, const FGuid& Guid, UObject* ItemDefinition, int Ammo = 0);
 	UObject* EquipWeapon(UObject* Controller, UObject* Instance, int Ammo = 0);
 	EFortQuickBars WhatQuickBars(UObject* Definition); // returns the quickbar the item should go in

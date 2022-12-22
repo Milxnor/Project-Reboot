@@ -708,7 +708,7 @@ std::vector<std::pair<UObject*, int>> Looting::PickLootDrops(const std::string& 
 			auto RowFName = Pair.First;
 			FFortLootTierData* RowData = Pair.Second;
 
-			if (!RowFName.ComparisonIndex || !RowData)
+			if (!RowFName.ComparisonIndex || IsBadReadPtr(RowData))
 				continue;
 
 			auto tierGroup = Get<FName>(RowData, LTD_TierGroupOffset);

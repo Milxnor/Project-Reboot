@@ -33,8 +33,8 @@ struct TArray
 	int32_t ArrayNum = 0;
 	int32_t ArrayMax = 0;
 
-	inline ElementType At(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
-	inline ElementType at(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
+	inline ElementType& At(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
+	inline ElementType& at(int i, int Size = sizeof(ElementType)) const { return *(ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
 	inline ElementType* AtPtr(int i, int Size = sizeof(ElementType)) const { return (ElementType*)(__int64(Data) + (static_cast<long long>(Size) * i)); }
 
 	inline int Num() const { return ArrayNum; }
@@ -59,6 +59,20 @@ struct TArray
 		return -1;
 	};
 
+	int Add(ElementType* New, int Size = sizeof(ElementType))
+	{
+		Reserve(1, Size);
+
+		if (Data)
+		{
+			memcpy_s((ElementType*)(__int64(Data) + (ArrayNum * Size)), Size, (void*)New, Size);
+			++ArrayNum;
+			return ArrayNum; // - 1;
+		}
+
+		return -1;
+	};
+
 	std::vector<ElementType> ToVector()
 	{
 		std::vector<ElementType> vector;
@@ -69,14 +83,15 @@ struct TArray
 		return vector;
 	}
 
-	bool RemoveAt(const int Index/*, int Size = sizeof(ElementType)*/) // NOT MINE
+	bool RemoveAt(const int Index, int Size = sizeof(ElementType)) // NOT MINE
 	{
 		if (Index < ArrayNum)
 		{
 			if (Index != ArrayNum - 1)
 			{
 				// memcpy_s((ElementType*)(__int64(Data) + (Index * Size)), Size, (ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
-				Data[Index] = Data[ArrayNum - 1];
+				// Data[Index] = Data[ArrayNum - 1];
+				memcpy_s((void*)(ElementType*)(__int64(Data) + (Index * Size)), Size, (void*)(ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
 			}
 
 			--ArrayNum;
@@ -166,6 +181,9 @@ struct UObject
 	std::string GetFullName();
 
 	void ProcessEvent(struct UFunction* Function, void* Parameters = nullptr);
+
+	void* GetProperty(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false, bool bWarnIfNotFound = true);
+	void* GetPropertySlow(const std::string& MemberName, bool bPrint = false, bool bWarnIfNotFound = true);
 
 	int GetOffset(const std::string& MemberName, bool bIsSuperStruct = false, bool bPrint = false, bool bWarnIfNotFound = true);
 	int GetOffsetSlow(const std::string& MemberName, bool bPrint = false, bool bWarnIfNotFound = true);
@@ -394,10 +412,10 @@ ObjectType* FindObject(const std::string& ObjectName, UObject* Class = nullptr, 
 int FindOffsetStruct(const std::string& StructName, const std::string& MemberName, bool bExactStruct = false);
 int FindOffsetStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false, bool bWarnIfNotFound = true);
 
+void* FindPropStruct2(const std::string& StructName, const std::string& MemberName, bool bPrint = false, bool bContain = false, bool bWarnIfNotFound = true);
 UObject* LoadObject(UObject* Class, const std::string& Name);
 
 int GetEnumValue(UObject* Enum, const std::string& EnumMemberName);
-// OTHER
 
 template<typename ElementType>
 union TSparseArrayElementOrFreeListLink
@@ -1061,4 +1079,92 @@ struct FActiveGameplayEffectHandle
 	int                                                Handle;                                                   // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData)
 	bool                                               bPassedFiltersAndWasExecuted;                             // 0x0004(0x0001) (ZeroConstructor, IsPlainOldData)
 	unsigned char                                      UnknownData00[0x3];                                       // 0x0005(0x0003) MISSED OFFSET
+};
+
+
+inline uint8_t GetFieldMask(void* Property)
+{
+	if (!Property)
+		return -1;
+
+	// 3 = sizeof(FieldSize) + sizeof(ByteOffset) + sizeof(ByteMask)
+
+	if (Engine_Version <= 420)
+		return *(uint8_t*)(__int64(Property) + (112 + 3));
+	else if (Engine_Version >= 421 && Engine_Version <= 424)
+		return *(uint8_t*)(__int64(Property) + (112 + 3));
+	else if (Engine_Version >= 425)
+		return *(uint8_t*)(__int64(Property) + (120 + 3));
+
+	return -1;
+}
+
+inline bool ReadBitfield(void* Addr, uint8_t FieldMask)
+{
+	auto Bitfield = (PlaceholderBitfield*)Addr;
+
+	// niceeeee
+
+	if (FieldMask == 0x1)
+		return Bitfield->First;
+	else if (FieldMask == 0x2)
+		return Bitfield->Second;
+	else if (FieldMask == 0x4)
+		return Bitfield->Third;
+	else if (FieldMask == 0x8)
+		return Bitfield->Fourth;
+	else if (FieldMask == 0x10)
+		return Bitfield->Fifth;
+	else if (FieldMask == 0x20)
+		return Bitfield->Sixth;
+	else if (FieldMask == 0x40)
+		return Bitfield->Seventh;
+	else if (FieldMask == 0x80)
+		return Bitfield->Eighth;
+	else if (FieldMask == 0xFF)
+		return *(bool*)Bitfield;
+
+	return false;
+}
+
+inline void SetBitfield(void* Addr, uint8_t FieldMask, bool NewVal)
+{
+	auto Bitfield = (PlaceholderBitfield*)Addr;
+
+	// niceeeee
+
+	if (FieldMask == 0x1)
+		Bitfield->First = NewVal;
+	else if (FieldMask == 0x2)
+		Bitfield->Second = NewVal;
+	else if (FieldMask == 0x4)
+		Bitfield->Third = NewVal;
+	else if (FieldMask == 0x8)
+		Bitfield->Fourth = NewVal;
+	else if (FieldMask == 0x10)
+		Bitfield->Fifth = NewVal;
+	else if (FieldMask == 0x20)
+		Bitfield->Sixth = NewVal;
+	else if (FieldMask == 0x40)
+		Bitfield->Seventh = NewVal;
+	else if (FieldMask == 0x80)
+		Bitfield->Eighth = NewVal;
+	else if (FieldMask == 0xFF)
+		*(bool*)Bitfield = NewVal;
+}
+
+struct FFortItemEntryStateValue
+{
+public:
+	int* GetIntValue()
+	{
+		static auto IntValueOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntryStateValue", "IntValue");
+		return (int*)(__int64(this) + IntValueOffset);
+	}
+
+	uint8_t* GetStateType()
+	{
+		static auto StateTypeOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortItemEntryStateValue", "StateType");
+		return (uint8_t*)(__int64(this) + StateTypeOffset);
+	}
 };
