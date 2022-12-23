@@ -226,6 +226,15 @@ static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f)
 	return DegVal * (M_PI / 180.f);
 }
 
+enum ENetRole
+{
+	ROLE_None,
+	ROLE_SimulatedProxy,
+	ROLE_AutonomousProxy,
+	ROLE_Authority,
+	ROLE_MAX,
+};
+
 #define CHECK_PATTERN(addr) if (!addr) \
 { \
     MessageBoxA(0, (std::string("Unable to find ") + #addr + " aborting..").c_str(), "Project Reboot", MB_ICONERROR);\

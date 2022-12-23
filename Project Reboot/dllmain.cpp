@@ -332,7 +332,7 @@ DWORD WINAPI Initialize(LPVOID)
 
                     for (int i = 0; i < AdditionalLevels->Num(); i++)
                     {
-                        auto AdditionalLevel = AdditionalLevels->At(i);
+                        auto& AdditionalLevel = AdditionalLevels->At(i);
 
                         auto CurrentLevelName = AdditionalLevel.ObjectID.AssetPathName.ToString();
                         std::cout << std::format("[{}] {}\n", i, CurrentLevelName);
@@ -409,6 +409,8 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
     AddHook("/Script/FortniteGame.FortPlayerController.ServerReadyToStartMatch", ServerReadyToStartMatch);
 
+    // AddHook("/Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable", ServerUpdateVehicleInputStateUnreliable);
+
     AddHook("/Script/FortniteGame.FortPlayerControllerAthena.ServerGiveCreativeItem", ServerGiveCreativeItem);
 
     AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem", Inventory::ServerExecuteInventoryItem);
@@ -455,9 +457,11 @@ DWORD WINAPI Initialize(LPVOID)
 
     // AddHook("/Script/FortniteGame.BuildingActor.OnDeathServer", OnDeathServer);
 
+    // AddHook("/Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState", ServerSendZiplineState);
     AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
     AddHook("/Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C.K2_OnEndAbility", onendabilitydance);
-    
+    // AddHook("/Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", Build::ServerRepairBuildingActor);
+
     // AddHook("/Script/FortniteGame.FortHeldObjectComponent.HandleOwnerAsBuildingActorDestroyed", HandleOwnerAsBuildingActorDestroyed);
 
     // auto sigfgw4y = Memory::FindPattern("4C 8B DC 49 89 5B 20 55 56 57 48 83 EC 60 8A 81 ? ? ? ? 49 8B F8 48 8B DA 48 8B F1 3C 01 75 4A");

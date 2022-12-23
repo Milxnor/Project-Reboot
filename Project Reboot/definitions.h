@@ -67,8 +67,8 @@ namespace Defines
 	inline char (*KickPlayer)(UObject* GameSession, UObject* Controller, FText a3);
 	inline char (*ValidationFailure)(__int64* a1, __int64 a2);
 	inline __int64 (*NoReservation)(__int64* a1, __int64 a2, char a3, __int64 a4);
-	inline __int64 (*CantBuild)(UObject*, UObject*, FVector, FRotator, char, void*, char*);
-	inline __int64 (*CantBuildDouble)(UObject*, UObject*, DVector, DRotator, char, void*, char*);
+	inline __int64 (*CantBuild)(UObject*, UObject*, FVector, FRotator, char, TArray<UObject*>*, char*);
+	inline __int64 (*CantBuildDouble)(UObject*, UObject*, DVector, DRotator, char, TArray<UObject*>*, char*);
 	inline void (*HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 	inline UObject* (*ReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int a2, UObject* a3, unsigned int a4, int a5, unsigned __int8 bMirrored, UObject* Controller);
 

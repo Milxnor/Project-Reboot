@@ -123,7 +123,7 @@ UObject* Inventory::GetWorldInventory(UObject* Controller)
 	static auto WorldInventoryOffset = Controller->GetOffset("WorldInventory");
 	auto WorldInventoryP = Get<UObject*>(Controller, WorldInventoryOffset);
 
-	return /* IsBadReadPtr(WorldInventoryP) ? nullptr : */ *WorldInventoryP;
+	return IsBadReadPtr(WorldInventoryP) ? nullptr : *WorldInventoryP;
 }
 
 __int64* Inventory::GetInventory(UObject* Controller)

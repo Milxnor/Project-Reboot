@@ -68,6 +68,7 @@ namespace Helper
 	std::string GetNetCL();
 	std::string GetEngineVer();
 	std::string GetFortniteVersion();
+	UObject* GetRootComponent(UObject* Actor);
 	FRotator GetControlRotation(UObject* Controller);
 	UObject* GetAbilitySetFromAGID(UObject* AGID);
 	FActiveGameplayEffectHandle ApplyGameplayEffect(UObject* Pawn, UObject* GEClass);

@@ -694,7 +694,7 @@ UObject* Helper::GetPickaxeDef(UObject* Controller, bool bGetNew)
 
 		if (ItemInstances->Num() >= 6)
 		{
-			auto PickaxeInstance = ItemInstances->At(1); // cursed probs // loop through all inventoryt and find  first melee
+			auto PickaxeInstance = ItemInstances->At(5); // cursed probs // loop through all inventoryt and find  first melee
 			toRet = IsBadReadPtr(PickaxeInstance) ? nullptr : *UFortItem::GetDefinition(PickaxeInstance);
 		}
 	}
@@ -863,6 +863,15 @@ std::string Helper::GetFortniteVersion()
 	auto EngineVer = GetEngineVersion().ToString();
 	EngineVer = EngineVer.substr(EngineVer.find_last_of('-') + 1);
 	return EngineVer;
+}
+
+UObject* Helper::GetRootComponent(UObject* Actor)
+{
+	UObject* RootComp = nullptr;
+	static auto GetRootCompFunc = FindObject<UFunction>("/Script/Engine.Actor.K2_GetRootComponent");
+	Actor->ProcessEvent(GetRootCompFunc, &RootComp);
+
+	return RootComp;
 }
 
 FRotator Helper::GetControlRotation(UObject* Controller)

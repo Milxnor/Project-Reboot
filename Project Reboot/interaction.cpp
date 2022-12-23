@@ -361,6 +361,71 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		Helper::ApplyGameplayEffect(DBNOPawn, TeammateReviveGameplayEffect); */
 	}
 
+	if (ReceivingActorName.contains("Zipline"))
+	{
+		std::cout << "zipline: " << ReceivingActorName << '\n';
+
+		static auto Zipline_StartPositionOffset = ReceivingActor->GetOffset("StartPosition");
+		static auto Zipline_EndPositionOffset = ReceivingActor->GetOffset("EndPosition");
+
+		static auto ZiplineStateOffset = ReceivingActor->GetOffset("ZiplineState");
+		auto ZiplineState = Get<__int64>(ReceivingActor, ZiplineStateOffset);
+
+		static auto bIsZipliningOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "bIsZiplining");
+		*Get<bool>(ZiplineState, bIsZipliningOffset) = true;
+
+		static auto StartPositionOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "StartPosition");
+		*Get<FVector>(ZiplineState, StartPositionOffset) = *Get<FVector>(ReceivingActor, Zipline_StartPositionOffset);
+
+		static auto EndPositionOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "EndPosition");
+		*Get<FVector>(ZiplineState, EndPositionOffset) = *Get<FVector>(ReceivingActor, Zipline_EndPositionOffset);
+	}
+
+	if (ReceivingActorName.contains("Vehicle"))
+	{
+		std::cout << "vehicle: " << ReceivingActorName << '\n';
+
+		return false;
+
+		struct FVehiclePawnState
+		{
+			UObject* Vehicle;                                                  // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                              VehicleApexZ;                                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      SeatIndex;                                                // 0x000C(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      ExitSocketIndex;                                          // 0x000D(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                               bOverrideVehicleExit;                                     // 0x000E(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData00[0x1];                                       // 0x000F(0x0001) MISSED OFFSET
+			FVector                                     SeatTransitionVector;                                     // 0x0010(0x000C) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                              EntryTime;                                                // 0x001C(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		};
+
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		static auto VehicleStateRepOffset = Pawn->GetOffset("VehicleStateRep");
+		auto VehicleStateRep = Get<FVehiclePawnState>(Pawn, VehicleStateRepOffset);
+
+		VehicleStateRep->Vehicle = ReceivingActor;
+		VehicleStateRep->SeatIndex = 0;
+		VehicleStateRep->ExitSocketIndex = 0;
+		VehicleStateRep->EntryTime = Helper::GetTimeSeconds();
+
+		static auto VehicleStateLocalffset = Pawn->GetOffset("VehicleStateLocal");
+		auto VehicleStateLocal = Get<FVehiclePawnState>(Pawn, VehicleStateLocalffset);
+
+		VehicleStateLocal->Vehicle = ReceivingActor;
+		VehicleStateLocal->SeatIndex = 0;
+		VehicleStateLocal->ExitSocketIndex = 0;
+		VehicleStateLocal->EntryTime = Helper::GetTimeSeconds();
+
+		static auto VehicleStateLastTickOffset = Pawn->GetOffset("VehicleStateLastTick");
+		auto VehicleStateLastTick = Get<FVehiclePawnState>(Pawn, VehicleStateLastTickOffset);
+
+		VehicleStateLastTick->Vehicle = ReceivingActor;
+		VehicleStateLastTick->SeatIndex = 0;
+		VehicleStateLastTick->ExitSocketIndex = 0;
+		VehicleStateLastTick->EntryTime = Helper::GetTimeSeconds();
+	}
+
 	if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // AB_Athena_Wumba_C
 	{
 		if (Fortnite_Season < 15) // idk but whenever they start taking gold we dont support

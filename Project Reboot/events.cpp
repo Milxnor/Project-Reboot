@@ -636,7 +636,7 @@ std::string Events::GetEventPlaylistName()
 		return "/Game/Athena/Playlists/Music/Playlist_Junior_32.Playlist_Junior_32";
 	else if (Fortnite_Version == 12.61)
 		return "/Game/Athena/Playlists/Fritter/Playlist_Fritter_High.Playlist_Fritter_High";
-	else if (Fortnite_Version <= 12.41)
+	else if (Engine_Version >= 422 && Fortnite_Version <= 12.41)
 		return "/Game/Athena/Playlists/Music/Playlist_Music_High.Playlist_Music_High";
 
 	return "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";

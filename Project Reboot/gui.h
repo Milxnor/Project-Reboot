@@ -464,7 +464,7 @@ void MainUI()
 
 				if (ImGui::Button("Fill all vending machines"))
 				{
-					static auto BuildingItemCollectorClass = FindObject("/Script/FortniteGame.BuildingItemCollectorActor");
+					static auto BuildingItemCollectorClass = FindObject("/Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C"); // FindObject("/Script/FortniteGame.BuildingItemCollectorActor");
 
 					std::cout << "BuildingItemCollectorClass: " << BuildingItemCollectorClass << '\n';
 
@@ -476,6 +476,9 @@ void MainUI()
 
 					if (GameData)
 					{
+						struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ Helper::GetGameState(), *Helper::GetPlaylist(),
+								FGameplayTagContainer() };	
+
 						// for (auto BuildingItemCollectorActor : BuildingItemCollectorActorActors)
 						for (int i = 0; i < BuildingItemCollectorActorActors.size(); i++)
 						{
@@ -512,16 +515,31 @@ void MainUI()
 							std::cout << "Def1: " << Def1 << '\n';
 							std::cout << "Def2: " << Def2 << '\n';
 
+							*Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def0;
+							*Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def1;
+							*Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def2;
+
+							// static auto bb = FindObject<UFunction>("/Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C.OnReady_21959F7346995C2CA1D67DB9455B627D");
+							// BuildingItemCollectorActor->ProcessEvent(bb, &bbparms);
+
+							// continue;
+
 							static auto SetRarityColors = FindObject<UFunction>("/Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C.SetRarityColors");
 
 							struct FFortRarityItemData
 							{
-								char Name[0x18];
-								FLinearColor                          Color1;                                            // 0x18(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-								FLinearColor                          Color2;                                            // 0x28(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-								FLinearColor                          Color3;                                            // 0x38(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-								FLinearColor                          Color4;                                            // 0x48(0x10)(Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-								FLinearColor                          Color5;
+								char                                      Name[0x0018];                                                     // 0x0000(0x0018) (Edit, BlueprintVisible, BlueprintReadOnly)
+								FLinearColor                                Color1;                                                   // 0x0018(0x0010) (Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData)
+								FLinearColor                                Color2;                                                   // 0x0028(0x0010) (Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData)
+								FLinearColor                                Color3;                                                   // 0x0038(0x0010) (Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData)
+								FLinearColor                                Color4;                                                   // 0x0048(0x0010) (Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData)
+								FLinearColor                                Color5;                                                   // 0x0058(0x0010) (Edit, BlueprintVisible, BlueprintReadOnly, IsPlainOldData)
+								float                                              Radius;                                                   // 0x0068(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+								float                                              Falloff;                                                  // 0x006C(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+								float                                              Brightness;                                               // 0x0070(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+								float                                              Roughness;                                                // 0x0074(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+								float                                              Glow;                                                     // 0x0078(0x0004) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+								unsigned char                                      UnknownData00[0x4];                                       // 0x007C(0x0004) MISSED OFFSET
 							};
 
 							FLinearColor Color{};
@@ -540,15 +558,14 @@ void MainUI()
 								static auto RarityCollectionOffset = RarityData->GetOffset("RarityCollection");
 								// FFortRarityItemData* RarityCollections[0x8] = Get<FFortRarityItemData[0x8]>(RarityData, RarityCollectionOffset); // 0x8-0xA
 
-								FFortRarityItemData* aa = *Get<FFortRarityItemData*>(RarityData, RarityCollectionOffset); // [(int)Rarity - 1] ;// RarityCollections[(int)Rarity - 1];
+								FFortRarityItemData* aa = *Get<FFortRarityItemData[10]>(RarityData, RarityCollectionOffset); // [(int)Rarity - 1] ;// RarityCollections[(int)Rarity - 1];
 
-								static auto SizeOfFFortRarityItemData = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortRarityItemData"));
-								FFortRarityItemData RarityCollection = *(FFortRarityItemData*)(__int64(aa) + (SizeOfFFortRarityItemData * ((int)Rarity - 1)));
+								auto& RarityCollection = aa[rand];
 
 								// FLinearColor Color = Rarity == ERarity::Rare ? RarityCollection->Color3 : 
 									// Rarity == ERarity::Epic ? RarityCollection->Color4 : RarityCollection->Color5;
 
-								FLinearColor Color = RarityCollection.Color1;
+								Color = RarityCollection.Color1;
 
 								std::cout << "Color Before: " << Color.Describe() << '\n';
 
@@ -562,18 +579,14 @@ void MainUI()
 							{
 								// got from 3.5 raritydata
 
-								// Color = Rarity == ERarity::Rare ? FLinearColor(0, 255, 245.99493, 255) :
-									// Rarity == ERarity::Epic ? FLinearColor(213.350085, 5.1, 255, 255) : FLinearColor(245.995185, 138.98724, 31.979295, 255);
+								Color = Rarity == ERarity::Rare ? FLinearColor(0, 255, 245.99493, 255) :
+									Rarity == ERarity::Epic ? FLinearColor(213.350085, 5.1, 255, 255) : FLinearColor(245.995185, 138.98724, 31.979295, 255);
 
-								Color = Rarity == ERarity::Rare ? FLinearColor(0, 1, 0.964686, 1) :
-									Rarity == ERarity::Epic ? FLinearColor(0.836667, 0.02, 1, 1) : FLinearColor(0.964687, 0.545048, 0.125409, 1);
+								// Color = Rarity == ERarity::Rare ? FLinearColor(0, 1, 0.964686, 1) :
+									// Rarity == ERarity::Epic ? FLinearColor(0.836667, 0.02, 1, 1) : FLinearColor(0.964687, 0.545048, 0.125409, 1);
 							}
 
 							std::cout << "Color After: " << Color.Describe() << '\n';
-
-							*Get<UObject*>(ItemCollections->AtPtr(0, CollectorUnitInfoClassSize), OutputItemOffset) = Def0;
-							*Get<UObject*>(ItemCollections->AtPtr(1, CollectorUnitInfoClassSize), OutputItemOffset) = Def1;
-							*Get<UObject*>(ItemCollections->AtPtr(2, CollectorUnitInfoClassSize), OutputItemOffset) = Def2;
 
 							BuildingItemCollectorActor->ProcessEvent(SetRarityColors, &Color);
 						}
