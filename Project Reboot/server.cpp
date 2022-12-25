@@ -546,7 +546,66 @@ void CheckViewTarget(FTViewTarget viewTarget, UObject* OwningController)
 	}
 }
 
+struct FMinimalViewInfoUD
+{
+public:
+	FVector                               Location;                                          // 0x0(0xC)(Edit, BlueprintVisible, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FRotator                              Rotation;
+};
 
+FMinimalViewInfoUD GetCameraCacheView(UObject* PlayerCameraManager)
+{
+	static auto CameraCachePrivateOffset = PlayerCameraManager->GetOffset("CameraCachePrivate");
+	auto CameraCachePrivate = Get<void>(PlayerCameraManager, CameraCachePrivateOffset);
+
+	static auto POVOffset = FindOffsetStruct2("ScriptStruct /Script/Engine.CameraCacheEntry", "POV");
+	return *(FMinimalViewInfoUD*)(__int64(CameraCachePrivate) + POVOffset);
+}
+
+void GetCameraViewpoint(UObject* PlayerCameraManager, FVector& OutCamLoc, FRotator& OutCamRot)
+{
+	const FMinimalViewInfoUD& CurrentPOV = GetCameraCacheView(PlayerCameraManager);
+	OutCamLoc = CurrentPOV.Location;
+	OutCamRot = CurrentPOV.Rotation;
+}
+
+UObject* GetViewTargetCameraManager(UObject* PlayerCameraManager)
+{
+	return nullptr;
+}
+
+UObject* GetViewTargetPlayerController(UObject* PC)
+{
+	static auto PlayerCameraManagerOffset = PC->GetOffset("PlayerCameraManager");
+	auto PlayerCameraManager = *Get<UObject*>(PC, PlayerCameraManagerOffset);
+
+	UObject* CameraManagerViewTarget = PlayerCameraManager ? GetViewTargetCameraManager(PlayerCameraManager) : nullptr;
+
+	return CameraManagerViewTarget ? CameraManagerViewTarget : PC;
+}
+
+void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
+{
+	/* static auto PlayerCameraManagerOffset = pc->GetOffset("PlayerCameraManager");
+	auto PlayerCameraManager = *Get<UObject*>(pc, PlayerCameraManagerOffset);
+
+	if (PlayerCameraManager
+		// PlayerCameraManager->GetCameraCacheTime() > 0.f // Whether camera was updated at least once)
+		)
+	{
+		GetCameraViewpoint(PlayerCameraManager, *a2, *a3);
+	}
+	else */
+	{
+		auto ViewTarget = GetViewTargetPlayerController(pc);
+
+		if (ViewTarget)
+		{
+			*a2 = Helper::GetActorLocation(ViewTarget);
+			*a3 = Helper::GetActorRotation(ViewTarget);
+		}
+	}
+}
 
 void Server::Hooks::Initialize()
 {
@@ -581,7 +640,7 @@ void Server::Hooks::Initialize()
 			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, Server::Hooks::GetViewTarget, nullptr)) << '\n';
 			std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 		}
-		else // if (Fortnite_Version < 17.50)
+		else if (true) // if (Fortnite_Version < 17.50)
 		{
 			auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
 
@@ -598,6 +657,13 @@ void Server::Hooks::Initialize()
 
 			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';
 			std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
+		}
+		else
+		{
+			auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84");
+
+			MH_CreateHook((PVOID)sig, GetPlayerViewPointDetour, nullptr);
+			MH_EnableHook((PVOID)sig);
 		}
 	}
 }
@@ -911,13 +977,15 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 						else
 							CorrectLocation.dV.Z += 50;
 
+						EFortPickupSourceTypeFlag SourceTypeFlag = EFortPickupSourceTypeFlag::FloorLoot;
+
 #ifdef TEST_NEW_LOOTING
 
 						auto LootDrops = Looting::PickLootDrops(TierGroup);
 
 						for (auto& LootDrop : LootDrops)
 						{
-							Helper::SummonPickup(nullptr, LootDrop.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, LootDrop.second, true);
+							Helper::SummonPickup(nullptr, LootDrop.first, CorrectLocation, SourceTypeFlag, EFortPickupSpawnSource::Unset, LootDrop.second, true);
 						}
 
 						continue;
@@ -934,7 +1002,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 							{
 								auto Ammo = Looting::GetRandomItem(ItemType::Ammo);
 
-								MainPickup = Helper::SummonPickup(nullptr, Ammo.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+								MainPickup = Helper::SummonPickup(nullptr, Ammo.Definition, CorrectLocation, SourceTypeFlag,
 									EFortPickupSpawnSource::Unset, Ammo.DropCount);
 							}
 
@@ -942,7 +1010,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 							{
 								auto Trap = Looting::GetRandomItem(ItemType::Trap);
 
-								MainPickup = Helper::SummonPickup(nullptr, Trap.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+								MainPickup = Helper::SummonPickup(nullptr, Trap.Definition, CorrectLocation, SourceTypeFlag,
 									EFortPickupSpawnSource::Unset, Trap.DropCount);
 							}
 
@@ -950,7 +1018,7 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 							{
 								auto Consumable = Looting::GetRandomItem(ItemType::Consumable);
 
-								MainPickup = Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+								MainPickup = Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, SourceTypeFlag,
 									EFortPickupSpawnSource::Unset, Consumable.DropCount);
 							}
 
@@ -958,13 +1026,13 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 							{
 								auto Weapon = Looting::GetRandomItem(ItemType::Weapon);
 
-								MainPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, true);
+								MainPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, SourceTypeFlag, EFortPickupSpawnSource::Unset, 1, true);
 
 								if (MainPickup)
 								{
 									auto AmmoDef = Helper::GetAmmoForDefinition(Weapon.Definition);
 
-									Helper::SummonPickup(nullptr, AmmoDef.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+									Helper::SummonPickup(nullptr, AmmoDef.first, CorrectLocation, SourceTypeFlag,
 										EFortPickupSpawnSource::Unset, AmmoDef.second);
 								}
 							}
@@ -1005,11 +1073,11 @@ char Server::Hooks::ValidationFailure(__int64* a1, __int64 a2)
 	return false;
 }
 
-UObject* GetViewTargetCameraManager(UObject* NonConstThis)
+/* UObject* GetViewTargetCameraManager(UObject* NonConstThis)
 {
 	return nullptr;
 
-	/* static auto PendingViewTargetOffset = NonConstThis->GetOffset("PendingViewTarget");
+	static auto PendingViewTargetOffset = NonConstThis->GetOffset("PendingViewTarget");
 	auto PendingViewTarget = Get<FTViewTarget>(NonConstThis, PendingViewTargetOffset);
 
 	static auto PCOwnerOffset = NonConstThis->GetOffset("PCOwner");
@@ -1027,8 +1095,8 @@ UObject* GetViewTargetCameraManager(UObject* NonConstThis)
 	auto ViewTarget = Get<FTViewTarget>(NonConstThis, ViewTargetOffset);
 
 	CheckViewTarget(ViewTarget, PCOwner);
-	return ViewTarget->Target; */
-}
+	return ViewTarget->Target; 
+} */
 
 UObject* Server::Hooks::GetViewTarget(UObject* PC, __int64 Unused, __int64 a3)
 {

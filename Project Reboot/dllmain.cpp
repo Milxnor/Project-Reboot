@@ -153,14 +153,20 @@ DWORD WINAPI Initialize(LPVOID)
 
             else if (Engine_Version == 425)
             {
-                GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 41 0F B6 E9 41 0F B6 F8", true, 2);
-                GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 75 0D F6 83 ? ? ? ? ? 0F", true, 2); // 8.51
+                GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 74 04 84 DB 75 15 80 3D ? ? ? ? ? 0F", true, 2);
+                GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 0F 84 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B", true, 2);
             }
 
             else if (Engine_Version == 500)
             {
                 GIsClientAddr = Memory::FindPattern("80 3D ? ? ? ? ? 48 8B DA 0F 84 ? ? ? ? 48", true, 2);
                 GIsServerAddr = Memory::FindPattern("80 3D ? ? ? ? ? 0F 85 ? ? ? ? F6 83", true, 2);
+            }
+
+            if (Fortnite_Version == 12.41)
+            {
+                GIsClientAddr = __int64(GetModuleHandleW(0)) + 0x8237B86;
+                GIsServerAddr = __int64(GetModuleHandleW(0)) + 0x8237B87;
             }
 
             std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
@@ -187,6 +193,14 @@ DWORD WINAPI Initialize(LPVOID)
 
                 MH_CreateHook((PVOID)IsGameServerForEvent, rettrue, nullptr);
                 MH_EnableHook((PVOID)IsGameServerForEvent);
+            }
+
+            if (Fortnite_Version == 12.41)
+            {
+                auto skidder = __int64(GetModuleHandleW(0) + 0x42ACE40);
+
+                MH_CreateHook((PVOID)skidder, rettrue, nullptr);
+                MH_EnableHook((PVOID)skidder);
             }
 
             bSetGIsClientSuccessful = GIsClientAddr;
@@ -450,14 +464,16 @@ DWORD WINAPI Initialize(LPVOID)
             : "/Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJump);
 
     AddHook("/Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone", OnAircraftExitedDropZone);
-    AddHook("/Script/FortniteGame.FortAthenaVehicle.ServerUpdateStateSync", ServerUpdateStateSync);
+    AddHook(FindObject("/Script/FortniteGame.FortAthenaVehicle.ServerUpdateStateSync") ? "/Script/FortniteGame.FortAthenaVehicle.ServerUpdateStateSync" 
+        : "/Script/FortniteGame.FortPhysicsPawn.ServerUpdateStateSync", ServerUpdateStateSync);
+
     AddHook("/Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", UFuncRetTrue);
 
     // /Script/FortniteGame.FortPlayerController:ServerDropAllItems
 
     // AddHook("/Script/FortniteGame.BuildingActor.OnDeathServer", OnDeathServer);
 
-    // AddHook("/Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState", ServerSendZiplineState);
+    AddHook("/Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState", ServerSendZiplineState);
     AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
     AddHook("/Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C.K2_OnEndAbility", onendabilitydance);
     // AddHook("/Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", Build::ServerRepairBuildingActor);
@@ -495,8 +511,6 @@ DWORD WINAPI Initialize(LPVOID)
     preoffsets::KillerPlayerState = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "KillerPlayerState");
     preoffsets::TeamsLeft = FindOffsetStruct("Class /Script/FortniteGame.FortGameStateAthena", "TeamsLeft");
     preoffsets::DamageCauser = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport", "DamageCauser");
-
-    std::cout << "size: " << Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortItemEntryStateValue")) << '\n';
 
     /* auto ahh = Memory::FindPattern("49 8B 04 24 48 8D 55 F8 49 8B CC FF 50 28 84 C0 0F 84 ? ? ? ? 48 89 7D A8 48 89 7D B0 48 89");
 

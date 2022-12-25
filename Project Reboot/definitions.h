@@ -101,3 +101,15 @@ T* Alloc(size_t Bytes)
 {
 	return (T*)FMemory::Realloc(nullptr, Bytes, 0);
 }
+
+inline FString* GetRequestURL(UObject* Connection)
+{
+	if (Engine_Version <= 420)
+		return (FString*)(__int64(Connection) + 432);
+	if (Fortnite_Season >= 5 && Engine_Version < 424)
+		return (FString*)(__int64(Connection) + 424);
+	else if (Engine_Version >= 424)
+		return (FString*)(__int64(Connection) + 440);
+
+	return nullptr;
+}

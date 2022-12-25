@@ -436,7 +436,7 @@ void GiveFortAbilitySet(UObject* Pawn, UObject* FortAbilitySet)
             auto& GameplayEffectInfo = GrantedGameplayEffects->At(i);
 
             auto GameplayEffectToGrant = GameplayEffectInfo.GameplayEffectClass;
-            Helper::ApplyGameplayEffect(Pawn, GameplayEffectToGrant);
+            Helper::ApplyGameplayEffect(Pawn, GameplayEffectToGrant, GameplayEffectInfo.Level);
         }
     }
 }

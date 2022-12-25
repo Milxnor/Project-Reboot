@@ -353,6 +353,7 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 
 	if (bAssignCharacterParts)
 	{
+		if (false)
 		{
 			static auto headPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1");
 			static auto bodyPart = FindObject("/Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01");
@@ -365,6 +366,10 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 
 			ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+		}
+		else
+		{
+			ApplyCID(Pawn, Helper::GetRandomCID());
 		}
 	}
 
@@ -905,7 +910,48 @@ UObject* Helper::GetAbilitySetFromAGID(UObject* AGID)
 	}
 }
 
-FActiveGameplayEffectHandle Helper::ApplyGameplayEffect(UObject* Pawn, UObject* GEClass)
+FString Helper::GetIPf(UObject* PlayerState)
+{
+	static auto SavedNetworkAddressOffset = PlayerState->GetOffset("SavedNetworkAddress");
+	auto SavedNetworkAddress = Get<FString>(PlayerState, SavedNetworkAddressOffset);
+
+	return *SavedNetworkAddress;
+}
+
+std::string Helper::GetPlayerName(UObject* Controller)
+{
+	// A controller without a player has no "owner"
+	// return (Player != NULL) ? NetConnection : NULL;
+
+	static auto NetConnectionOffset = Controller->GetOffset("NetConnection");
+
+	auto Connection = *Get<UObject*>(Controller, NetConnectionOffset);
+
+	if (!Connection)
+		return "NO_CONNECTION";
+
+	auto RequestURL = *GetRequestURL(Connection);
+
+	if (RequestURL.Data.Data)
+	{
+		auto RequestURLStr = RequestURL.ToString();
+
+		std::size_t pos = RequestURLStr.find("Name=");
+
+		if (pos != std::string::npos) {
+			std::size_t end_pos = RequestURLStr.find('?', pos);
+
+			if (end_pos != std::string::npos)
+				RequestURLStr = RequestURLStr.substr(pos + 5, end_pos - pos - 5);
+		}
+
+		return RequestURLStr;
+	}
+
+	return "INVALID_REQUEST_URL";
+}
+
+FActiveGameplayEffectHandle Helper::ApplyGameplayEffect(UObject* Pawn, UObject* GEClass, float Level)
 {
 	static auto BP_ApplyGameplayEffectToSelf = FindObject<UFunction>("/Script/GameplayAbilities.AbilitySystemComponent.BP_ApplyGameplayEffectToSelf");
 
@@ -915,7 +961,7 @@ FActiveGameplayEffectHandle Helper::ApplyGameplayEffect(UObject* Pawn, UObject* 
 		float Level;
 		FGameplayEffectContextHandle EffectContext;
 		FActiveGameplayEffectHandle Return;
-	} BP_ApplyGameplayEffectToSelf_Params{GEClass, 1.0, FGameplayEffectContextHandle()};
+	} BP_ApplyGameplayEffectToSelf_Params{GEClass, Level, FGameplayEffectContextHandle()};
 
 	auto ASC = Helper::GetAbilitySystemComponent(Pawn);
 	ASC->ProcessEvent(BP_ApplyGameplayEffectToSelf, &BP_ApplyGameplayEffectToSelf_Params);
@@ -967,6 +1013,26 @@ UObject* Helper::GetRandomObjectOfClass(UObject* Class, bool bUseCache, bool bSa
 	}
 
 	return RandObject;
+}
+
+void Helper::ForceNetUpdate(UObject* Actor)
+{
+	static auto ForceNetUpdateFn = FindObject<UFunction>("/Script/Engine.Actor.ForceNetUpdate");
+	Actor->ProcessEvent(ForceNetUpdateFn);
+}
+
+UObject* Helper::GetAnimInstance(UObject* Mesh)
+{
+	static auto GetAnimInstance = FindObject<UFunction>("/Script/Engine.SkeletalMeshComponent.GetAnimInstance");
+	UObject* AnimInstance = nullptr;
+	Mesh->ProcessEvent(GetAnimInstance, &AnimInstance);
+	return AnimInstance;
+}
+
+UObject* Helper::GetMesh(UObject* Character)
+{
+	static auto MeshOffset = Character->GetOffsetSlow("Mesh");
+	return *Get<UObject*>(Character, MeshOffset);
 }
 
 UObject* GetHealthSet(UObject* Pawn)
@@ -1309,6 +1375,9 @@ UObject* Helper::SummonPickup(UObject* Pawn, UObject* Definition, BothVector Loc
 			static auto bTossedFromContainerOffset = Pickup->GetOffset("bTossedFromContainer");
 			*(bool*)(__int64(Pickup) + bTossedFromContainerOffset) = true;
 		}
+
+		static auto PickupLocationDataOffset = Pickup->GetOffset("PickupLocationData");
+		auto PickupLocationData = (void*)(__int64(Pickup) + PickupLocationDataOffset);
 
 		static auto TossPickupFn = FindObject<UFunction>("/Script/FortniteGame.FortPickup.TossPickup");
 

@@ -535,6 +535,8 @@ void Events::StartEvent()
 					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
 					// Loader->ProcessEvent(loader_callstarteventonscripting, &SecondsSinceEventBegan);
+
+					std::cout << "aa!\n";
 				}
 			}
 		}
@@ -645,7 +647,7 @@ std::string Events::GetEventPlaylistName()
 BothVector Events::GetSpawnLocation(bool* outSuccess)
 {
 	if (outSuccess)
-		*outSuccess = true;
+		*outSuccess = true; 
 
 	if (Fortnite_Version == 20.40)
 		return BothVector(DVector(-104890.109, 120585.164, 117040.789));

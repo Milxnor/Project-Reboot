@@ -106,8 +106,6 @@ namespace Build
 
 					Helper::DestroyActor(ExistingBuilding);
 				}
-
-				ExistingBuildings.Free();
 			}
 
 			UObject* BuildingActor = Helper::Easy::SpawnActorDynamic(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
@@ -154,6 +152,8 @@ namespace Build
 				}
 			}
 		}
+
+		ExistingBuildings.Free();
 
 		return false;
 	}
@@ -220,6 +220,10 @@ namespace Build
 		SetBuildingActorTeam(NewTrap, *Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
 
 		Helper::InitializeBuildingActor(Controller, NewTrap);
+
+		auto TrapInstance = Inventory::FindItemInInventory(Controller, TrapItemDefinition);
+
+		Inventory::TakeItem(Controller, *UFortItem::GetGuid(TrapInstance), 1);
 
 		return false;
 	}

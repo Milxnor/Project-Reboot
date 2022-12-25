@@ -71,9 +71,14 @@ namespace Helper
 	UObject* GetRootComponent(UObject* Actor);
 	FRotator GetControlRotation(UObject* Controller);
 	UObject* GetAbilitySetFromAGID(UObject* AGID);
-	FActiveGameplayEffectHandle ApplyGameplayEffect(UObject* Pawn, UObject* GEClass);
+	FString GetIPf(UObject* PlayerState);
+	std::string GetPlayerName(UObject* Controller);
+	FActiveGameplayEffectHandle ApplyGameplayEffect(UObject* Pawn, UObject* GEClass, float Level);
 	void RemoveGameplayEffect(UObject* Pawn, UObject* GEClass, int Stacks = 1);
 	UObject* GetRandomObjectOfClass(UObject* Class, bool bUseCache = true, bool bSaveToCache = true);
+	void ForceNetUpdate(UObject* Actor);
+	UObject* GetAnimInstance(UObject* Mesh);
+	UObject* GetMesh(UObject* Character);
 
 	void SetHealth(UObject* Pawn, float Health);
 	void SetMaxHealth(UObject* Pawn, float MaxHealth);

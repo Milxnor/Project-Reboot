@@ -915,7 +915,7 @@ bool Inventory::ServerAttemptInventoryDrop(UObject* Controller, UFunction*, void
 	auto newDef = TakeItem(Controller, Params->ItemGuid, Params->Count);
 	auto Entry = UFortItem::GetItemEntry(Instance);
 
-	// FFortItemEntry::ModifyStateValue(Controller, Entry, nullptr, false); // needed?
+	FFortItemEntry::ModifyStateValue(Controller, Entry, nullptr, false, true); // needed?
 
 	auto Pickup = Helper::SummonPickup(Pawn, newDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count, false, 
 		*FFortItemEntry::GetLoadedAmmo(Entry));
@@ -971,7 +971,9 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	bool bShouldSwap = false;
 
-	if (Inventory::WhatQuickBars(*Definition) == EFortQuickBars::Primary)
+	bool IsTheDefPickingUpPrimary = Inventory::WhatQuickBars(*Definition) == EFortQuickBars::Primary;
+
+	if (IsTheDefPickingUpPrimary)
 	{
 		int PrimaryQuickBarSlotsFilled = 0;
 
@@ -1008,7 +1010,7 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 	int NextSlot = 1;
 
-	struct FFortPickupLocationData
+	/* struct FFortPickupLocationData
 	{
 		UObject* PickupTarget;                                             // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData)
 		UObject* CombineTarget;  // AFortPickup                                           // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData)
@@ -1022,16 +1024,24 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 		bool                                               bPlayPickupSound;                                         // 0x004D(0x0001) (ZeroConstructor, IsPlainOldData)
 		unsigned char                                      UnknownData00[0x2];                                       // 0x004E(0x0002) MISSED OFFSET
 		FGuid                                       PickupGuid;                                               // 0x0050(0x0010) (IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
-	};
+	}; */
 
 	static auto PickupLocationDataOffset = Pickup->GetOffset("PickupLocationData");
-	auto PickupLocationData = (FFortPickupLocationData*)(__int64(Pickup) + PickupLocationDataOffset);
+	auto PickupLocationData = (void*)(__int64(Pickup) + PickupLocationDataOffset);
 
-	PickupLocationData->PickupTarget = Pawn;
-	PickupLocationData->ItemOwner = Pawn;
-	// PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
-	PickupLocationData->FlyTime = 0.40f;
-	// PickupLocationData->StartDirection = StartDirection;
+	static auto PickupTargetOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortPickupLocationData", "PickupTarget");
+	static auto ItemOwnerOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortPickupLocationData", "ItemOwner");
+	static auto FlyTimeOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortPickupLocationData", "FlyTime");
+	static auto PickupGuidOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortPickupLocationData", "PickupGuid");
+
+	*Get<UObject*>(PickupLocationData, PickupTargetOffset) = Pawn;
+	*Get<UObject*>(PickupLocationData, ItemOwnerOffset) = Pawn;
+	*Get<float>(PickupLocationData, FlyTimeOffset) = 0.40f;
+	// *Get<FGuid>(PickupLocationData, PickupGuidOffset) = *FFortItemEntry::GetGuid(PickupEntry);
+
+	// PickupLocationData->PickupTarget = Pawn;
+	// PickupLocationData->ItemOwner = Pawn;
+	// PickupLocationData->FlyTime = 0.40f;
 
 	static auto OnRep_PickupLocationData = FindObject<UFunction>("/Script/FortniteGame.FortPickup.OnRep_PickupLocationData");
 	Pickup->ProcessEvent(OnRep_PickupLocationData);
@@ -1070,7 +1080,8 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	*StateValue->GetIntValue() = 1;
 	*StateValue->GetStateType() = 2;
 	
-	FFortItemEntry::ModifyStateValue(Controller, UFortItem::GetItemEntry(Instance), StateValue, true);
+	// if (!IsTheDefPickingUpPrimary)
+	FFortItemEntry::ModifyStateValue(Controller, UFortItem::GetItemEntry(Instance), StateValue, true, true);
 
 	*bPickedUp = true;
 
@@ -1153,13 +1164,11 @@ void Inventory::HandleReloadCost(UObject* Weapon, int AmountToRemove)
 
 	// std::cout << "WeaponData Name: " << WeaponData->GetFullName() << '\n';
 
-	if (/* !AmmoDef || */ WeaponData->IsA(FortTrapItemDefinitionClass))
-		AmmoDef = WeaponData;
+	if (AmmoDef)
+	{
+		auto AmmoInstance = Inventory::FindItemInInventory(Controller, AmmoDef);
 
-	// std::cout << "ammoDefName: " << AmmoDef->GetFullName() << '\n';
-
-	auto AmmoInstance = Inventory::FindItemInInventory(Controller, AmmoDef);
-
-	if (!IsBadReadPtr(AmmoInstance))
-		Inventory::TakeItem(Controller, *UFortItem::GetGuid(AmmoInstance), AmountToRemove);
+		if (!IsBadReadPtr(AmmoInstance))
+			Inventory::TakeItem(Controller, *UFortItem::GetGuid(AmmoInstance), AmountToRemove);
+	}
 }

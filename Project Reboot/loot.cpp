@@ -703,7 +703,7 @@ std::vector<std::pair<UObject*, int>> Looting::PickLootDrops(const std::string& 
 
 		for (int i = 0; i < LTDData.Num(); i++)
 		{
-			auto SparseArray = LTDData.At(i);
+			auto& SparseArray = LTDData.At(i);
 			auto& Pair = SparseArray.ElementData.Value;
 			auto RowFName = Pair.First;
 			FFortLootTierData* RowData = Pair.Second;
@@ -759,7 +759,7 @@ std::vector<std::pair<UObject*, int>> Looting::PickLootDrops(const std::string& 
 
 		for (int i = 0; i < LPData.Num(); i++)
 		{
-			auto SparseArray = LPData.At(i);
+			auto& SparseArray = LPData.At(i);
 			auto& Pair = SparseArray.ElementData.Value;
 			auto RowFName = Pair.First;
 			FFortLootPackageData* RowData = Pair.Second;
@@ -842,7 +842,7 @@ std::vector<std::pair<UObject*, int>> Looting::PickLootDrops(const std::string& 
 
 			for (int z = 0; z < LPData.Num(); z++)
 			{
-				auto SparseArray_2 = LPData.At(z);
+				auto& SparseArray_2 = LPData.At(z);
 				auto& Pair_2 = SparseArray_2.ElementData.Value;
 				auto RowFName_2 = Pair_2.First;
 				FFortLootPackageData* RowData_2 = Pair_2.Second;

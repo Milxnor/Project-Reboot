@@ -11,6 +11,7 @@
 #include "loot.h"
 #include "team.h"
 #include "events.h"
+#include "moderation.h"
 #include "interaction.h"
 
 // bool ReceivedDestroyed(UObject* Effect, UFunction*, void* Parameters) { return true; }
@@ -62,8 +63,9 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		// AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
-		AddHook(Engine_Version >= 424 ? "/Script/FortniteGame.FortPhysicsPawn.ServerMove"
-			: "/Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams", ServerUpdatePhysicsParams);
+		// AddHook(Engine_Version >= 424 ? "/Script/FortniteGame.FortPhysicsPawn.ServerMove"
+			// : "/Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams", ServerUpdatePhysicsParams);
+ 
 		// AddHook("/Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.ReceiveDestroyed", ReceivedDestroyed);
 		AddHook("/Game/Athena/BuildingActors/ConsumableBGAs/CBGA_Parent.CBGA_Parent_C.OnGatherOrInteract", OnGatherOrInteract);
 
@@ -120,10 +122,23 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 	if (PlayerController)
 	{
+		if (Moderation::Banning::IsBanned(PlayerController))
+		{
+			std::string KickReason = "You have been banned!";
+
+			std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
+			FString Reason;
+			Reason.Set(wstr.c_str());
+
+			static auto ClientReturnToMainMenu = FindObject<UFunction>("/Script/Engine.PlayerController.ClientReturnToMainMenu");
+			PlayerController->ProcessEvent(ClientReturnToMainMenu, &Reason);
+			return false;
+		}
+		
 		auto PlayerState = Helper::GetPlayerStateFromController(PlayerController);
 
 		if (!PlayerState)
-			return PlayerController;
+			return false;
 
 		/* static auto InventoryNetworkManagementComponentOffset = PlayerController->GetOffset("InventoryNetworkManagementComponent");
 
@@ -246,7 +261,7 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 	Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
 
-	UObject* PickaxeDef = FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+	UObject* PickaxeDef = Helper::GetPickaxeDef(PlayerController, true); // FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
 	auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
 	if (Defines::bIsCreative)
@@ -259,35 +274,6 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	// auto d2 = Inventory::GiveItem(PlayerController, d, EFortQuickBars::Primary, 2);
 
 	// FFortItemEntry::SetLoadedAmmo(UFortItem::GetItemEntry(d2), PlayerController, 100);
-
-	//
-
-	/* static UObject* Def1 = FindObject("/HighTower/Items/HoneyDew/Fist/Abilities/WID_HighTower_HoneyDew_Fists.WID_HighTower_HoneyDew_Fists");
-	std::cout << "Def1: " << Def1 << '\n';
-	auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
-
-	static UObject* Def2 = FindObject("/HighTower/Items/Wasabi/Claws/CoreBR/WID_HighTower_Wasabi_Claws_CoreBR.WID_HighTower_Wasabi_Claws_CoreBR");
-	auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
-
-	static UObject* Def3 = FindObject("/HighTower/Items/Tomato/RepulsorCannon/CoreBR/WID_HighTower_Tomato_RepulsorCannon_CoreBR.WID_HighTower_Tomato_RepulsorCannon_CoreBR");
-	auto Def3Instance = Inventory::GiveItem(PlayerController, Def3, EFortQuickBars::Primary, 3);
-
-	static UObject* Def4 = FindObject("/HighTower/Items/Tapas/SkyStrike/CoreBR/WID_HighTower_Tapas_SkyStrike_CoreBR.WID_HighTower_Tapas_SkyStrike_CoreBR");
-	auto Def4Instance = Inventory::GiveItem(PlayerController, Def4, EFortQuickBars::Primary, 4);
-
-	static UObject* Def5 = FindObject("/HighTower/Items/Grape/BrambleShield/CoreBR/WID_HighTower_Grape_BrambleShield_CoreBR.WID_HighTower_Grape_BrambleShield_CoreBR");
-	auto Def5Instance = Inventory::GiveItem(PlayerController, Def5, EFortQuickBars::Primary, 5); */
-
-	/*
-
-	static UObject* Def1 = FindObject("/Game/Athena/Items/Gameplay/Keycards/AGID_Athena_Keycard_Tomato.AGID_Athena_Keycard_Tomato");
-	std::cout << "Def1: " << Def1 << '\n';
-	auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Primary, 1);
-
-	static UObject* Def2 = FindObject("/Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item");
-	auto Def2Instance = Inventory::GiveItem(PlayerController, Def2, EFortQuickBars::Primary, 2);
-
-	*/
 
 	static UObject* Def1 = FindObject("/Game/Athena/Items/Traps/TID_Context_BouncePad_Athena.TID_Context_BouncePad_Athena");
 	// auto Def1Instance = Inventory::GiveItem(PlayerController, Def1, EFortQuickBars::Secondary, 0);
@@ -307,54 +293,15 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
 
-	// if ((Engine_Version < 426 || Fortnite_Season >= 14) && Fortnite_Season < 17)
+	if (Fortnite_Version < 8.30)
 	{
-		if (Fortnite_Version < 8.30)
-		{
-			static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
-
-			if (AbilitySet)
-			{
-				static auto GameplayAbilitiesOffset = AbilitySet->GetOffset("GameplayAbilities");
-				auto Abilities = (TArray<UObject*>*)(__int64(AbilitySet) + GameplayAbilitiesOffset);
-
-				if (Abilities)
-				{
-					for (int i = 0; i < Abilities->Num(); i++)
-					{
-						auto Ability = Abilities->At(i);
-
-						if (!Ability)
-							continue;
-
-						Abilities::GrantGameplayAbility(Pawn, Ability);
-					}
-				}
-			}
-		}
-		else
-		{
-			static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
-
-			if (AbilitySet)
-			{
-				static auto GameplayAbilitiesOffset = AbilitySet->GetOffset("GameplayAbilities");
-				auto Abilities = Get<TArray<UObject*>>(AbilitySet, GameplayAbilitiesOffset);
-
-				if (Abilities)
-				{
-					for (int i = 0; i < Abilities->Num(); i++)
-					{
-						auto Ability = Abilities->At(i);
-
-						if (!Ability)
-							continue;
-
-						Abilities::GrantGameplayAbility(Pawn, Ability);
-					}
-				}
-			}
-		}
+		static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
+		GiveFortAbilitySet(Pawn, AbilitySet);
+	}
+	else
+	{
+		static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
+		GiveFortAbilitySet(Pawn, AbilitySet);
 	}
 
 	/* auto Boss = LoadObject(Helper::GetBGAClass(), "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss_Meowscles_Jr.BP_MangPlayerPawn_Boss_Meowscles_Jr_C");
@@ -487,32 +434,150 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		NewVolume->ProcessEvent(UpdateSize, &NewSize); */
 	}
 
-	bool bGoIntoWarmup = !Defines::bIsGoingToPlayMainEvent || Fortnite_Version == 14.60;
+	auto CurrentPlaylist = Helper::GetPlaylist();
 
-	std::cout << "bGoIntoWarmup: " << bGoIntoWarmup << '\n';
+	if (!IsBadReadPtr(CurrentPlaylist) && !IsBadReadPtr(*CurrentPlaylist))
+	{
+		static auto LTMModifiersOffset = (*CurrentPlaylist)->GetOffset("ModifierList", false, false, false);
 
-	if (bGoIntoWarmup)
+		if (LTMModifiersOffset != 0)
+		{
+			auto LTMModifiers = Get<TArray<TSoftObjectPtr>>(*CurrentPlaylist, LTMModifiersOffset);
+
+			//std::cout << "LTMModifiers->Num(): " << LTMModifiers->Num() << '\n';
+
+			for (int i = 0; i < LTMModifiers->Num(); i++)
+			{
+				static auto LTMModifierClass = FindObject("/Script/FortniteGame.FortGameplayModifierItemDefinition");
+				auto& LTMModifierSoftObject = LTMModifiers->At(i);
+				auto LTMModifier = LTMModifierSoftObject.Get(LTMModifierClass);
+
+				// std::cout << std::format("[{}] {}\n", i, CoreGameModeModifier->GetFullName());
+
+				static auto PersistentGameplayEffectsOffset = LTMModifier->GetOffset("PersistentGameplayEffects");
+				static auto PersistentAbilitySetsOffset = LTMModifier->GetOffset("PersistentAbilitySets");
+				auto PersistentGameplayEffects = Get<TArray<__int64>>(LTMModifier, PersistentGameplayEffectsOffset);
+				auto PersistentAbilitySets = Get<TArray<__int64>>(LTMModifier, PersistentAbilitySetsOffset);
+
+				static auto FortGameplayEffectDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortGameplayEffectDeliveryInfo"));
+				static auto FortAbilitySetDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortAbilitySetDeliveryInfo"));
+
+				if (!IsBadReadPtr(PersistentGameplayEffects))
+				{
+					for (int o = 0; o < PersistentGameplayEffects->Num(); o++)
+					{
+						auto DeliveryInfo = PersistentGameplayEffects->AtPtr(o, FortGameplayEffectDeliveryInfoSize);
+
+						static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortGameplayEffectDeliveryInfo", "DeliveryRequirements");
+						void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
+
+						static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
+						static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
+
+						std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
+
+						if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
+						{
+							static auto GameplayEffectsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortGameplayEffectDeliveryInfo", "GameplayEffects");
+
+							if (GameplayEffectsOffset != 0)
+							{
+								struct FGameplayEffectApplicationInfo
+								{
+									TSoftObjectPtr GameplayEffect;
+									float Level;                                                    // 0x0028(0x0004) (Edit, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+									unsigned char                                      UnknownData01[0x4];                                       // 0x002C(0x0004) MISSED OFFSET
+								};
+
+								auto GrantedGameplayEffects = Get<TArray<FGameplayEffectApplicationInfo>>(DeliveryInfo, GameplayEffectsOffset);
+
+								for (int n = 0; n < GrantedGameplayEffects->Num(); n++)
+								{
+									auto& GameplayEffectInfo = GrantedGameplayEffects->At(n);
+
+									static auto BlueprintGeneratedClass = Helper::GetBGAClass();
+
+									auto GameplayEffectBlueprintGeneratedClass = GameplayEffectInfo.GameplayEffect.Get(BlueprintGeneratedClass);
+
+									if (GameplayEffectBlueprintGeneratedClass)
+									{
+										Helper::ApplyGameplayEffect(Pawn, GameplayEffectBlueprintGeneratedClass, GameplayEffectInfo.Level);
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (!IsBadReadPtr(PersistentAbilitySets))
+				{
+					for (int p = 0; p < PersistentAbilitySets->Num(); p++)
+					{
+						auto DeliveryInfo = PersistentAbilitySets->AtPtr(p, FortAbilitySetDeliveryInfoSize);
+
+						static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "DeliveryRequirements");
+						void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
+
+						static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
+						static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
+
+						std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
+
+						if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
+						{
+							static auto AbilitySetsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "AbilitySets");
+							auto AbilitySets = Get<TArray<TSoftObjectPtr>>(DeliveryInfo, AbilitySetsOffset);
+
+							for (int z = 0; z < AbilitySets->Num(); z++)
+							{
+								static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
+
+								auto& AbilitySetSoft = AbilitySets->At(z);
+
+								auto CurrentAbilitySet = AbilitySetSoft.Get(FortAbilitySetClass);
+
+								std::cout << "CurrentAbilitySet: " << CurrentAbilitySet << " AbilitySetSoft.ObjectID.AssetPathName.ToString(): " << AbilitySetSoft.ObjectID.AssetPathName.ToString() << '\n';
+
+								if (CurrentAbilitySet)
+									GiveFortAbilitySet(Pawn, CurrentAbilitySet);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	static bool bFirst = true;
+
+	if (bFirst)
 	{
 		auto GameMode = Helper::GetGameMode();
 
-		/* int WarmupCountdownLengthSeconds = 1000;
+		static auto StartMatch = FindObject<UFunction>("/Script/Engine.GameMode.StartMatch");
+		GameMode->ProcessEvent(StartMatch);
 
-		static auto WarmupEarlyCountdownDurationOffset = GameMode->GetOffset("WarmupEarlyCountdownDuration");
-		*Get<float>(GameMode, WarmupEarlyCountdownDurationOffset) = WarmupCountdownLengthSeconds;
+		bool bGoIntoWarmup = !Defines::bIsGoingToPlayMainEvent || Fortnite_Version == 14.60;
 
-		static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
-		*Get<float>(GameState, WarmupCountdownEndTimeOffset) = Helper::GetTimeSeconds() + WarmupCountdownLengthSeconds;
+		std::cout << "bGoIntoWarmup: " << bGoIntoWarmup << '\n';
 
-		static auto WarmupCountdownStartTimeOffset = GameState->GetOffset("WarmupCountdownStartTime");
-		*Get<float>(GameState, WarmupCountdownEndTimeOffset) = Helper::GetTimeSeconds(); */
+		if (bGoIntoWarmup)
+		{
+			auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
-		auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
+			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
 
-		*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
+			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
-		static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
+			GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+		}
+	}
 
-		GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+	if (Engine_Version <= 421 && *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) == EAthenaGamePhase::Warmup)
+	{
+		static auto bCanBeDamagedOffset = Pawn->GetOffset("bCanBeDamaged");
+		static auto bCanBeDamagedFieldMask = GetFieldMask(Pawn->GetProperty("bCanBeDamaged"));
+		SetBitfield(Get<PlaceholderBitfield>(Pawn, bCanBeDamagedOffset), bCanBeDamagedFieldMask, true);
 	}
 
 	return false;
@@ -520,7 +585,19 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 {
-	if (GameMode && Defines::bReadyForStartMatch)
+	/* static auto WarmupClass = Defines::bIsCreative ? FindObject("/Script/FortniteGame.FortPlayerStartCreative") : FindObject("/Script/FortniteGame.FortPlayerStartWarmup");
+
+	if (!WarmupClass)
+		return false;
+
+	TArray<UObject*> OutActors = Helper::GetAllActorsOfClass(WarmupClass);
+
+	if (OutActors.Num() == 0)
+	{
+		return false;
+	} */
+
+	if (Defines::bReadyForStartMatch)
 	{
 		Defines::bReadyForStartMatch = false;
 
@@ -549,10 +626,10 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 
 		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
 
-		static auto GameplayTagContainerOffset = Playlist->GetOffset("GameplayTagContainer");
+		/* static auto GameplayTagContainerOffset = Playlist->GetOffset("GameplayTagContainer");
 		auto GameplayTagContainer = Get<FGameplayTagContainer>(Playlist, GameplayTagContainerOffset);
 
-		std::cout << "playltist tgags; " << GameplayTagContainer->ToStringSimple(true) << '\n';
+		std::cout << "playltist tgags; " << GameplayTagContainer->ToStringSimple(true) << '\n'; */
 
 		auto GameStatePlaylist = Helper::GetPlaylist();
 
@@ -642,7 +719,7 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		Defines::bIsRestarting = false;
 	}
 
-	*(bool*)Parameters = true;
+	// *(bool*)Parameters = true;
 
 	return true;
 	// return false;
@@ -881,7 +958,8 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	if (GamePhase > EAthenaGamePhase::Warmup)
 	{
-		if (*TeamsLeft <= 1) // && (int)Playlist->WinCondition <= 1
+		// if (*TeamsLeft <= 1) // && (int)Playlist->WinCondition <= 1
+		if (*PlayersLeftPtr <= 1)
 		{
 			static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
 
@@ -1039,7 +1117,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 
 	if (Fortnite_Version >= 8.30) // && Fortnite_Version != 14.40
 	{
-		// if (false)
+		if (false)
 		{
 			static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
 
@@ -1441,7 +1519,16 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 					// auto Quaternion = *Rotation; // Helper::GetActorRotation(Vehicle);
 					// auto Rotator = Quaternion.Rotator();
 
-					auto Rotator = Helper::GetActorRotation(Vehicle);
+					static auto RelativeRotationOffset = RootComp->GetOffset("RelativeRotation");
+					auto RelativeRotation = Get<FRotator>(RootComp, RelativeRotationOffset);
+
+					static auto RelativeLocationOffset = RootComp->GetOffset("RelativeLocation");
+					auto RelativeLocation = Get<FVector>(RootComp, RelativeLocationOffset);
+
+					static auto ComponentVelocityOffset = RootComp->GetOffset("ComponentVelocity");
+					auto ComponentVelocity = Get<FVector>(RootComp, ComponentVelocityOffset);
+
+					auto Rotator = *RelativeRotation; // Helper::GetActorRotation(Vehicle);
 					// auto Quaternion = Rotator.Quaternion();
 
 					// auto wrongRot = *Rotation;
@@ -1460,11 +1547,34 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 					NewTransform->Rotation = Quaternion; // *Rotation;
 					NewTransform->Scale3D = { 1, 1, 1 };
 
+					/* static auto SetPhysicsLinearVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsLinearVelocity");
+
+					struct {
+						FVector                                     NewVel;                                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						bool                                        bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						FName                                       BoneName;
+					} SetPhysicsLinearVelocity_Params{ *LinearVelocity, false, FName() };
+
+					RootComp->ProcessEvent(SetPhysicsLinearVelocity, &SetPhysicsLinearVelocity);
+
+					static auto SetPhysicsAngularVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsAngularVelocity");
+
+					struct {
+						FVector                                     NewAngVel;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						bool                                               bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						FName                                       BoneName;
+					} SetPhysicsAngularVelocity_Params{ *AngularVelocity, false, FName() };
+
+					RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params); */
+
 					bool bShouldTeleport = false;
 
 					static auto bTeleportOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "bTeleport", false, true);
 					auto bTeleport = (bool*)(__int64(params) + bTeleportOffset);
 					*bTeleport = bShouldTeleport;
+
+					static auto OnRep_Transform = FindObject<UFunction>("/Script/Engine.SceneComponent.OnRep_Transform");
+					RootComp->ProcessEvent(OnRep_Transform);
 
 					/* static auto bSweepOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "bSweep", false, true);
 					auto bSweep = (bool*)(__int64(params) + bSweepOffset);
@@ -1484,26 +1594,6 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 					static auto OnRep_SafeTeleportInfo = FindObject<UFunction>("/Script/FortniteGame.FortPhysicsPawn:OnRep_SafeTeleportInfo");
 					Vehicle->ProcessEvent(OnRep_SafeTeleportInfo); */
 				}
-
-				/* static auto SetPhysicsLinearVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsLinearVelocity");
-
-				struct {
-					FVector                                     NewVel;                                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					bool                                        bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					FName                                       BoneName;
-				} SetPhysicsLinearVelocity_Params{ *LinearVelocity, false, FName() };
-
-				RootComp->ProcessEvent(SetPhysicsLinearVelocity, &SetPhysicsLinearVelocity);
-
-				static auto SetPhysicsAngularVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsAngularVelocity");
-
-				struct {
-					FVector                                     NewAngVel;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					bool                                               bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					FName                                       BoneName;
-				} SetPhysicsAngularVelocity_Params{ *AngularVelocity, false, FName() };
-
-				RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params); */
 			}
 
 			// Vehicle->ProcessEvent("OnRep_ServerCorrection");
@@ -1792,6 +1882,66 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	return false;
 }
 
+bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters)
+{
+	/* if (ZiplineState.Zipline)
+	{
+		ZiplineState.TimeZipliningBegan = Helper::GetTimeSeconds();
+	}
+	else
+	{
+		ZiplineState.TimeZipliningEndedFromJump = Helper::GetTimeSeconds(); // ??
+	} */
+	
+	static auto ZiplinePawnStateSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.ZiplinePawnState"));
+
+	static auto ZiplineStateOffset = Pawn->GetOffset("ZiplineState");
+
+	memcpy_s(Get<void>(Pawn, ZiplineStateOffset), ZiplinePawnStateSize, Parameters, ZiplinePawnStateSize);
+
+	auto Mesh = Helper::GetMesh(Pawn);
+	auto AnimInstance = Helper::GetAnimInstance(Mesh);
+
+	/* static auto ZiplineInputOffset = AnimInstance->GetOffset("ZiplineInput");
+	auto ZiplineInput = Get<FFortAnimInput_Zipline>(AnimInstance, ZiplineInputOffset);
+	ZiplineInput->bIsZiplining = ZiplineState.bIsZiplining; */
+
+	static bool bFoundFunc = false;
+
+	static void (*OnRep_ZiplineState)(UObject* Pawn);
+
+	if (!bFoundFunc)
+	{
+		bFoundFunc = true;
+
+		static auto Addrr = Memcury::Scanner::FindStringRef(L"ZIPLINES!! Role(%s)  AFortPlayerPawn::OnRep_ZiplineState ZiplineState.bIsZiplining=%d").Get();
+
+		std::cout << "Addrr: " << Addrr << '\n';
+
+		if (Addrr)
+		{
+			for (int i = 600; i >= 0; i--)
+			{
+				// LOG("[{}] 0x{:x} 0x{:x}", i, (int)*(uint8_t*)Addr - i, (int)*(uint8_t*)(Addr - i), (int)*(uint8_t*)(Addr - i + 1));
+
+				if (*(uint8_t*)(uint8_t*)(Addrr - i) == 0x40 && *(uint8_t*)(uint8_t*)(Addrr - i + 1) == 0x53)
+				{
+					OnRep_ZiplineState = decltype(OnRep_ZiplineState)(Addrr - i);
+				}
+			}
+		}
+
+		std::cout << std::format("OnRep_ZiplineState: 0x{:x}\n", (uintptr_t)OnRep_ZiplineState - __int64(GetModuleHandleW(0)));
+	}
+
+	if (OnRep_ZiplineState)
+		OnRep_ZiplineState(Pawn);
+
+	// Helper::ForceNetUpdate(Pawn);
+
+	return false;
+}
+
 bool onendabilitydance(UObject* Ability, UFunction*, void* Parameters)
 {
 	UObject* Pawn; // Helper::GetOwner(ability);
@@ -1935,7 +2085,7 @@ bool PlayerCanRestart(UObject* GameMode, UFunction*, void* Parameters)
 
 bool ServerUpdateStateSync(UObject* Vehicle, UFunction*, void* Parameters)
 {
-	/* auto StateSyncData = (TArray<unsigned char>*)Parameters;
+	auto StateSyncData = (TArray<unsigned char>*)Parameters;
 
 	std::cout << "StateSyncData Num: " << StateSyncData->Num() << '\n';
 
@@ -1945,7 +2095,7 @@ bool ServerUpdateStateSync(UObject* Vehicle, UFunction*, void* Parameters)
 
 		std::cout << "StateSyncData: " << StateSyncData << '\n';
 		std::cout << "StateSyncData Int: " << (int)StateSyncData << '\n';
-	} */
+	}
 
 	return false;
 }
