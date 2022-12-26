@@ -552,10 +552,9 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	if (bFirst)
 	{
-		auto GameMode = Helper::GetGameMode();
+		bFirst = false;
 
-		static auto StartMatch = FindObject<UFunction>("/Script/Engine.GameMode.StartMatch");
-		GameMode->ProcessEvent(StartMatch);
+		Defines::bShouldSpawnForagedItems = true;
 
 		bool bGoIntoWarmup = !Defines::bIsGoingToPlayMainEvent || Fortnite_Version == 14.60;
 
@@ -563,6 +562,19 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 		if (bGoIntoWarmup)
 		{
+			auto GameMode = Helper::GetGameMode();
+
+			/* int WarmupCountdownLengthSeconds = 1000;
+
+			static auto WarmupEarlyCountdownDurationOffset = GameMode->GetOffset("WarmupEarlyCountdownDuration");
+			*Get<float>(GameMode, WarmupEarlyCountdownDurationOffset) = WarmupCountdownLengthSeconds;
+
+			static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+			*Get<float>(GameState, WarmupCountdownEndTimeOffset) = Helper::GetTimeSeconds() + WarmupCountdownLengthSeconds;
+
+			static auto WarmupCountdownStartTimeOffset = GameState->GetOffset("WarmupCountdownStartTime");
+			*Get<float>(GameState, WarmupCountdownEndTimeOffset) = Helper::GetTimeSeconds(); */
+
 			auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
 
 			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
@@ -570,6 +582,8 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
 
 			GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
+
+			std::cout << "OnRep_GamePhase!\n";
 		}
 	}
 
@@ -1428,37 +1442,58 @@ bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
 	return false;
 }
 
-
-bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
+bool OnGamePhaseChanged(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	auto Phase = *(EAthenaGamePhase*)Parameters;
+	if (!Parameters)
+		return false;
 
-	std::cout << "Phase: " << (int)Phase << '\n';
+	auto o = Controller;
 
-	if ((int)Phase == 3 && Defines::bIsLateGame)
+	if (Engine_Version >= 424)
+		Controller = Helper::GetOwnerOfComponent(Controller); // CurrentAircraft
+
+	BothRotator Rotation = Fortnite_Season >= 20 ? BothRotator(*(DRotator*)Parameters) : BothRotator(*(FRotator*)Parameters);
+
+	UObject* Aircraft = nullptr;
+
+
+	if (Engine_Version >= 424)
 	{
-		std::cout << "Nice!\n";
+		static auto CurrentAircraftOffset = o->GetOffset("CurrentAircraft");
 
-		auto GameState = Helper::GetGameState();
-
-		static auto AircraftsOffset = GameState->GetOffset("Aircrafts");
-		auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
-
-		auto Aircraft = Aircrafts->At(0);
-
-		if (!Aircraft)
+		if (CurrentAircraftOffset != 0)
 		{
-			std::cout << "No aircraft!\n";
-			return false;
+			Aircraft = *Get<UObject*>(o, CurrentAircraftOffset);
 		}
-
-		FString StartSafeZone = L"startsafezone";
-		Helper::ExecuteConsoleCommand(StartSafeZone);
-
-		static auto SafeZonesStartTimeOffset = GameState->GetOffset("SafeZonesStartTime");
-		*Get<float>(GameState, SafeZonesStartTimeOffset) = 0.f;
 	}
 
+
+	if (!Aircraft)
+	{
+		auto GameState = Helper::GetGameState();
+
+		static auto AircraftsOffset = GameState->GetOffset("Aircrafts", false, false, false);
+
+
+		if (AircraftsOffset != 0)
+		{
+
+			auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+
+			if (IsBadReadPtr(Aircrafts))
+				return false;
+
+			Aircraft = Aircrafts->At(0);
+		}
+		else
+		{
+
+			static auto AircraftOffset = GameState->GetOffset("Aircraft");
+			Aircraft = *Get<UObject*>(GameState, AircraftOffset);
+		}
+
+
+	}
 	return false;
 }
 
