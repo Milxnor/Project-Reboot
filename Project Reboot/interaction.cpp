@@ -302,8 +302,8 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 		std::cout << "bIsDBNOFieldMask: " << (int)bIsDBNOFieldMask << '\n';
 
-		auto bIsDBNO = Get<PlaceholderBitfield>(DBNOPawn, bIsDBNOOffset);
-		SetBitfield(bIsDBNO, bIsDBNOFieldMask, false);
+		// auto bIsDBNO = Get<PlaceholderBitfield>(DBNOPawn, bIsDBNOOffset);
+		// SetBitfield(bIsDBNO, bIsDBNOFieldMask, false);
 
 		static auto OnRep_bIsDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPawn.OnRep_IsDBNO");
 		DBNOPawn->ProcessEvent(OnRep_bIsDBNO);
