@@ -143,9 +143,6 @@
     <ClCompile Include="moderation.cpp">
       <Filter>Source\Net</Filter>
     </ClCompile>
-    <ClCompile Include="milxnor.cpp">
-      <Filter>Source\Gameplay</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -228,9 +225,6 @@
     </ClInclude>
     <ClInclude Include="json.hpp">
       <Filter>Third Party</Filter>
-    </ClInclude>
-    <ClInclude Include="milxnor.h">
-      <Filter>Headers\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
