@@ -11,8 +11,13 @@
 #include "loot.h"
 #include "team.h"
 #include "events.h"
+#include <fstream>
 #include "moderation.h"
 #include "interaction.h"
+
+#ifdef MILXNOR_H
+#include "milxnor.h"
+#endif
 
 // bool ReceivedDestroyed(UObject* Effect, UFunction*, void* Parameters) { return true; }
 
@@ -90,6 +95,8 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 			Helper::SetSnowIndex(0); // Fill snow
 		if (Fortnite_Season == 11)
 			Helper::SetSnowIndex(100);
+		if (Fortnite_Version == 7.2 || Fortnite_Version == 7.3)
+			Helper::SetSnowIndex(1000);
 
 		static bool bbb = false;
 
@@ -158,18 +165,18 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		*Get<bool>(PlayerState, bHasStartedPlayingOffset) = true;
 	}
 
-	return false;
+	return true; // should be false
 }
 
 bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
 	auto Pawan = Helper::GetPawnFromController(PlayerController);
 
-	if (Pawan)
-		return false;
-
 	auto GameState = Helper::GetGameState();
 	static auto GamePhaseOffset = GameState->GetOffset("GamePhase");
+
+	if (Pawan || *Get<EAthenaGamePhase>(GameState, GamePhaseOffset) > EAthenaGamePhase::Warmup)
+		return false;
 
 	auto PlayerState = Helper::GetPlayerStateFromController(PlayerController);
 
@@ -225,13 +232,13 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	static auto BuildingItemData_Stair_W = FindObject(("/Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
 	static auto BuildingItemData_RoofS = FindObject(("/Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
 
+	UObject* PickaxeDef = Helper::GetPickaxeDef(PlayerController, true); // FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
+	auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
+
 	Inventory::GiveItem(PlayerController, BuildingItemData_Wall, EFortQuickBars::Secondary, 0, bUpdate);
 	Inventory::GiveItem(PlayerController, BuildingItemData_Floor, EFortQuickBars::Secondary, 1, bUpdate);
 	Inventory::GiveItem(PlayerController, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, bUpdate);
 	Inventory::GiveItem(PlayerController, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, bUpdate);
-
-	UObject* PickaxeDef = Helper::GetPickaxeDef(PlayerController, true); // FindObject("/Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
-	auto PickaxeInstance = Inventory::GiveItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0);
 
 	if (Defines::bIsCreative)
 	{
@@ -416,11 +423,9 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		if (bGoIntoWarmup)
 		{
 			auto OldPhase = *Get<EAthenaGamePhase>(GameState, GamePhaseOffset);
-
 			*Get<EAthenaGamePhase>(GameState, GamePhaseOffset) = EAthenaGamePhase::Warmup;
 
 			static auto OnRepGamePhase = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena.OnRep_GamePhase");
-
 			GameState->ProcessEvent(OnRepGamePhase, &OldPhase);
 		}
 	}
@@ -782,6 +787,9 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	{
 		beforePlayersLeft = *PlayersLeftPtr;
 		(*PlayersLeftPtr)--;
+
+		static auto OnRep_PlayersLeft = FindObject<UFunction>("/Script/FortniteGame.FortGameStateAthena:OnRep_PlayersLeft");
+		GameState->ProcessEvent(OnRep_PlayersLeft);
 
 		auto PlayerState = Helper::GetPlayerStateFromController(DeadController);
 
@@ -1642,6 +1650,7 @@ bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* 
 
 	*/
 
+	/*
 	auto TeamIDX = Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller));
 
 	std::cout << "TeamIDX: " << *TeamIDX << '\n';
@@ -1658,6 +1667,8 @@ bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* 
 	// if (*TeamIDX <= 3)
 
 	Teams::AssignTeam(Controller);
+
+	*/
 
 	static bool bbbb = false;
 
@@ -1723,6 +1734,15 @@ bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Paramete
 	CBGAParent->ProcessEvent(Gather, &Controller); */
 
 	return false;
+}
+
+bool ServerCheat(UObject* PlayerController, UFunction* Function, void* Parameters)
+{
+#ifdef MILXNOR_H
+	return ServerCheatMilxnor(PlayerController, Function, Parameters);
+#else
+	return true;
+#endif
 }
 
 struct FFortRespawnData
@@ -2177,6 +2197,18 @@ bool PlayerCanRestart(UObject* GameMode, UFunction*, void* Parameters)
 	return false;
 }
 
+bool ServerChoosePart(UObject* Pawn, UFunction*, void* Parameters)
+{
+	struct SCP_Params { TEnumAsByte<EFortCustomPartType> Part; UObject* ChosenCharacterPart; };
+
+	auto Params = (SCP_Params*)Parameters;
+
+	if (Params && (!Params->ChosenCharacterPart && Params->Part.Get() != EFortCustomPartType::Backpack))
+		return true;
+
+	return false;
+}
+
 bool ServerUpdateStateSync(UObject* Vehicle, UFunction*, void* Parameters)
 {
 	auto StateSyncData = (TArray<unsigned char>*)Parameters;
@@ -2332,6 +2364,18 @@ void ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			!strstr(FunctionName.c_str(), "BGA_Petrol_Pickup_C"))
 		{
 			std::cout << ("Function called: ") << FunctionName << '\n';
+		}
+	}
+
+	if (Defines::bLogRPCs)
+	{
+		auto FunctionName = Function->GetName();
+
+		if (FunctionName.starts_with("Server"))
+		{
+			std::ofstream aaaaa("rpcs.log", std::ios_base::app);
+			aaaaa << FunctionName << '\n';
+			aaaaa.close();
 		}
 	}
 

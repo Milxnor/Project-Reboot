@@ -174,6 +174,10 @@ namespace Build
 			return false;
 
 		auto Pawn = Helper::GetOwner(DecoTool);
+
+		if (!Pawn)
+			return false;
+
 		auto Controller = Helper::GetControllerFromPawn(Pawn);
 
 		static auto ItemDefinitionOffset = DecoTool->GetOffset("ItemDefinition");
@@ -223,7 +227,8 @@ namespace Build
 
 		auto TrapInstance = Inventory::FindItemInInventory(Controller, TrapItemDefinition);
 
-		Inventory::TakeItem(Controller, *UFortItem::GetGuid(TrapInstance), 1);
+		if (TrapInstance)
+			Inventory::TakeItem(Controller, *UFortItem::GetGuid(TrapInstance), 1);
 
 		return false;
 	}

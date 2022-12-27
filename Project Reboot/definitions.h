@@ -5,6 +5,7 @@
 
 // #define TEST_NEW_LOOTING
 // #define DEVELOPER_LOGGING
+// #define MILXNOR_H
 
 #ifdef DEVELOPER_LOGGING
 #define DEV_LOG(...) std::cout << std::format(__VA_ARGS__) << '\n';
@@ -28,6 +29,7 @@ namespace Defines
 	inline bool bInfiniteMats = false;
 	inline bool bIsSTW = false; // not implemeneted
 	inline bool bRespawning = false;
+	inline bool bLogRPCs = false;
 	inline bool bShouldRestart = false;
 
 	inline int SecondsUntilTravel = 5;

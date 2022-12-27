@@ -17,6 +17,10 @@
 #include "interaction.h"
 #include <intrin.h>
 
+#ifdef MILXNOR_H
+#include "milxnor.h"
+#endif
+
 // DEFINE_LOG_CATEGORY_STATIC(LogInit, ELogLevel::All)
 
 __int64 rettrue() { return 1; }
@@ -58,6 +62,11 @@ DWORD WINAPI Initialize(LPVOID)
     }
 
     std::cout << std::format("Base Address 0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
+
+    std::ofstream aaa("baseaddress.log", std::ios_base::app);
+
+    if (aaa.is_open())
+        aaa << std::format("Base: 0x{:x}", (uintptr_t)GetModuleHandleW(0)) << '\n';
 
     if (!InitializePatterns())
     {
@@ -395,6 +404,11 @@ DWORD WINAPI Initialize(LPVOID)
 
     std::cout << "PC: " << PC << '\n';
 
+    std::ofstream baiafgq("rpcs.log", std::ios_base::app);
+    
+    if (baiafgq.is_open())
+        baiafgq << "\n\nNEW\n\n";
+
     static auto SwitchLevel = FindObject<UFunction>("/Script/Engine.PlayerController.SwitchLevel");
 
     std::wstring LevelWStr = std::wstring(Defines::MapName.begin(), Defines::MapName.end());
@@ -418,10 +432,16 @@ DWORD WINAPI Initialize(LPVOID)
         }
     }
 
+    AddHook("/Script/FortniteGame.FortPlayerPawn.ServerChoosePart", ServerChoosePart);
+    AddHook("/Script/Engine.PlayerController.ServerChangeName", UFuncRetTrue);
     AddHook("/Script/Engine.GameModeBase.HandleStartingNewPlayer", HandleStartingNewPlayer);
     AddHook("/Script/Engine.GameMode.ReadyToStartMatch", ReadyToStartMatch);
     AddHook("/Script/Engine.PlayerController.ServerAcknowledgePossession", ServerAcknowledgePossession);
     AddHook("/Script/FortniteGame.FortPlayerController.ServerReadyToStartMatch", ServerReadyToStartMatch);
+
+#ifdef MILXNOR_H
+    InitializeMilxnorHooks();
+#endif
 
     // AddHook("/Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable", ServerUpdateVehicleInputStateUnreliable);
 
@@ -436,12 +456,14 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("/Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon", Inventory::ServerExecuteInventoryWeapon);
 
     AddHook("/Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor", Build::ServerCreateBuildingActor);
-    AddHook("/Script/FortniteGame.FortDecoTool.ServerSpawnDeco", Build::ServerSpawnDeco);
+    // AddHook("/Script/FortniteGame.FortDecoTool.ServerSpawnDeco", Build::ServerSpawnDeco);
 
     AddHook(Engine_Version < 423 ? "/Script/FortniteGame.FortPlayerController.ServerAttemptInteract" :
         "/Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract", Interaction::ServerAttemptInteract);
 
     AddHook("/Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped", ServerLoadingScreenDropped);
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerCheat", ServerCheat);
+    AddHook("/Script/FortniteGame.FortPlayerController.ServerCheatAll", UFuncRetTrue);
 
     if (Fortnite_Season < 20)
     {

@@ -372,6 +372,7 @@ void MainUI()
 			if (bLoaded)
 			{
 				ImGui::Checkbox("Log ProcessEvent", &Defines::bLogProcessEvent);
+				ImGui::Checkbox("Log RPCS", &Defines::bLogRPCs);
 				ImGui::Checkbox("Infinite Mats", &Defines::bInfiniteMats);
 				ImGui::Checkbox("Infinite Ammo", &Defines::bInfiniteAmmo);
 				// ImGui::Checkbox("Respawning", &Defines::bRespawning);

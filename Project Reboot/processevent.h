@@ -26,7 +26,9 @@ bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters);
 bool HandleOwnerAsBuildingActorDestroyed(UObject* ObjectComponent, UFunction* func, void* Parameters);
 bool OnDeathServer(UObject* BuildingActor, UFunction* func, void* Parameters);
 bool OnAircraftExitedDropZone(UObject* GameMode, UFunction*, void* Parameters);
+bool ServerCheat(UObject* PlayerController, UFunction* Function, void* Parameters);
 bool PlayerCanRestart(UObject* GameMode, UFunction*, void* Parameters);
+bool ServerChoosePart(UObject* Pawn, UFunction*, void* Parameters);
 static bool UFuncRetTrue(UObject*, UFunction*, void* Parameters) { return true; }
 bool ServerUpdateStateSync(UObject* Vehicle, UFunction*, void* Parameters);
 bool onendabilitydance(UObject* Ability, UFunction*, void* Parameters);

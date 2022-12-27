@@ -706,7 +706,7 @@ UObject* Helper::GetPickaxeDef(UObject* Controller, bool bGetNew)
 
 		if (ItemInstances->Num() >= 6)
 		{
-			auto PickaxeInstance = ItemInstances->At(5); // cursed probs // loop through all inventoryt and find  first melee
+			auto PickaxeInstance = ItemInstances->At(1); // cursed probs // loop through all inventoryt and find  first melee
 			toRet = IsBadReadPtr(PickaxeInstance) ? nullptr : *UFortItem::GetDefinition(PickaxeInstance);
 		}
 	}
@@ -803,6 +803,8 @@ UObject* Helper::GetGameDataCosmetics()
 
 void Helper::SetSnowIndex(int SnowIndex)
 {
+	auto GameState = Helper::GetGameState();
+
 	if (Fortnite_Season == 19)
 	{
 		auto sjt9ase9i = FindObject("/SpecialSurfaceCoverage/Maps/SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.SpecialSurfaceCoverage_Artemis_Terrain_LS_Parent_Overlay.PersistentLevel.BP_Artemis_S19Progression_C_0");
@@ -827,8 +829,46 @@ void Helper::SetSnowIndex(int SnowIndex)
 
 		if (agfag)
 		{
+			struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ GameState, *Helper::GetPlaylist(),
+				FGameplayTagContainer() };
+
+			auto OnReady_E426AA7F4F2319EA06FBA2B9905F0B24 = FindObject<UFunction>("/Game/Athena/Environments/Landscape/Blueprints/BP_SnowSetup.BP_SnowSetup_C.OnReady_E426AA7F4F2319EA06FBA2B9905F0B24");
+
+			if (OnReady_E426AA7F4F2319EA06FBA2B9905F0B24)
+				agfag->ProcessEvent(OnReady_E426AA7F4F2319EA06FBA2B9905F0B24, &GameState);
+
+			auto OnReady_0A511B314AE165C51798519FB84738B8 = FindObject<UFunction>("/Game/Athena/Environments/Landscape/Blueprints/BP_SnowSetup.BP_SnowSetup_C.OnReady_0A511B314AE165C51798519FB84738B8");
+
+			if (OnReady_0A511B314AE165C51798519FB84738B8)
+				agfag->ProcessEvent(OnReady_0A511B314AE165C51798519FB84738B8, &bbparms);
+
 			auto age = FindObject<UFunction>("/Game/Athena/Apollo/Environments/Blueprints/CalendarEvents/BP_ApolloSnowSetup.BP_ApolloSnowSetup_C.RefreshMapLocations");
 			agfag->ProcessEvent(age);
+		}
+	}
+
+	if (Fortnite_Season == 7)
+	{
+		auto snowsetup = FindObject("/Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.BP_SnowSetup_2");
+
+		std::cout << "snowsteup: " << snowsetup << '\n';
+
+		if (snowsetup)
+		{
+			auto OnReady_347B1F4D45630C357605FCB417D749A3 = FindObject<UFunction>("/Game/Athena/Environments/Landscape/Blueprints/BP_SnowSetup.BP_SnowSetup_C.OnReady_347B1F4D45630C357605FCB417D749A3");
+			
+			if (OnReady_347B1F4D45630C357605FCB417D749A3)
+				snowsetup->ProcessEvent(OnReady_347B1F4D45630C357605FCB417D749A3, &GameState);
+
+			auto afga = FindObject<UFunction>("/Game/Athena/Environments/Landscape/Blueprints/BP_SnowSetup.BP_SnowSetup_C.SetSnow");
+
+			if (afga)
+				snowsetup->ProcessEvent(afga, &SnowIndex);
+	
+			auto RefreshMapLocations = FindObject<UFunction>("/Game/Athena/Environments/Landscape/Blueprints/BP_SnowSetup.BP_SnowSetup_C.RefreshMapLocations");
+
+			if (RefreshMapLocations)
+				snowsetup->ProcessEvent(RefreshMapLocations);
 		}
 	}
 }

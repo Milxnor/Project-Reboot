@@ -170,6 +170,7 @@
     <ClCompile Include="..\other\inc\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="abilities.cpp" />
     <ClCompile Include="ai.cpp" />
+    <ClCompile Include="milxnor.cpp" />
     <ClCompile Include="moderation.cpp" />
     <ClCompile Include="build.cpp" />
     <ClCompile Include="calendar.cpp" />
@@ -199,6 +200,7 @@
     <ClInclude Include="abilities.h" />
     <ClInclude Include="ai.h" />
     <ClInclude Include="json.hpp" />
+    <ClInclude Include="milxnor.h" />
     <ClInclude Include="moderation.h" />
     <ClInclude Include="build.h" />
     <ClInclude Include="datatables.h" />
