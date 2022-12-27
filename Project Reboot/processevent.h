@@ -21,6 +21,7 @@ bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* 
 bool OnGatherOrInteract(UObject* CBGAParent, UFunction* Function, void* Parameters);
 bool ServerClientIsReadyToRespawn(UObject* Controller, UFunction*, void* Parameters);
 bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters);
+bool SpawnDefaultPawnFor(UObject* GameMode, UFunction*, void* Parameters);
 bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters);
 bool HandleOwnerAsBuildingActorDestroyed(UObject* ObjectComponent, UFunction* func, void* Parameters);
 bool OnDeathServer(UObject* BuildingActor, UFunction* func, void* Parameters);

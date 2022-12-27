@@ -40,6 +40,7 @@ namespace Helper
 	void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart);
 	void SetOwner(UObject* Actor, UObject* Owner);
 	UObject* GetAbilitySystemComponent(UObject* Pawn);
+	UObject* GetAbilitySystemComponentFromPS(UObject* PlayerState);
 	void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false, UObject* ReplacedBuilding = nullptr);
 	UObject** GetPlaylist();
 	TArray<UObject*> GetAllActorsOfClass(UObject* Class);

@@ -427,10 +427,11 @@ void MainUI()
 					Defines::bShouldSpawnVehicles = true;
 				}
 
-				if (ImGui::Button("Restart"))
+				/* if (ImGui::Button("Restart"))
 				{
+					Defines::bShouldRestart = true;
 					Server::Restart();
-				}
+				} */
 
 				if (ImGui::Button("toggle FloorLoot"))
 				{

@@ -61,10 +61,11 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 
 		AddHook("/Script/FortniteGame.FortMatchAnalytics.OnGamePhaseChanged", OnGamePhaseChanged);
 
-		// AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+		AddHook("/Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
-		// AddHook(Engine_Version >= 424 ? "/Script/FortniteGame.FortPhysicsPawn.ServerMove"
-			// : "/Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams", ServerUpdatePhysicsParams);
+		// AddHook(FindObject("/Script/FortniteGame.FortPhysicsPawn.ServerMove") ? "/Script/FortniteGame.FortPhysicsPawn.ServerMove"
+			// : FindObject("/Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams") ? "/Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"
+			// : "/Script/FortniteGame.FortPhysicsPawn.ServerUpdatePhysicsParams", ServerUpdatePhysicsParams);
  
 		// AddHook("/Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.ReceiveDestroyed", ReceivedDestroyed);
 		AddHook("/Game/Athena/BuildingActors/ConsumableBGAs/CBGA_Parent.CBGA_Parent_C.OnGatherOrInteract", OnGatherOrInteract);
@@ -140,38 +141,6 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		if (!PlayerState)
 			return false;
 
-		/* static auto InventoryNetworkManagementComponentOffset = PlayerController->GetOffset("InventoryNetworkManagementComponent");
-
-		std::cout << "InventoryNetworkManagementComponent: " << *Get<UObject*>(PlayerController, InventoryNetworkManagementComponentOffset) << '\n';
-
-		*Get<UObject*>(PlayerController, InventoryNetworkManagementComponentOffset) = nullptr;
-
-		auto WorldInventory = Inventory::GetWorldInventory(PlayerController);
-
-		static auto ForceNetUpdate = FindObject<UFunction>("/Script/Engine.Actor.ForceNetUpdate");
-		WorldInventory->ProcessEvent(ForceNetUpdate);
-
-		static auto NetUpdateFrequencyOffset = WorldInventory->GetOffset("NetUpdateFrequency");
-		*Get<float>(WorldInventory, NetUpdateFrequencyOffset) = 100.f;
-
-		static auto MinNetUpdateFrequencyOffset = WorldInventory->GetOffset("MinNetUpdateFrequency");
-		*Get<float>(WorldInventory, MinNetUpdateFrequencyOffset) = 100.f;
-
-		static auto NetPriorityOffset = WorldInventory->GetOffset("NetPriority");
-		*Get<float>(WorldInventory, NetPriorityOffset) = 3.f; */
-
-		/* static auto AttributeSetsOffset = PlayerState->GetOffset("AttributeSets");
-		auto AttributeSets = Get<__int64>(PlayerState, AttributeSetsOffset);
-		auto HomebaseSet = *(UObject**)(__int64(AttributeSets) + 0x48);
-
-		// *(UObject**)(__int64(AttributeSets) + 0x48) = nullptr;
-
-		static auto WorldInventorySizeBonusOffset = HomebaseSet->GetOffset("WorldInventorySizeBonus");
-
-		auto WorldInventorySizeBonus = Get<FFortGameplayAttributeData>(HomebaseSet, WorldInventorySizeBonusOffset);
-
-		*WorldInventorySizeBonus = FFortGameplayAttributeData(); */
-
 		std::cout << "set!\n";
 
 		if (Fortnite_Version < 7.4)
@@ -189,7 +158,7 @@ bool HandleStartingNewPlayer(UObject* Object, UFunction* Function, void* Paramet
 		*Get<bool>(PlayerState, bHasStartedPlayingOffset) = true;
 	}
 
-	return true;
+	return false;
 }
 
 bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, void* Parameters)
@@ -287,11 +256,10 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		Inventory::GiveItem(PlayerController, PortalDeviceDef, EFortQuickBars::Primary, 1);
 	}
 
-	//
-
 	UObject* Pawn = Helper::SpawnPawn(PlayerController, SpawnLocation, true);
 
-	auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
+	if (!Pawn)
+		return false;
 
 	if (Fortnite_Version < 8.30)
 	{
@@ -304,12 +272,6 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 		GiveFortAbilitySet(Pawn, AbilitySet);
 	}
 
-	/* auto Boss = LoadObject(Helper::GetBGAClass(), "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss_Meowscles_Jr.BP_MangPlayerPawn_Boss_Meowscles_Jr_C");
-
-	std::cout << "Boss: " << Boss << '\n';
-
-	Helper::Easy::SpawnActor(Boss, Helper::GetActorLocation(Pawn)); */
-
 	if (Defines::bIsGoingToPlayMainEvent)
 	{
 		static auto CheatManagerOffset = PlayerController->GetOffset("CheatManager");
@@ -320,118 +282,6 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 		static auto God = FindObject<UFunction>("/Script/Engine.CheatManager.God");
 		(*CheatManager)->ProcessEvent(God);
-	}
-
-	if (Defines::bIsCreative)
-	{
-		static auto OtherRiftClass = FindObject("/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C"); // LoadObject(Helper::GetBGAClass(), "/Game/Playgrounds/Items/BGA_IslandPortal.BGA_IslandPortal_C");
-
-		UObject* NewPortal = nullptr;
-
-		std::cout << "OtherRiftClass: " << OtherRiftClass << '\n';
-
-		const wchar_t* url = L"https://media.discordapp.net/attachments/993197214744715284/1038297667463291001/45F01C49-1220-426C-973B-110583AC1B4F.png"; // std::wstring(Defines::urlForPortal.begin(), Defines::urlForPortal.end()).c_str();
-
-		if (OtherRiftClass)
-		{
-			NewPortal = Helper::Easy::SpawnActor(OtherRiftClass, Helper::GetActorLocation(Helper::GetPlayerStart()));
-
-			static auto DestinationActorOffset = NewPortal->GetOffset("DestinationActor");
-			*Get<UObject*>(NewPortal, DestinationActorOffset) = Pawn;
-
-			static auto CreatorNameOffset = NewPortal->GetOffset("CreatorName");
-			*Get<FString>(NewPortal, CreatorNameOffset) = L"MILXNORDEV";
-
-			static auto UserDescriptionOffset = NewPortal->GetOffset("UserDescription");
-			*Get<FString>(NewPortal, UserDescriptionOffset) = L"Project Reboot bad tbh";
-
-			static auto ImageURLOffset = NewPortal->GetOffset("ImageURL");
-			*Get<FString>(NewPortal, ImageURLOffset) = url;
-
-			static auto OnThumbnailTextureReady = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnThumbnailTextureReady");
-			NewPortal->ProcessEvent(OnThumbnailTextureReady);
-
-			static auto OnRep_ImageURLChanged = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_ImageURLChanged");
-			NewPortal->ProcessEvent(OnRep_ImageURLChanged);
-
-			static auto UniqueIdOffset = PlayerState->GetOffset("UniqueId");
-
-			static auto OwningPlayerOffset = NewPortal->GetOffset("OwningPlayer");
-			*Get<FUniqueNetIdRepl>(NewPortal, OwningPlayerOffset) = *(FUniqueNetIdRepl*)(__int64(PlayerState) + UniqueIdOffset);
-
-			static auto bIsPublishedPortalOffset = NewPortal->GetOffset("bIsPublishedPortal");
-			*Get<bool>(NewPortal, bIsPublishedPortalOffset) = false;
-
-			static auto OnRep_PublishedPortal = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PublishedPortal");
-			NewPortal->ProcessEvent(OnRep_PublishedPortal);
-
-			static auto OnRep_OwningPlayer = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_OwningPlayer");
-			NewPortal->ProcessEvent(OnRep_OwningPlayer);
-
-			static auto bPortalOpenOffset = NewPortal->GetOffset("bPortalOpen");
-			*Get<bool>(NewPortal, bPortalOpenOffset) = true;
-
-			static auto OnRep_PortalOpen = FindObject<UFunction>("/Script/FortniteGame.FortAthenaCreativePortal.OnRep_PortalOpen");
-			NewPortal->ProcessEvent(OnRep_PortalOpen);
-		}
-
-		Helper::InitializeBuildingActor(PlayerController, NewPortal);
-
-		static int OwnedPortalOffset = PlayerController->GetOffset("OwnedPortal");
-		*Get<UObject*>(PlayerController, OwnedPortalOffset) = NewPortal;
-
-		Defines::Portal = NewPortal;
-
-		auto GameState = Helper::GetGameState();
-		static auto VolumeManagerOffset = GameState->GetOffset("VolumeManager");
-
-		auto VolumeManager = Get<UObject*>(GameState, VolumeManagerOffset);
-		std::cout << "VolumeManager: " << *VolumeManager << '\n';
-
-		if (!*VolumeManager)
-		{
-			static auto VolumeManagerClass = FindObject("/Game/Athena/BuildingActors/FortVolumeManager_BP.FortVolumeManager_BP_C");
-			*VolumeManager = Helper::Easy::SpawnActor(VolumeManagerClass, Helper::GetActorLocation(Pawn));
-		}
-
-		std::cout << "VolumeManager: " << *VolumeManager << '\n';
-
-		static auto VolumeClass = FindObject("/Script/FortniteGame.FortVolume");
-		auto NewVolume = Helper::Easy::SpawnActor(VolumeClass, Helper::GetActorLocation(Pawn));
-		Helper::InitializeBuildingActor(PlayerController, NewVolume);
-
-		if (*VolumeManager)
-		{
-			struct FVolumePlayerStateInfo : public FFastArraySerializerItem
-			{
-				unsigned char                                      UnknownData00[0x4];                                       // 0x000C(0x0004) MISSED OFFSET
-				UObject* PlayerState;                                              // 0x0010(0x0008) (ZeroConstructor, Transient, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				UObject* Volume;                                                   // 0x0018(0x0008) (ZeroConstructor, Transient, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			};
-
-			struct FFortVolumeActiveUsers : public FastTArray::FFastArraySerializerOL
-			{
-				TArray<FVolumePlayerStateInfo>              Items;                                                    // 0x00B0(0x0010) (ZeroConstructor, Transient, NativeAccessSpecifierPrivate)
-				UObject* Manager;                                                  // 0x00C0(0x0008) (ZeroConstructor, Transient, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-			};
-
-			static auto VolumeObjectsOffset = (*VolumeManager)->GetOffset("VolumeObjects");
-			Get<TArray<UObject*>>(*VolumeManager, VolumeObjectsOffset)->Add(NewVolume);
-
-			static auto VolumeActivePlayersOffset = (*VolumeManager)->GetOffset("VolumeActivePlayers");
-			auto VolumeActivePlayers = Get<FFortVolumeActiveUsers>(*VolumeManager, VolumeActivePlayersOffset);
-
-			VolumeActivePlayers->Manager = *VolumeManager;
-			FVolumePlayerStateInfo newinfo;
-			newinfo.PlayerState = PlayerState;
-			newinfo.Volume = NewVolume;
-			VolumeActivePlayers->Items.Add(newinfo);
-			FastTArray::MarkArrayDirty(VolumeActivePlayers);
-		}
-
-		/* static auto UpdateSize = FindObject<UFunction>("/Script/FortniteGame.FortVolume.UpdateSize");
-		FVector NewSize = FVector{ 10000, 10000, 10000 };
-		NewVolume->ProcessEvent(UpdateSize, &NewSize); */
 	}
 
 	auto CurrentPlaylist = Helper::GetPlaylist();
@@ -552,6 +402,8 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	if (bFirst)
 	{
+		bFirst = false;
+
 		auto GameMode = Helper::GetGameMode();
 
 		static auto StartMatch = FindObject<UFunction>("/Script/Engine.GameMode.StartMatch");
@@ -625,6 +477,20 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 		auto Playlist = FindObjectSlow(cpyplaylist);
 
 		std::cout << "Setting playlist to: " << (Playlist ? Playlist->GetName() : "UNDEFINED") << '\n';
+
+		auto Engine = Helper::GetEngine();
+
+		static auto GameInstanceOffset = Engine->GetOffset("GameInstance");
+		auto GameInstance = *Get<UObject*>(Engine, GameInstanceOffset);
+
+		if (!GameInstance)
+			return false;
+
+		static auto LocalPlayersOffset = GameInstance->GetOffset("LocalPlayers");
+		auto& LocalPlayers = *Get<TArray<UObject*>>(GameInstance, LocalPlayersOffset);
+
+		if (LocalPlayers.size())
+			LocalPlayers.RemoveAt(0);
 
 		/* static auto GameplayTagContainerOffset = Playlist->GetOffset("GameplayTagContainer");
 		auto GameplayTagContainer = Get<FGameplayTagContainer>(Playlist, GameplayTagContainerOffset);
@@ -717,6 +583,13 @@ bool ReadyToStartMatch(UObject* GameMode, UFunction* Function, void* Parameters)
 			*Get<bool>(GameState, DefaultGliderRedeployCanRedeployOffset) = Defines::bIsPlayground;
 
 		Defines::bIsRestarting = false;
+
+		if (GameMode)
+		{
+			static auto bWorldIsReadyOffset = GameMode->GetOffset("bWorldIsReady");
+			static auto bWorldIsReadyFieldMask = GetFieldMask(GameMode->GetProperty("bWorldIsReady"));
+			SetBitfield(Get<PlaceholderBitfield>(GameMode, bWorldIsReadyOffset), bWorldIsReadyFieldMask, true);
+		}
 	}
 
 	// *(bool*)Parameters = true;
@@ -1111,6 +984,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	static auto ClientSendTeamStatsForPlayer = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientSendTeamStatsForPlayer");
 	DeadController->ProcessEvent(ClientSendTeamStatsForPlayer, &teamStats); // "You came x out of y Players"
 
+	// if (DeadPawn->IsKillPending() // IDK
 	auto DeathLocation = Helper::GetActorLocation(DeadPawn);
 
 	DeathLocation.Describe();
@@ -1392,6 +1266,174 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 
 	auto Pawn = Helper::SpawnPawn(Controller, ExitLocation, false);
 
+	if (Defines::bIsLateGame)
+	{	
+		if (!Defines::bWipeInventoryOnAircraft)
+			Inventory::WipeInventory(Controller, false);
+
+		std::cout << "A!\n";
+
+		static UObject* AthenaAmmoDataRockets = FindObject(("/Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
+		static UObject* AthenaAmmoDataShells = FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
+		static UObject* AthenaAmmoDataBulletsMedium = FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
+		static UObject* AthenaAmmoDataBulletsLight = FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
+		static UObject* AthenaAmmoDataBulletsHeavy = FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+
+		if (!AthenaAmmoDataRockets || !AthenaAmmoDataShells || !AthenaAmmoDataBulletsMedium || !AthenaAmmoDataBulletsLight || !AthenaAmmoDataBulletsHeavy)
+			std::cout << "Some ammo is invalid!\n";
+
+		Inventory::GiveItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 15);
+		Inventory::GiveItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 50);
+		Inventory::GiveItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 350);
+		Inventory::GiveItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 300);
+		Inventory::GiveItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 50);
+
+		static auto WoodItemData = FindObject(("/Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+		static auto StoneItemData = FindObject(("/Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+		static auto MetalItemData = FindObject(("/Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+		Inventory::GiveItem(Controller, WoodItemData, EFortQuickBars::Secondary, 0, 500);
+		Inventory::GiveItem(Controller, StoneItemData, EFortQuickBars::Secondary, 0, 500);
+		Inventory::GiveItem(Controller, MetalItemData, EFortQuickBars::Secondary, 0, 500);
+
+		std::cout << "C!\n";
+
+		auto AR = Looting::GetRandomItem(ItemType::Weapon);
+
+		while (!AR.Definition || (!AR.Definition->GetFullName().contains("Assault") && !AR.Definition->GetFullName().contains("LMG")))
+		{
+			AR = Looting::GetRandomItem(ItemType::Weapon);
+		}
+
+		std::cout << "B!\n";
+
+		auto Shotgun = Looting::GetRandomItem(ItemType::Weapon);
+
+		while (!Shotgun.Definition || !Shotgun.Definition->GetFullName().contains("Shotgun"))
+		{
+			Shotgun = Looting::GetRandomItem(ItemType::Weapon);
+		}
+
+		std::cout << "D!\n";
+
+		Inventory::GiveItem(Controller, AR.Definition, EFortQuickBars::Primary, 1, 1, true);
+		Inventory::GiveItem(Controller, Shotgun.Definition, EFortQuickBars::Primary, 2, 1, true);
+
+		std::cout << "CC!\n";
+
+		std::random_device rd; // obtain a random number from hardware
+		std::mt19937 gen(rd()); // seed the generator
+
+		std::uniform_int_distribution<> distr(0, 10);
+
+		int slotForFirstConsumable = 3;
+		int slotForSecondConsumable = 4;
+		int slotForThirdConsumable = 5;
+
+		if (Fortnite_Version < 9)
+		{
+			if (distr(gen) > 6) // 2 heals
+			{
+				if (distr(gen) >= 4) // 40/60 sniper or smg
+				{
+					auto SMG = Looting::GetRandomItem(ItemType::Weapon);
+
+					while (!SMG.Definition || IsBadReadPtr(SMG.Definition) || !SMG.Definition->GetFullName().contains("PDW")) // bad
+					{
+						SMG = Looting::GetRandomItem(ItemType::Weapon);
+					}
+
+					Inventory::GiveItem(Controller, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
+				}
+				else
+				{
+					auto Sniper = Looting::GetRandomItem(ItemType::Weapon);
+
+					while (!Sniper.Definition || IsBadReadPtr(Sniper.Definition) || !Sniper.Definition->GetFullName().contains("Sniper"))
+					{
+						Sniper = Looting::GetRandomItem(ItemType::Weapon);
+					}
+
+					Inventory::GiveItem(Controller, Sniper.Definition, EFortQuickBars::Primary, 3, 1, true);
+				}
+
+				std::cout << "E!\n";
+
+				slotForFirstConsumable = 4;
+				slotForSecondConsumable = 5;
+				slotForThirdConsumable = -1;
+			}
+			else // 1 heal
+			{
+				{
+					auto SMG = Looting::GetRandomItem(ItemType::Weapon);
+
+					while (!SMG.Definition || IsBadReadPtr(SMG.Definition) || !SMG.Definition->GetFullName().contains("PDW")) // bad
+					{
+						SMG = Looting::GetRandomItem(ItemType::Weapon);
+					}
+
+					Inventory::GiveItem(Controller, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
+				}
+
+				{
+					auto Sniper = Looting::GetRandomItem(ItemType::Weapon);
+
+					while (!Sniper.Definition || IsBadReadPtr(Sniper.Definition) || !Sniper.Definition->GetFullName().contains("Sniper"))
+					{
+						Sniper = Looting::GetRandomItem(ItemType::Weapon);
+					}
+
+					Inventory::GiveItem(Controller, Sniper.Definition, EFortQuickBars::Primary, 4, 1, true);
+				}
+
+				std::cout << "G!\n";
+
+				slotForFirstConsumable = 5;
+				slotForSecondConsumable = -1;
+				slotForThirdConsumable = -1;
+			}
+		}
+
+		if (slotForFirstConsumable != -1)
+		{
+			auto Consumable1 = Looting::GetRandomItem(ItemType::Consumable);
+
+			/* while (!Consumable1.Definition || !Consumable1.Definition->GetFullName().contains("Shield") || !Consumable1.Definition->GetFullName().contains("Med"))
+			{
+				Consumable1 = Looting::GetRandomItem(ItemType::Consumable);
+			} */
+
+			Inventory::GiveItem(Controller, Consumable1.Definition, EFortQuickBars::Primary, slotForFirstConsumable, Consumable1.DropCount);
+		}
+
+		if (slotForSecondConsumable != -1)
+		{
+			auto Consumable2 = Looting::GetRandomItem(ItemType::Consumable);
+
+			/* while (!Consumable2.Definition || !Consumable2.Definition->GetFullName().contains("Shield") || !Consumable2.Definition->GetFullName().contains("Med"))
+			{
+				Consumable2 = Looting::GetRandomItem(ItemType::Consumable);
+			} */
+
+			Inventory::GiveItem(Controller, Consumable2.Definition, EFortQuickBars::Primary, slotForSecondConsumable, Consumable2.DropCount);
+		}
+
+		if (slotForThirdConsumable != -1)
+		{
+			auto Consumable3 = Looting::GetRandomItem(ItemType::Consumable);
+
+			/* while (!Consumable3.Definition || !Consumable3.Definition->GetFullName().contains("Shield") || !Consumable3.Definition->GetFullName().contains("Med"))
+			{
+				Consumable3 = Looting::GetRandomItem(ItemType::Consumable);
+			} */
+
+			Inventory::GiveItem(Controller, Consumable3.Definition, EFortQuickBars::Primary, slotForThirdConsumable, Consumable3.DropCount);
+		}
+	}
+
+	// ASC->RemoveActiveGameplayEffectBySourceEffect(SlurpEffect);
+
 	return false;
 }
 
@@ -1435,7 +1477,7 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 
 	std::cout << "Phase: " << (int)Phase << '\n';
 
-	if ((int)Phase == 3 && Defines::bIsLateGame)
+	/* if ((int)Phase == 3 && Defines::bIsLateGame)
 	{
 		std::cout << "Nice!\n";
 
@@ -1457,7 +1499,7 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 
 		static auto SafeZonesStartTimeOffset = GameState->GetOffset("SafeZonesStartTime");
 		*Get<float>(GameState, SafeZonesStartTimeOffset) = 0.f;
-	}
+	} */
 
 	return false;
 }
@@ -1495,50 +1537,28 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 			if (RootComp)
 			{
 				static auto SetWorldTransform = FindObject<UFunction>("/Script/Engine.SceneComponent.K2_SetWorldTransform");
+				static auto SetRelativeLocation = FindObject<UFunction>("/Script/Engine.SceneComponent.K2_SetRelativeLocation");
 
 				static auto SizeOfSetWorldTransform = Helper::GetSizeOfClass(SetWorldTransform);
+				static auto SizeOfSetRelativeLocation = Helper::GetSizeOfClass(SetRelativeLocation);
 
 				// std::cout << "SizeOfSetWorldTransform: " << SizeOfSetWorldTransform << '\n';
 
-				auto params = malloc(SizeOfSetWorldTransform);
+				auto SetWorldTransform_Params = Alloc(SizeOfSetWorldTransform);
+				auto SetRelativeLocation_Params = Alloc(SizeOfSetRelativeLocation);
 
-				if (params)
+				if (SetWorldTransform_Params && SetRelativeLocation_Params)
 				{
-					/*
-
-						FTransform                                  NewTransform;                                             // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
-						bool                                               bSweep;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
-						struct FHitResult                                  SweepHitResult;                                           // (Parm, OutParm, IsPlainOldData)
-						bool                                               bTeleport;
-
-					*/
-
 					static auto NewTransformOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "NewTransform", false, true);
-					auto NewTransform = (FTransform*)(__int64(params) + NewTransformOffset);
+					auto NewTransform = (FTransform*)(__int64(SetWorldTransform_Params) + NewTransformOffset);
 
-					// auto Quaternion = *Rotation; // Helper::GetActorRotation(Vehicle);
-					// auto Rotator = Quaternion.Rotator();
+					static auto NewLocationOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetRelativeLocation", "NewLocation", false, true);
+					*(FVector*)(__int64(SetRelativeLocation_Params) + NewLocationOffset) = *Translation;
 
-					static auto RelativeRotationOffset = RootComp->GetOffset("RelativeRotation");
-					auto RelativeRotation = Get<FRotator>(RootComp, RelativeRotationOffset);
+					auto rot = Rotation->Rotator();
+					rot.Pitch = Helper::GetActorRotation(Vehicle).Pitch;
 
-					static auto RelativeLocationOffset = RootComp->GetOffset("RelativeLocation");
-					auto RelativeLocation = Get<FVector>(RootComp, RelativeLocationOffset);
-
-					static auto ComponentVelocityOffset = RootComp->GetOffset("ComponentVelocity");
-					auto ComponentVelocity = Get<FVector>(RootComp, ComponentVelocityOffset);
-
-					auto Rotator = *RelativeRotation; // Helper::GetActorRotation(Vehicle);
-					// auto Quaternion = Rotator.Quaternion();
-
-					// auto wrongRot = *Rotation;
-					// auto Rotator = wrongRot.Rotator();
-					// std::cout << "Before: ";
-					// Rotator = { Rotator.Yaw, Rotator.Roll, Rotator.Pitch };
-
-					// auto Rotator = Helper::GetActorRotation(Vehicle);
-
-					auto Quaternion = Rotator.Quaternion();
+					auto Quaternion = rot.Quaternion();
 
 					// std::cout << "Quat: ";
 					// Quaternion.Describe();
@@ -1547,7 +1567,15 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 					NewTransform->Rotation = Quaternion; // *Rotation;
 					NewTransform->Scale3D = { 1, 1, 1 };
 
-					/* static auto SetPhysicsLinearVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsLinearVelocity");
+					RootComp->ProcessEvent(SetRelativeLocation, SetRelativeLocation_Params);
+					RootComp->ProcessEvent(SetWorldTransform, SetWorldTransform_Params);
+
+					static auto bComponentToWorldUpdatedOffset = RootComp->GetOffset("bComponentToWorldUpdated");
+					static auto bComponentToWorldUpdatedFieldMask = GetFieldMask(RootComp->GetProperty("bComponentToWorldUpdated"));
+
+					SetBitfield(Get<PlaceholderBitfield>(RootComp, bComponentToWorldUpdatedOffset), bComponentToWorldUpdatedFieldMask, true);
+
+					static auto SetPhysicsLinearVelocity = FindObject<UFunction>("/Script/Engine.PrimitiveComponent.SetPhysicsLinearVelocity");
 
 					struct {
 						FVector                                     NewVel;                                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -1565,34 +1593,7 @@ bool ServerUpdatePhysicsParams(UObject* Vehicle, UFunction* Function, void* Para
 						FName                                       BoneName;
 					} SetPhysicsAngularVelocity_Params{ *AngularVelocity, false, FName() };
 
-					RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params); */
-
-					bool bShouldTeleport = false;
-
-					static auto bTeleportOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "bTeleport", false, true);
-					auto bTeleport = (bool*)(__int64(params) + bTeleportOffset);
-					*bTeleport = bShouldTeleport;
-
-					static auto OnRep_Transform = FindObject<UFunction>("/Script/Engine.SceneComponent.OnRep_Transform");
-					RootComp->ProcessEvent(OnRep_Transform);
-
-					/* static auto bSweepOffset = FindOffsetStruct2("/Script/Engine.SceneComponent.K2_SetWorldTransform", "bSweep", false, true);
-					auto bSweep = (bool*)(__int64(params) + bSweepOffset);
-					*bSweep = true; // col;lision stuff */
-
-					/* struct FVehicleSafeTeleportInfo
-					{
-						FVector                                     Location;                                                 // 0x0000(0x000C) (ZeroConstructor, IsPlainOldData)
-						FRotator                                    Rotation;                                                 // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
-					};
-
-					static auto SafeTeleportInfoOffset = Vehicle->GetOffset("SafeTeleportInfo");
-					auto SafeTeleportInfo = Get<FVehicleSafeTeleportInfo>(Vehicle, SafeTeleportInfoOffset);
-					SafeTeleportInfo->Location = NewTransform->Translation;
-					SafeTeleportInfo->Rotation = Rotator;
-
-					static auto OnRep_SafeTeleportInfo = FindObject<UFunction>("/Script/FortniteGame.FortPhysicsPawn:OnRep_SafeTeleportInfo");
-					Vehicle->ProcessEvent(OnRep_SafeTeleportInfo); */
+					RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params);
 				}
 			}
 
@@ -1620,6 +1621,26 @@ bool ServerGiveCreativeItem(UObject* Controller, UFunction* Function, void* Para
 bool ServerLoadingScreenDropped(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	// skunked
+
+	/* auto Pawn = Helper::GetPawnFromController(Controller);
+
+	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
+
+	if (Pawn && Pawn->IsA(PawnClass))
+	{
+		if (Fortnite_Version < 8.30)
+		{
+			static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
+			GiveFortAbilitySet(Pawn, AbilitySet);
+		}
+		else
+		{
+			static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
+			GiveFortAbilitySet(Pawn, AbilitySet);
+		}
+	}
+
+	*/
 
 	auto TeamIDX = Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller));
 
@@ -1882,6 +1903,39 @@ bool ServerPlayEmoteItem(UObject* Controller, UFunction*, void* Parameters)
 	return false;
 }
 
+bool SpawnDefaultPawnFor(UObject* GameMode, UFunction*, void* Parameters)
+{
+	struct parmas { UObject* PlayerController; UObject* StartSpot; UObject* Pawn;  };
+
+	auto Params = (parmas*)Parameters;
+
+	std::cout << "cal!\n";
+
+	// if (Helper::GetPawnFromController(Params->PlayerController))
+		// return false;
+
+	if (Helper::GetLocalPlayerController() == Params->PlayerController)
+	{
+		std::cout << "bruh!\n";
+		return true;
+	}
+
+	FTransform Transform{};
+	Transform.Translation = Helper::GetActorLocation(Helper::GetPlayerStart()); // Helper::GetActorLocation(Params->StartSpot); // IDK WHY THIS doesnt work
+	Transform.Scale3D = { 1, 1, 1 };
+
+	/* struct { UObject* NewPlayer; FTransform SpawnTransform; UObject* Pawn; } SpawnDefaultPawnAtTransform_Params{Params->PlayerController, Transform};
+
+	static auto SpawnDefaultPawnAtTransform = FindObject<UFunction>("/Script/Engine.GameModeBase.SpawnDefaultPawnAtTransform");
+	GameMode->ProcessEvent(SpawnDefaultPawnAtTransform, &SpawnDefaultPawnAtTransform_Params); */ // IDK WHY CRASH
+
+	static auto PawnClass = FindObject("/Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C");
+
+	Params->Pawn = Helper::Easy::SpawnActor(PawnClass, Transform.Translation, Transform.Rotation.Rotator()); // THIS IS ALL THE FUNC DOES anyway // SpawnDefaultPawnAtTransform_Params.Pawn;
+
+	return true;
+}
+
 bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters)
 {
 	/* if (ZiplineState.Zipline)
@@ -1892,19 +1946,59 @@ bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters)
 	{
 		ZiplineState.TimeZipliningEndedFromJump = Helper::GetTimeSeconds(); // ??
 	} */
-	
-	static auto ZiplinePawnStateSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.ZiplinePawnState"));
 
 	static auto ZiplineStateOffset = Pawn->GetOffset("ZiplineState");
 
-	memcpy_s(Get<void>(Pawn, ZiplineStateOffset), ZiplinePawnStateSize, Parameters, ZiplinePawnStateSize);
+	auto PawnZiplineState = Get<void>(Pawn, ZiplineStateOffset);
 
-	auto Mesh = Helper::GetMesh(Pawn);
-	auto AnimInstance = Helper::GetAnimInstance(Mesh);
+	static auto AuthoritativeValueOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "AuthoritativeValue");
+	
+	if (*(int*)(__int64(Parameters) + AuthoritativeValueOffset) > *(int*)(__int64(PawnZiplineState) + AuthoritativeValueOffset))
+	{
+		static auto ZiplinePawnStateSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.ZiplinePawnState"));
 
-	/* static auto ZiplineInputOffset = AnimInstance->GetOffset("ZiplineInput");
-	auto ZiplineInput = Get<FFortAnimInput_Zipline>(AnimInstance, ZiplineInputOffset);
-	ZiplineInput->bIsZiplining = ZiplineState.bIsZiplining; */
+		memcpy_s(PawnZiplineState, ZiplinePawnStateSize, Parameters, ZiplinePawnStateSize);
+
+		PawnZiplineState = Get<void>(Pawn, ZiplineStateOffset); // definitely how this works
+
+		static auto bIsZipliningOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "bIsZiplining");
+		static auto bJumpedOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "bJumped");
+
+		if (!*(bool*)(__int64(PawnZiplineState) + bIsZipliningOffset))
+		{
+			if (*(bool*)(__int64(PawnZiplineState) + bJumpedOffset))
+			{
+				FVector LaunchVelocity;
+				float ZiplineJumpDampening = 0.f;
+				float ZiplineJumpStrength = 0.f;
+				float v14 = 0.f;
+				float v15 = 0.f;
+
+				static auto ZiplineJumpDampeningCurveOffset = Pawn->GetOffset("ZiplineJumpDampening");
+				auto ZiplineJumpDampeningCurve = Get<FCurveTableRowHandle>(Pawn, ZiplineJumpDampeningCurveOffset);
+
+				static auto ZiplineJumpStrengthCurveOffset = Pawn->GetOffset("ZiplineJumpStrength");
+				auto ZiplineJumpStrengthCurve = Get<FCurveTableRowHandle>(Pawn, ZiplineJumpStrengthCurveOffset);
+
+				ZiplineJumpDampeningCurve->Eval(0, &ZiplineJumpDampening);
+				ZiplineJumpStrengthCurve->Eval(0, &ZiplineJumpStrength);
+
+				if ((float)(ZiplineJumpDampening * v14) >= -750.0)
+					LaunchVelocity.X = fminf(ZiplineJumpDampening * v14, 750.0);
+				else
+					LaunchVelocity.X = -1002733568;
+				if ((float)(ZiplineJumpDampening * v15) >= -750.0)
+					LaunchVelocity.Y = fminf(ZiplineJumpDampening * v15, 750.0);
+				else
+					LaunchVelocity.Y = -1002733568;
+
+				static auto LaunchCharacter = FindObject<UFunction>("/Script/Engine.Character.LaunchCharacter");
+
+				struct { FVector LaunchVelocity; bool bXYOverride; bool bZOverride; } ACharacter_LaunchCharacter_Params{LaunchVelocity, false, false};
+				Pawn->ProcessEvent(LaunchCharacter, &ACharacter_LaunchCharacter_Params);
+			}
+		}
+	}
 
 	static bool bFoundFunc = false;
 

@@ -352,7 +352,7 @@ DWORD WINAPI Initialize(LPVOID)
                         std::cout << std::format("[{}] {}\n", i, CurrentLevelName);
                     }
 
-                    auto LevelToOpen = AdditionalLevels->At(AdditionalLevels->Num() - 1);
+                    auto& LevelToOpen = AdditionalLevels->At(AdditionalLevels->Num() - 1);
 
                     auto LevelName = LevelToOpen.ObjectID.AssetPathName.ToString();
 
@@ -476,6 +476,7 @@ DWORD WINAPI Initialize(LPVOID)
     AddHook("/Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState", ServerSendZiplineState);
     AddHook("/Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem", ServerPlayEmoteItem);
     AddHook("/Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C.K2_OnEndAbility", onendabilitydance);
+    // AddHook("/Script/Engine.GameModeBase.SpawnDefaultPawnFor", SpawnDefaultPawnFor);
     // AddHook("/Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", Build::ServerRepairBuildingActor);
 
     // AddHook("/Script/FortniteGame.FortHeldObjectComponent.HandleOwnerAsBuildingActorDestroyed", HandleOwnerAsBuildingActorDestroyed);

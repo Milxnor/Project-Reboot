@@ -743,6 +743,38 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 		}
 	}
 
+	/*
+	if (Defines::bShouldRestart)
+	{
+		Defines::bShouldRestart = false;
+
+		Defines::AmountOfRestarts++;
+		Defines::bIsRestarting = true;
+
+		std::cout << MH_StatusToString(MH_DisableHook((PVOID)TickFlushAddress)) << '\n';
+		std::cout << MH_StatusToString(MH_DisableHook((PVOID)KickPlayerAddress)) << '\n';
+		std::cout << MH_StatusToString(MH_DisableHook((PVOID)ValidationFailureAddress)) << '\n';
+
+		if (Engine_Version < 424)
+			std::cout << MH_StatusToString(MH_DisableHook((PVOID)NoReserveAddress)) << '\n';
+
+		if (BeaconHost)
+			Helper::DestroyActor(BeaconHost);
+
+		BeaconHost = nullptr;
+
+		// Sleep(5000);
+
+		static auto RestartGame = FindObject<UFunction>("/Script/Engine.GameMode.RestartGame");
+		Helper::GetGameMode()->ProcessEvent(RestartGame);
+
+		Teams::NextTeamIndex = Teams::StartingTeamIndex;
+		Teams::CurrentNumPlayersOnTeam = 0;
+
+		Defines::bReadyForStartMatch = true;
+	}
+	*/
+
 	if (Defines::bShouldSpawnForagedItems)
 	{
 		Defines::bShouldSpawnForagedItems = false;

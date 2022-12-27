@@ -529,12 +529,17 @@ void Events::StartEvent()
 					auto BB = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.OnReady_093B6E664C060611B28F79B5E7052A39");
 					auto CC = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.OnReady_7FE9744D479411040654F5886C078D08");
 					auto loader_callstarteventonscripting = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting");
+					auto DebugStartSequence = FindObject<UFunction>("/CycloneJerky/Gameplay/BP_Jerky_Parent.BP_Jerky_Parent_C.DebugStartSequence");
+					auto DD = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Sky/BP_SkyJerk.BP_SkyJerk_C.OnReady_BF7D9B86447A86EF0458DDAF0DA3EE1A");
+
+					std::cout << "DebugStartSequence: " << DebugStartSequence << '\n';
 
 					Loader->ProcessEvent(CC, &bbparms);
 					Scripting->ProcessEvent(BB, &bbparms);
-					// Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
+					Loader->ProcessEvent(loader_startevent, &SecondsSinceEventBegan);
 					Scripting->ProcessEvent(scripting_startevent, &SecondsSinceEventBegan);
-					// Loader->ProcessEvent(loader_callstarteventonscripting, &SecondsSinceEventBegan);
+					Scripting->ProcessEvent(DebugStartSequence, &SecondsSinceEventBegan);
+					Loader->ProcessEvent(loader_callstarteventonscripting, &SecondsSinceEventBegan);
 
 					std::cout << "aa!\n";
 				}

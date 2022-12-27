@@ -378,11 +378,12 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 	if (ClientOnPawnSpawned)
 		Controller->ProcessEvent(ClientOnPawnSpawned); // IDK
 
+	SetHealth(Pawn, 100);
+
 	if (Engine_Version <= 420)
 	{
 		SetMaxHealth(Pawn, 100);
 		SetMaxShield(Pawn, 100);
-		SetHealth(Pawn, 100);
 		SetShield(Pawn, 0);
 	}
 
@@ -446,6 +447,12 @@ UObject* Helper::GetAbilitySystemComponent(UObject* Pawn)
 	static auto AbilitySystemComponentOffset = Pawn->GetOffset("AbilitySystemComponent");
 
 	return *Get<UObject*>(Pawn, AbilitySystemComponentOffset);
+}
+
+UObject* Helper::GetAbilitySystemComponentFromPS(UObject* PlayerState)
+{
+	static auto AbilitySystemComponentOffset = PlayerState->GetOffset("AbilitySystemComponent");
+	return *Get<UObject*>(PlayerState, AbilitySystemComponentOffset);
 }
 
 void Helper::InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations, UObject* ReplacedBuilding)

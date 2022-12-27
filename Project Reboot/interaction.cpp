@@ -246,10 +246,12 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 		void* spec = nullptr;
 
-		auto compareAbilities = [&spec](__int64* Spec) {
+		UObject* ClassToFind = GAB_AthenaDBNOClass->ClassPrivate;
+
+		auto compareAbilities = [&spec, &ClassToFind](__int64* Spec) {
 			auto CurrentAbility = GetAbilityFromSpec(Spec);
 
-			if ((*CurrentAbility)->ClassPrivate == GAB_AthenaDBNOClass->ClassPrivate)
+			if ((*CurrentAbility)->ClassPrivate == ClassToFind)
 			{
 				spec = Spec;
 				// AbilityToReturn = *CurrentAbility;
@@ -300,8 +302,8 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 
 		std::cout << "bIsDBNOFieldMask: " << (int)bIsDBNOFieldMask << '\n';
 
-		auto bIsDBNO = Get<PlaceholderBitfield>(DBNOPawn, bIsDBNOOffset);
-		SetBitfield(bIsDBNO, bIsDBNOFieldMask, false);
+		// auto bIsDBNO = Get<PlaceholderBitfield>(DBNOPawn, bIsDBNOOffset);
+		// SetBitfield(bIsDBNO, bIsDBNOFieldMask, false);
 
 		static auto OnRep_bIsDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPawn.OnRep_IsDBNO");
 		DBNOPawn->ProcessEvent(OnRep_bIsDBNO);
@@ -309,76 +311,12 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		static auto clientonpoa = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived");
 		Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(clientonpoa, &Controller);
 
+		static auto RespawnPlayerAfterDeath = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.RespawnPlayerAfterDeath");
+
+		if (RespawnPlayerAfterDeath)
+			Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(RespawnPlayerAfterDeath); // more skunked than sulfur 2.4.2
+
 		Helper::SetHealth(DBNOPawn, 30);
-
-		/* static auto GameplayTagsOffset = DBNOPawn->GetOffset("GameplayTags");
-		auto GameplayTags = Get<FGameplayTagContainer>(DBNOPawn, GameplayTagsOffset);
-
-		static auto EventReviveTagOffset = DBNOPawn->GetOffset("EventReviveTag");
-		auto EventReviveTag = Get<FGameplayTag>(DBNOPawn, EventReviveTagOffset);
-
-		std::cout << "EventReviveTag: " << EventReviveTag->TagName.ToString() << '\n';
-
-		FString DBNOaaa = L"Gameplay.Action.Player.DBNO";
-		FString DBNOAthenaaaa = L"Gameplay.Action.Player.DBNOAthena";
-
-		FGameplayTag DBNOTag{};
-		DBNOTag.TagName = Helper::Conversion::StringToName(DBNOaaa);
-
-		FGameplayTag DBNOAthenaTag{};
-		DBNOAthenaTag.TagName = Helper::Conversion::StringToName(DBNOAthenaaaa);
-
-		static auto RemoveGameplayTag = FindObject<UFunction>("/Script/GameplayTags.BlueprintGameplayTagLibrary.RemoveGameplayTag");
-		static auto BlueprintGameplayTagLibrary = FindObject("/Script/GameplayTags.Default__BlueprintGameplayTagLibrary");
-
-		struct
-		{
-			FGameplayTagContainer                       TagContainer;                                             // (Parm, OutParm, ReferenceParm)
-			FGameplayTag                                Tag;                                                      // (Parm)
-			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
-		} UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params1{*GameplayTags, DBNOTag};
-
-		BlueprintGameplayTagLibrary->ProcessEvent(RemoveGameplayTag, &UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params1);
-
-		struct
-		{
-			FGameplayTagContainer                       TagContainer;                                             // (Parm, OutParm, ReferenceParm)
-			FGameplayTag                                Tag;                                                      // (Parm)
-			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
-		} UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params2{ *GameplayTags, DBNOAthenaTag };
-
-		BlueprintGameplayTagLibrary->ProcessEvent(RemoveGameplayTag, &UBlueprintGameplayTagLibrary_RemoveGameplayTag_Params2);
-
-		static auto ReviveFromDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawn.ReviveFromDBNO");
-		DBNOPawn->ProcessEvent(ReviveFromDBNO, &InstigatorController);
-
-		static auto ForceReviveFromDBNO = FindObject<UFunction>("/Script/FortniteGame.FortPlayerPawnAthena.ForceReviveFromDBNO");
-		DBNOPawn->ProcessEvent(ForceReviveFromDBNO, &InstigatorController);
-
-		static auto TeammateReviveGameplayEffectOffset = DBNOPawn->GetOffset("TeammateReviveGameplayEffect");
-		auto TeammateReviveGameplayEffect = *Get<UObject*>(DBNOPawn, TeammateReviveGameplayEffectOffset);
-
-		Helper::ApplyGameplayEffect(DBNOPawn, TeammateReviveGameplayEffect); */
-	}
-
-	if (ReceivingActorName.contains("Zipline"))
-	{
-		std::cout << "zipline: " << ReceivingActorName << '\n';
-
-		static auto Zipline_StartPositionOffset = ReceivingActor->GetOffset("StartPosition");
-		static auto Zipline_EndPositionOffset = ReceivingActor->GetOffset("EndPosition");
-
-		static auto ZiplineStateOffset = ReceivingActor->GetOffset("ZiplineState");
-		auto ZiplineState = Get<__int64>(ReceivingActor, ZiplineStateOffset);
-
-		static auto bIsZipliningOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "bIsZiplining");
-		*Get<bool>(ZiplineState, bIsZipliningOffset) = true;
-
-		static auto StartPositionOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "StartPosition");
-		*Get<FVector>(ZiplineState, StartPositionOffset) = *Get<FVector>(ReceivingActor, Zipline_StartPositionOffset);
-
-		static auto EndPositionOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.ZiplinePawnState", "EndPosition");
-		*Get<FVector>(ZiplineState, EndPositionOffset) = *Get<FVector>(ReceivingActor, Zipline_EndPositionOffset);
 	}
 
 	if (ReceivingActorName.contains("Vehicle"))

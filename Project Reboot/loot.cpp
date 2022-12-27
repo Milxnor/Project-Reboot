@@ -847,7 +847,7 @@ std::vector<std::pair<UObject*, int>> Looting::PickLootDrops(const std::string& 
 				auto RowFName_2 = Pair_2.First;
 				FFortLootPackageData* RowData_2 = Pair_2.Second;
 
-				if (!RowFName_2.ComparisonIndex || !RowData_2)
+				if (!RowFName_2.ComparisonIndex || IsBadReadPtr(RowData_2))
 					continue;
 
 				if (bIsWorldList)

@@ -45,7 +45,7 @@ bool Teams::AssignTeam(UObject* Controller)
 
 	std::cout << "AllTeams: " << AllTeams->Num() << '\n';
 
-	if (AllTeams->Num() <= NextTeamIndex)
+	if (AllTeams->Num() - 4 <= NextTeamIndex)
 	{
 		std::cout << "Not enough teams for next player!\n";
 		return false;
