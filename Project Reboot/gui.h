@@ -287,7 +287,7 @@ void MainTabs()
 		}
 #endif
 
-		if (false && ImGui::BeginTabItem(("Settings")))
+		if (ImGui::BeginTabItem(("Settings")))
 		{
 			Tab = SETTINGS_TAB;
 			PlayerTab = -1;
@@ -434,10 +434,10 @@ void MainUI()
 					Server::Restart();
 				} */
 
-				if (ImGui::Button("toggle FloorLoot"))
+				/* if (ImGui::Button("toggle FloorLoot"))
 				{
 					Defines::bShouldSpawnFloorLoot = !Defines::bShouldSpawnFloorLoot;
-				}
+				} */
 
 				if (Fortnite_Season == 19)
 				{
@@ -922,6 +922,10 @@ void MainUI()
 		else if (Tab == UNBAN_TAB)
 		{
 			
+		}
+		else if (Tab == SETTINGS_TAB)
+		{
+			// ImGui::Checkbox("Use custom lootpool (from Win64/lootpool.txt)", &Defines::bCustomLootpool);
 		}
 	}
 

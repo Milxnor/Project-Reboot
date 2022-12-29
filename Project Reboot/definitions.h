@@ -30,6 +30,7 @@ namespace Defines
 	inline bool bIsSTW = false; // not implemeneted
 	inline bool bRespawning = false;
 	inline bool bLogRPCs = false;
+	inline bool bCustomLootpool = false;
 	inline bool bShouldRestart = false;
 
 	inline int SecondsUntilTravel = 5;

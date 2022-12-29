@@ -360,6 +360,46 @@ FNetViewer* __fastcall NetViewerConstructorDetour2(FNetViewer* NetViewer, UObjec
 	return NetViewer;
 }
 
+UObject* GetViewTargetCameraManager(UObject* PlayerCameraManager)
+{
+	return nullptr;
+}
+
+UObject* GetViewTargetPlayerController(UObject* PC)
+{
+	static auto PlayerCameraManagerOffset = PC->GetOffset("PlayerCameraManager");
+	auto PlayerCameraManager = *Get<UObject*>(PC, PlayerCameraManagerOffset);
+
+	UObject* CameraManagerViewTarget = PlayerCameraManager ? GetViewTargetCameraManager(PlayerCameraManager) : nullptr;
+
+	return CameraManagerViewTarget ? CameraManagerViewTarget : PC;
+}
+
+void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
+{
+	/* static auto PlayerCameraManagerOffset = pc->GetOffset("PlayerCameraManager");
+	auto PlayerCameraManager = *Get<UObject*>(pc, PlayerCameraManagerOffset);
+
+	if (PlayerCameraManager
+		// PlayerCameraManager->GetCameraCacheTime() > 0.f // Whether camera was updated at least once)
+		)
+	{
+		GetCameraViewpoint(PlayerCameraManager, *a2, *a3);
+	}
+	else */
+	{
+		static auto PC_GetViewTarget = FindObject<UFunction>("/Script/Engine.Controller.GetViewTarget");
+		UObject* ViewTarget = nullptr;
+		pc->ProcessEvent(PC_GetViewTarget, &ViewTarget);
+
+		if (ViewTarget)
+		{
+			*a2 = Helper::GetActorLocation(ViewTarget);
+			*a3 = Helper::GetActorRotation(ViewTarget);
+		}
+	}
+}
+
 __int64 (__fastcall* NetViewerConstructorO)(__int64 NetViewer, UObject* Connection);
 
 FNetViewer* __fastcall NetViewerConstructorDetour(FNetViewer* NetViewer, UObject* Connection)
@@ -398,6 +438,8 @@ FNetViewer* __fastcall NetViewerConstructorDetour(FNetViewer* NetViewer, UObject
 	if (ViewingController)
 	{
 		FRotator ViewRotation = Helper::GetControlRotation(ViewingController);
+
+		GetPlayerViewPointDetour(ViewingController, (FVector*)(__int64(NetViewer) + Viewer_ViewLocationOffset), &ViewRotation);
 
 		static auto Viewer_ViewDirOffset = FindOffsetStruct("ScriptStruct /Script/Engine.NetViewer", "ViewDir");
 		*(FVector*)(__int64(NetViewer) + Viewer_ViewDirOffset) = ViewRotation.Vector();
@@ -569,44 +611,6 @@ void GetCameraViewpoint(UObject* PlayerCameraManager, FVector& OutCamLoc, FRotat
 	OutCamRot = CurrentPOV.Rotation;
 }
 
-UObject* GetViewTargetCameraManager(UObject* PlayerCameraManager)
-{
-	return nullptr;
-}
-
-UObject* GetViewTargetPlayerController(UObject* PC)
-{
-	static auto PlayerCameraManagerOffset = PC->GetOffset("PlayerCameraManager");
-	auto PlayerCameraManager = *Get<UObject*>(PC, PlayerCameraManagerOffset);
-
-	UObject* CameraManagerViewTarget = PlayerCameraManager ? GetViewTargetCameraManager(PlayerCameraManager) : nullptr;
-
-	return CameraManagerViewTarget ? CameraManagerViewTarget : PC;
-}
-
-void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
-{
-	/* static auto PlayerCameraManagerOffset = pc->GetOffset("PlayerCameraManager");
-	auto PlayerCameraManager = *Get<UObject*>(pc, PlayerCameraManagerOffset);
-
-	if (PlayerCameraManager
-		// PlayerCameraManager->GetCameraCacheTime() > 0.f // Whether camera was updated at least once)
-		)
-	{
-		GetCameraViewpoint(PlayerCameraManager, *a2, *a3);
-	}
-	else */
-	{
-		auto ViewTarget = GetViewTargetPlayerController(pc);
-
-		if (ViewTarget)
-		{
-			*a2 = Helper::GetActorLocation(ViewTarget);
-			*a3 = Helper::GetActorRotation(ViewTarget);
-		}
-	}
-}
-
 void Server::Hooks::Initialize()
 {
 	// if (false)
@@ -658,7 +662,7 @@ void Server::Hooks::Initialize()
 			std::cout << MH_StatusToString(MH_CreateHook((PVOID)sig, NetViewerConstructorDetour, (PVOID*)&NetViewerConstructorO)) << '\n';
 			std::cout << MH_StatusToString(MH_EnableHook((PVOID)sig)) << '\n';
 		}
-		else
+		else if (false)
 		{
 			auto sig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84");
 

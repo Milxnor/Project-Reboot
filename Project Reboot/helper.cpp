@@ -373,24 +373,29 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 		}
 	}
 
-	static auto ClientOnPawnSpawned = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnSpawned");
+	static auto FortPlayerControllerZoneClass = FindObject("/Script/FortniteGame.FortPlayerControllerZone");
 
-	if (ClientOnPawnSpawned)
-		Controller->ProcessEvent(ClientOnPawnSpawned); // IDK
-
-	SetHealth(Pawn, 100);
-
-	if (Engine_Version <= 420)
+	if (Controller->IsA(FortPlayerControllerZoneClass))
 	{
-		SetMaxHealth(Pawn, 100);
-		SetMaxShield(Pawn, 100);
-		SetShield(Pawn, 0);
-	}
+		static auto ClientOnPawnSpawned = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnSpawned");
 
-	if (Fortnite_Season >= 16)
-	{
-		static auto stormeffect = FindObject("/Game/Athena/SafeZone/GE_OutsideSafeZoneDamage.GE_OutsideSafeZoneDamage_C");
-		Helper::RemoveGameplayEffect(Pawn, stormeffect);
+		if (ClientOnPawnSpawned)
+			Controller->ProcessEvent(ClientOnPawnSpawned); // IDK
+
+		SetHealth(Pawn, 100);
+
+		if (Engine_Version <= 420)
+		{
+			SetMaxHealth(Pawn, 100);
+			SetMaxShield(Pawn, 100);
+			SetShield(Pawn, 0);
+		}
+
+		if (Fortnite_Season >= 16)
+		{
+			static auto stormeffect = FindObject("/Game/Athena/SafeZone/GE_OutsideSafeZoneDamage.GE_OutsideSafeZoneDamage_C");
+			Helper::RemoveGameplayEffect(Pawn, stormeffect);
+		}
 	}
 
 	return Pawn;
@@ -1095,7 +1100,15 @@ UObject* GetHealthSet(UObject* Pawn)
 
 void Helper::SetHealth(UObject* Pawn, float Health)
 {
-	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+	auto PawnsController = Helper::GetControllerFromPawn(Pawn);
+
+	if (!PawnsController)
+		return;
+
+	UObject* PlayerState = Helper::GetPlayerStateFromController(PawnsController);
+
+	if (!PlayerState)
+		return;
 
 	static auto PS_CurrentHealthOffset = PlayerState->GetOffset("CurrentHealth", false, false, false);
 
@@ -1115,10 +1128,10 @@ void Helper::SetHealth(UObject* Pawn, float Health)
 		*(float*)(__int64(HealthData) + CurrentValueOffset) = Health;
 	}
 
-	static UFunction* OnRep_Health = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Health");
+	/* static UFunction* OnRep_Health = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Health");
 
 	if (OnRep_Health)
-		HealthSet->ProcessEvent(OnRep_Health);
+		HealthSet->ProcessEvent(OnRep_Health); */
 }
 
 void Helper::SetMaxHealth(UObject* Pawn, float MaxHealth)

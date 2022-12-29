@@ -311,10 +311,12 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 		static auto clientonpoa = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived");
 		Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(clientonpoa, &Controller);
 
+		bool bSkydive = false;
+
 		static auto RespawnPlayerAfterDeath = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.RespawnPlayerAfterDeath");
 
 		if (RespawnPlayerAfterDeath)
-			Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(RespawnPlayerAfterDeath); // more skunked than sulfur 2.4.2
+			Helper::GetControllerFromPawn(DBNOPawn)->ProcessEvent(RespawnPlayerAfterDeath, &bSkydive); // more skunked than sulfur 2.4.2
 
 		Helper::SetHealth(DBNOPawn, 30);
 	}

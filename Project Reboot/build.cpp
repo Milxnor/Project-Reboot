@@ -98,14 +98,11 @@ namespace Build
 		{
 			std::cout << "ExistingBuildings.Num(): " << ExistingBuildings.Num() << '\n';
 
-			if (ExistingBuildings.Num())
+			for (int i = 0; i < ExistingBuildings.Num(); i++)
 			{
-				for (int i = 0; i < ExistingBuildings.Num(); i++)
-				{
-					auto ExistingBuilding = ExistingBuildings.At(i);
+				auto ExistingBuilding = ExistingBuildings.At(i);
 
-					Helper::DestroyActor(ExistingBuilding);
-				}
+				Helper::DestroyActor(ExistingBuilding);
 			}
 
 			UObject* BuildingActor = Helper::Easy::SpawnActorDynamic(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
@@ -127,10 +124,6 @@ namespace Build
 
 					if (!IsBadReadPtr(MatCount)) // && Helper::IsStructurallySupported(BuildingActor)
 					{
-						// __int64 (__fastcall* SomeBuildCollisionThing)(UObject* Build) = decltype(SomeBuildCollisionThing)(Memory::FindPattern("40 55 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B E9 0F 85 ? ? ? ?"));
-
-						// SomeBuildCollisionThing(BuildingActor); // 10.4
-
 						SetBuildingActorTeam(BuildingActor, *Helper::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
 
 						Helper::InitializeBuildingActor(Controller, BuildingActor, true);

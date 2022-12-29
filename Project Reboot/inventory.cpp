@@ -499,40 +499,11 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 
 		std::cout << "GadgetDefinition: " << GadgetDefinition << '\n';
 
-		/* static auto carminePack = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
-
-		if (carminePack == ItemDefinition)
-		{
-			std::cout << "thanos!\n";
-			static UObject* AS = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
-			static auto GameplayAbilitiesOffset = AS->GetOffset("GameplayAbilities");
-			auto GameplayAbilities = Get<TArray<UObject*>>(AS, GameplayAbilitiesOffset);
-
-			for (int i = 0; i < GameplayAbilities->Num(); i++) {
-				Abilities::GrantGameplayAbility(Pawn, GameplayAbilities->At(i));
-			}
-
-			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, FindObject("/Game/Athena/Heroes/Meshes/Heads/Dev_TestAsset_Head_M_XL.Dev_TestAsset_Head_M_XL"));
-			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("/Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
-		} */
-
-		/* auto CharacterPartsOffset = ItemDefinition->GetOffset("CharacterParts");
-		auto CharacterParts = Get<TArray<UObject*>>(ItemDefinition, CharacterPartsOffset);
-
-		for (int i = 0; i < CharacterParts->size(); i++)
-		{
-			auto CharacterPart = CharacterParts->At(i);
-
-			if (!CharacterPart)
-				continue;
-
-			Helper::ChoosePart(Pawn, (EFortCustomPartType)i, CharacterPart);
-		} */
-
 		if (!GadgetDefinition)
 			return nullptr;
 
-		/* auto AS = Helper::GetAbilitySetFromAGID(ItemDefinition);
+		/*
+		auto AS = Helper::GetAbilitySetFromAGID(ItemDefinition);
 
 		std::cout << "AS: " << AS << '\n';
 
@@ -549,13 +520,14 @@ UObject* Inventory::EquipWeapon(UObject* Controller, const FGuid& Guid, UObject*
 				continue;
 
 			Helper::ChoosePart(Pawn, (EFortCustomPartType)i, CharacterPart);
-		} */
+		}
 
-		/* static auto AGID_AnimBPOverrideOffset = ItemDefinition->GetOffset("AnimBPOverride");
+		static auto AGID_AnimBPOverrideOffset = ItemDefinition->GetOffset("AnimBPOverride");
 		auto AGID_AnimBPOverride = *Get<UObject*>(ItemDefinition, AGID_AnimBPOverrideOffset);
 
 		static auto AnimBPOverrideOffset = Pawn->GetOffset("AnimBPOverride");
-		*Get<UObject*>(Pawn, AnimBPOverrideOffset) = AGID_AnimBPOverride; */
+		*Get<UObject*>(Pawn, AnimBPOverrideOffset) = AGID_AnimBPOverride;
+		*/
 
 		Wep = EquipWeapon(Controller, Guid, GadgetDefinition, Ammo);
 	}
@@ -1095,8 +1067,6 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 	// static auto ThanosID = FnVerDouble >= 8 ? FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack") :
 		// FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
 
-	/*
-
 	static auto carminePack = FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
 
 	if (carminePack == *Definition)
@@ -1127,7 +1097,7 @@ bool Inventory::ServerHandlePickup(UObject* Pawn, UFunction*, void* Parameters)
 
 		static auto AnimBPOverrideOffset = Pawn->GetOffset("AnimBPOverride");
 		*Get<UObject*>(Pawn, AnimBPOverrideOffset) = AGID_AnimBPOverride;
-	} */
+	}
 
 	return true;
 }

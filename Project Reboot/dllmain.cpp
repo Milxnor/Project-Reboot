@@ -138,6 +138,8 @@ DWORD WINAPI Initialize(LPVOID)
     MH_CreateHook((PVOID)CheckPawnOverlapAddress, retfalse, nullptr); // This only happens with StartPlay/StartMatch and on older versions.
     MH_EnableHook((PVOID)CheckPawnOverlapAddress);
 
+    auto Base = __int64(GetModuleHandleW(0));
+
     // if (false)
     {
         bool bIsSettingGIsClient = true;
@@ -178,9 +180,11 @@ DWORD WINAPI Initialize(LPVOID)
                 GIsServerAddr = __int64(GetModuleHandleW(0)) + 0x8237B87;
             }
 
-            std::cout << "GIsClientSig: " << GIsClientAddr << '\n';
+            std::cout << "GIsClientAddr: " << GIsClientAddr << '\n';
             std::cout << "GIsServerAddr: " << GIsServerAddr << '\n';
-            // std::cout << "aFTER: " << GIsClientAddr << '\n';
+
+            std::cout << std::format("GIsClientAddr: 0x{:x}\n", (uintptr_t)GIsClientAddr - Base);
+            std::cout << std::format("GIsServerAddr: 0x{:x}\n", (uintptr_t)GIsServerAddr - Base);
 
             if (GIsClientAddr)
             {
@@ -257,6 +261,13 @@ DWORD WINAPI Initialize(LPVOID)
     std::cout << "SizeOfPredictionKey: " << Helper::GetSizeOfClass(FindObjectSlow("ScriptStruct /Script/GameplayAbilities.PredictionKey", false)) << '\n';
     std::cout << "SizeOfItemEntryStruct: " << Helper::GetSizeOfClass(FFortItemEntry::ItemEntryStruct) << '\n';
     
+    auto aasig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
+
+    if (!aasig)
+        aasig = Memory::FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
+
+    std::cout << std::format("NetViewerConstructor: 0x{:x}\n", (uintptr_t)aasig - Base);
+
     // Level.Free();
 
     std::cout << "Full Version: " << Helper::GetEngineVersion().ToString() << '\n';

@@ -268,17 +268,6 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 	if (!Pawn)
 		return false;
 
-	if (Fortnite_Version < 8.30)
-	{
-		static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
-		GiveFortAbilitySet(Pawn, AbilitySet);
-	}
-	else
-	{
-		static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
-		GiveFortAbilitySet(Pawn, AbilitySet);
-	}
-
 	if (Defines::bIsGoingToPlayMainEvent)
 	{
 		static auto CheatManagerOffset = PlayerController->GetOffset("CheatManager");
@@ -293,110 +282,126 @@ bool ServerReadyToStartMatch(UObject* PlayerController, UFunction* Function, voi
 
 	auto CurrentPlaylist = Helper::GetPlaylist();
 
-	if (!IsBadReadPtr(CurrentPlaylist) && !IsBadReadPtr(*CurrentPlaylist))
+	static auto FortPlayerControllerZoneClass = FindObject("/Script/FortniteGame.FortPlayerControllerZone");
+
+	if (PlayerController->IsA(FortPlayerControllerZoneClass))
 	{
-		static auto LTMModifiersOffset = (*CurrentPlaylist)->GetOffset("ModifierList", false, false, false);
-
-		if (LTMModifiersOffset != 0)
+		if (Fortnite_Version < 8.30)
 		{
-			auto LTMModifiers = Get<TArray<TSoftObjectPtr>>(*CurrentPlaylist, LTMModifiersOffset);
+			static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
+			GiveFortAbilitySet(Pawn, AbilitySet);
+		}
+		else
+		{
+			static auto AbilitySet = FindObject(("/Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
+			GiveFortAbilitySet(Pawn, AbilitySet);
+		}
 
-			//std::cout << "LTMModifiers->Num(): " << LTMModifiers->Num() << '\n';
+		if (!IsBadReadPtr(CurrentPlaylist) && !IsBadReadPtr(*CurrentPlaylist))
+		{
+			static auto LTMModifiersOffset = (*CurrentPlaylist)->GetOffset("ModifierList", false, false, false);
 
-			for (int i = 0; i < LTMModifiers->Num(); i++)
+			if (LTMModifiersOffset != 0)
 			{
-				static auto LTMModifierClass = FindObject("/Script/FortniteGame.FortGameplayModifierItemDefinition");
-				auto& LTMModifierSoftObject = LTMModifiers->At(i);
-				auto LTMModifier = LTMModifierSoftObject.Get(LTMModifierClass);
+				auto LTMModifiers = Get<TArray<TSoftObjectPtr>>(*CurrentPlaylist, LTMModifiersOffset);
 
-				// std::cout << std::format("[{}] {}\n", i, CoreGameModeModifier->GetFullName());
+				//std::cout << "LTMModifiers->Num(): " << LTMModifiers->Num() << '\n';
 
-				static auto PersistentGameplayEffectsOffset = LTMModifier->GetOffset("PersistentGameplayEffects");
-				static auto PersistentAbilitySetsOffset = LTMModifier->GetOffset("PersistentAbilitySets");
-				auto PersistentGameplayEffects = Get<TArray<__int64>>(LTMModifier, PersistentGameplayEffectsOffset);
-				auto PersistentAbilitySets = Get<TArray<__int64>>(LTMModifier, PersistentAbilitySetsOffset);
-
-				static auto FortGameplayEffectDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortGameplayEffectDeliveryInfo"));
-				static auto FortAbilitySetDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortAbilitySetDeliveryInfo"));
-
-				if (!IsBadReadPtr(PersistentGameplayEffects))
+				for (int i = 0; i < LTMModifiers->Num(); i++)
 				{
-					for (int o = 0; o < PersistentGameplayEffects->Num(); o++)
+					static auto LTMModifierClass = FindObject("/Script/FortniteGame.FortGameplayModifierItemDefinition");
+					auto& LTMModifierSoftObject = LTMModifiers->At(i);
+					auto LTMModifier = LTMModifierSoftObject.Get(LTMModifierClass);
+
+					// std::cout << std::format("[{}] {}\n", i, CoreGameModeModifier->GetFullName());
+
+					static auto PersistentGameplayEffectsOffset = LTMModifier->GetOffset("PersistentGameplayEffects");
+					static auto PersistentAbilitySetsOffset = LTMModifier->GetOffset("PersistentAbilitySets");
+					auto PersistentGameplayEffects = Get<TArray<__int64>>(LTMModifier, PersistentGameplayEffectsOffset);
+					auto PersistentAbilitySets = Get<TArray<__int64>>(LTMModifier, PersistentAbilitySetsOffset);
+
+					static auto FortGameplayEffectDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortGameplayEffectDeliveryInfo"));
+					static auto FortAbilitySetDeliveryInfoSize = Helper::GetSizeOfClass(FindObject("/Script/FortniteGame.FortAbilitySetDeliveryInfo"));
+
+					if (!IsBadReadPtr(PersistentGameplayEffects))
 					{
-						auto DeliveryInfo = PersistentGameplayEffects->AtPtr(o, FortGameplayEffectDeliveryInfoSize);
-
-						static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortGameplayEffectDeliveryInfo", "DeliveryRequirements");
-						void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
-
-						static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
-						static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
-
-						std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
-
-						if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
+						for (int o = 0; o < PersistentGameplayEffects->Num(); o++)
 						{
-							static auto GameplayEffectsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortGameplayEffectDeliveryInfo", "GameplayEffects");
+							auto DeliveryInfo = PersistentGameplayEffects->AtPtr(o, FortGameplayEffectDeliveryInfoSize);
 
-							if (GameplayEffectsOffset != 0)
+							static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortGameplayEffectDeliveryInfo", "DeliveryRequirements");
+							void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
+
+							static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
+							static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
+
+							std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
+
+							if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
 							{
-								struct FGameplayEffectApplicationInfo
+								static auto GameplayEffectsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortGameplayEffectDeliveryInfo", "GameplayEffects");
+
+								if (GameplayEffectsOffset != 0)
 								{
-									TSoftObjectPtr GameplayEffect;
-									float Level;                                                    // 0x0028(0x0004) (Edit, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
-									unsigned char                                      UnknownData01[0x4];                                       // 0x002C(0x0004) MISSED OFFSET
-								};
-
-								auto GrantedGameplayEffects = Get<TArray<FGameplayEffectApplicationInfo>>(DeliveryInfo, GameplayEffectsOffset);
-
-								for (int n = 0; n < GrantedGameplayEffects->Num(); n++)
-								{
-									auto& GameplayEffectInfo = GrantedGameplayEffects->At(n);
-
-									static auto BlueprintGeneratedClass = Helper::GetBGAClass();
-
-									auto GameplayEffectBlueprintGeneratedClass = GameplayEffectInfo.GameplayEffect.Get(BlueprintGeneratedClass);
-
-									if (GameplayEffectBlueprintGeneratedClass)
+									struct FGameplayEffectApplicationInfo
 									{
-										Helper::ApplyGameplayEffect(Pawn, GameplayEffectBlueprintGeneratedClass, GameplayEffectInfo.Level);
+										TSoftObjectPtr GameplayEffect;
+										float Level;                                                    // 0x0028(0x0004) (Edit, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+										unsigned char                                      UnknownData01[0x4];                                       // 0x002C(0x0004) MISSED OFFSET
+									};
+
+									auto GrantedGameplayEffects = Get<TArray<FGameplayEffectApplicationInfo>>(DeliveryInfo, GameplayEffectsOffset);
+
+									for (int n = 0; n < GrantedGameplayEffects->Num(); n++)
+									{
+										auto& GameplayEffectInfo = GrantedGameplayEffects->At(n);
+
+										static auto BlueprintGeneratedClass = Helper::GetBGAClass();
+
+										auto GameplayEffectBlueprintGeneratedClass = GameplayEffectInfo.GameplayEffect.Get(BlueprintGeneratedClass);
+
+										if (GameplayEffectBlueprintGeneratedClass)
+										{
+											Helper::ApplyGameplayEffect(Pawn, GameplayEffectBlueprintGeneratedClass, GameplayEffectInfo.Level);
+										}
 									}
 								}
 							}
 						}
 					}
-				}
 
-				if (!IsBadReadPtr(PersistentAbilitySets))
-				{
-					for (int p = 0; p < PersistentAbilitySets->Num(); p++)
+					if (!IsBadReadPtr(PersistentAbilitySets))
 					{
-						auto DeliveryInfo = PersistentAbilitySets->AtPtr(p, FortAbilitySetDeliveryInfoSize);
-
-						static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "DeliveryRequirements");
-						void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
-
-						static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
-						static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
-
-						std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
-
-						if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
+						for (int p = 0; p < PersistentAbilitySets->Num(); p++)
 						{
-							static auto AbilitySetsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "AbilitySets");
-							auto AbilitySets = Get<TArray<TSoftObjectPtr>>(DeliveryInfo, AbilitySetsOffset);
+							auto DeliveryInfo = PersistentAbilitySets->AtPtr(p, FortAbilitySetDeliveryInfoSize);
 
-							for (int z = 0; z < AbilitySets->Num(); z++)
+							static auto DeliveryRequirementsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "DeliveryRequirements");
+							void* DeliveryRequirements = Get<void>(DeliveryInfo, DeliveryRequirementsOffset);
+
+							static auto bApplyToPlayerPawnsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns");
+							static auto bApplyToPlayerPawnsFieldMask = GetFieldMask(FindPropStruct2("ScriptStruct /Script/FortniteGame.FortDeliveryInfoRequirementsFilter", "bApplyToPlayerPawns"));
+
+							std::cout << "bApplyToPlayerPawnsFieldMask: " << bApplyToPlayerPawnsFieldMask << '\n';
+
+							if (ReadBitfield(Get<PlaceholderBitfield>(DeliveryRequirements, bApplyToPlayerPawnsOffset), bApplyToPlayerPawnsFieldMask))
 							{
-								static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
+								static auto AbilitySetsOffset = FindOffsetStruct2("ScriptStruct /Script/FortniteGame.FortAbilitySetDeliveryInfo", "AbilitySets");
+								auto AbilitySets = Get<TArray<TSoftObjectPtr>>(DeliveryInfo, AbilitySetsOffset);
 
-								auto& AbilitySetSoft = AbilitySets->At(z);
+								for (int z = 0; z < AbilitySets->Num(); z++)
+								{
+									static auto FortAbilitySetClass = FindObject("/Script/FortniteGame.FortAbilitySet");
 
-								auto CurrentAbilitySet = AbilitySetSoft.Get(FortAbilitySetClass);
+									auto& AbilitySetSoft = AbilitySets->At(z);
 
-								std::cout << "CurrentAbilitySet: " << CurrentAbilitySet << " AbilitySetSoft.ObjectID.AssetPathName.ToString(): " << AbilitySetSoft.ObjectID.AssetPathName.ToString() << '\n';
+									auto CurrentAbilitySet = AbilitySetSoft.Get(FortAbilitySetClass);
 
-								if (CurrentAbilitySet)
-									GiveFortAbilitySet(Pawn, CurrentAbilitySet);
+									std::cout << "CurrentAbilitySet: " << CurrentAbilitySet << " AbilitySetSoft.ObjectID.AssetPathName.ToString(): " << AbilitySetSoft.ObjectID.AssetPathName.ToString() << '\n';
+
+									if (CurrentAbilitySet)
+										GiveFortAbilitySet(Pawn, CurrentAbilitySet);
+								}
 							}
 						}
 					}
@@ -1991,8 +1996,17 @@ bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters)
 				FVector LaunchVelocity;
 				float ZiplineJumpDampening = 0.f;
 				float ZiplineJumpStrength = 0.f;
-				float v14 = 0.f;
-				float v15 = 0.f;
+				float PlayerVelocity = 0.f;
+				float PlayerVelocity2 = 0.f;
+
+				static auto CharacterMovementOffset = Pawn->GetOffset("CharacterMovement");
+				auto CharacterMovement = *(UObject**)(__int64(Pawn) + CharacterMovementOffset);
+
+				static auto JumpZVelocityOffset = CharacterMovement->GetOffset("JumpZVelocity");
+				auto JumpZVelocity = Get<float>(CharacterMovement, JumpZVelocityOffset);
+
+				PlayerVelocity = *JumpZVelocity;
+				PlayerVelocity2 = *JumpZVelocity;
 
 				static auto ZiplineJumpDampeningCurveOffset = Pawn->GetOffset("ZiplineJumpDampening");
 				auto ZiplineJumpDampeningCurve = Get<FCurveTableRowHandle>(Pawn, ZiplineJumpDampeningCurveOffset);
@@ -2000,15 +2014,18 @@ bool ServerSendZiplineState(UObject* Pawn, UFunction*, void* Parameters)
 				static auto ZiplineJumpStrengthCurveOffset = Pawn->GetOffset("ZiplineJumpStrength");
 				auto ZiplineJumpStrengthCurve = Get<FCurveTableRowHandle>(Pawn, ZiplineJumpStrengthCurveOffset);
 
-				ZiplineJumpDampeningCurve->Eval(0, &ZiplineJumpDampening);
-				ZiplineJumpStrengthCurve->Eval(0, &ZiplineJumpStrength);
+				// ZiplineJumpDampeningCurve->Eval(0, &ZiplineJumpDampening);
+				// ZiplineJumpStrengthCurve->Eval(0, &ZiplineJumpStrength);
 
-				if ((float)(ZiplineJumpDampening * v14) >= -750.0)
-					LaunchVelocity.X = fminf(ZiplineJumpDampening * v14, 750.0);
+				// ZiplineJumpDampening = 1500;
+				// ZiplineJumpStrength = -0.5;
+
+				if ((float)(ZiplineJumpDampening * PlayerVelocity) >= -750.0)
+					LaunchVelocity.X = fminf(ZiplineJumpDampening * PlayerVelocity, 750.0);
 				else
 					LaunchVelocity.X = -1002733568;
-				if ((float)(ZiplineJumpDampening * v15) >= -750.0)
-					LaunchVelocity.Y = fminf(ZiplineJumpDampening * v15, 750.0);
+				if ((float)(ZiplineJumpDampening * PlayerVelocity2) >= -750.0)
+					LaunchVelocity.Y = fminf(ZiplineJumpDampening * PlayerVelocity2, 750.0);
 				else
 					LaunchVelocity.Y = -1002733568;
 
