@@ -1166,45 +1166,55 @@ void Helper::SetShield(UObject* Pawn, float Shield)
 {
 	UObject* PlayerState = Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
 
-	static auto PS_CurrentShieldOffset = PlayerState->GetOffset("CurrentShield", false, false, false);
-
-	if (PS_CurrentShieldOffset != 0)
-		*(float*)(__int64(PlayerState) + PS_CurrentShieldOffset) = Shield;
-
-	static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
-	static auto MinimumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Minimum");
-	static auto BaseValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "BaseValue");
-
-	auto HealthSet = GetHealthSet(Pawn);
-
-	static auto ShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "Shield");
-	static auto CurrentShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "CurrentShield");
-
-	if (ShieldOffset != 0)
+	if (Engine_Version < 421)
 	{
-		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
-		*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
-		*(float*)(__int64(ShieldData) + BaseValueOffset) = Shield;
-		*(float*)(__int64(ShieldData) + MinimumOffset) = Shield;
-	}
+		static auto PS_CurrentShieldOffset = PlayerState->GetOffset("CurrentShield", false, false, false);
 
-	if (CurrentShieldOffset != 0)
+		if (PS_CurrentShieldOffset != 0)
+			*(float*)(__int64(PlayerState) + PS_CurrentShieldOffset) = Shield;
+
+		static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+		static auto MinimumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Minimum");
+		static auto BaseValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "BaseValue");
+
+		auto HealthSet = GetHealthSet(Pawn);
+
+		static auto ShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "Shield");
+		static auto CurrentShieldOffset = FindOffsetStruct("Class /Script/FortniteGame.FortHealthSet", "CurrentShield");
+
+		if (ShieldOffset != 0)
+		{
+			auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+			*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
+			*(float*)(__int64(ShieldData) + BaseValueOffset) = Shield;
+			*(float*)(__int64(ShieldData) + MinimumOffset) = Shield;
+		}
+
+		if (CurrentShieldOffset != 0)
+		{
+			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
+			*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
+			*(float*)(__int64(CurrentShieldData) + BaseValueOffset) = Shield;
+			*(float*)(__int64(CurrentShieldData) + MinimumOffset) = Shield;
+		}
+
+		static UFunction* OnRep_Shield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Shield");
+
+		if (OnRep_Shield)
+			HealthSet->ProcessEvent(OnRep_Shield);
+
+		static UFunction* OnRep_CurrentShield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_CurrentShield");
+
+		if (OnRep_CurrentShield)
+			HealthSet->ProcessEvent(OnRep_CurrentShield);
+	}
+	else
 	{
-		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
-		*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
-		*(float*)(__int64(CurrentShieldData) + BaseValueOffset) = Shield;
-		*(float*)(__int64(CurrentShieldData) + MinimumOffset) = Shield;
+		static auto setShield = FindObject<UFunction>("/Script/FortniteGame.FortPawn.SetShield");
+
+		if (setShield)
+			Pawn->ProcessEvent(setShield, &Shield);
 	}
-
-	static UFunction* OnRep_Shield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_Shield");
-
-	if (OnRep_Shield)
-		HealthSet->ProcessEvent(OnRep_Shield);
-
-	static UFunction* OnRep_CurrentShield = FindObject<UFunction>("/Script/FortniteGame.FortHealthSet.OnRep_CurrentShield");
-
-	if (OnRep_CurrentShield)
-		HealthSet->ProcessEvent(OnRep_CurrentShield);
 }
 
 void Helper::SetMaxShield(UObject* Pawn, float MaxShield)

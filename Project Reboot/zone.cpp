@@ -22,37 +22,37 @@ bool Zone::OnSafeZoneStateChange(UObject* Indicator, UFunction* Function, void* 
 
 		auto GameState = Helper::GetGameState();
 
-		UObject* Aircraft = nullptr;
-
-		static auto AircraftsOffset = GameState->GetOffset("Aircrafts", false, false, false);
-
-		if (AircraftsOffset != 0)
-		{
-			auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
-
-			if (Aircrafts->Num() == 0)
-			{
-				std::cout << "There are no aircrafts!\n";
-				return false;
-			}
-
-			Aircraft = Aircrafts->At(0);
-		}
-		else
-		{
-			static auto AircraftOffset = GameState->GetOffset("Aircraft");
-			Aircraft = *Get<UObject*>(GameState, AircraftOffset);
-		}
-
-		if (!Aircraft)
-			return false;
-
 		static FVector AircraftLocation;
 
 		static int LastResetNum = 824524899135;
 
 		if (LastResetNum != Defines::AmountOfRestarts)
 		{
+			UObject* Aircraft = nullptr;
+
+			static auto AircraftsOffset = GameState->GetOffset("Aircrafts", false, false, false);
+
+			if (AircraftsOffset != 0)
+			{
+				auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
+
+				if (Aircrafts->Num() == 0)
+				{
+					std::cout << "There are no aircrafts!\n";
+					return false;
+				}
+
+				Aircraft = Aircrafts->At(0);
+			}
+			else
+			{
+				static auto AircraftOffset = GameState->GetOffset("Aircraft");
+				Aircraft = *Get<UObject*>(GameState, AircraftOffset);
+			}
+
+			if (!Aircraft)
+				return false;
+
 			LastResetNum = Defines::AmountOfRestarts;
 			AircraftLocation = Helper::GetActorLocation(Aircraft);
 

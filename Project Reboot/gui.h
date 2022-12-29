@@ -423,6 +423,18 @@ void MainUI()
 				if (Defines::bIsCreative)
 					ImGui::InputText("URL", &Defines::urlForPortal);
 
+				if (Defines::bIsLateGame)
+				{
+					if (ImGui::Button("Start safezone"))
+					{
+						FString StartSafeZone = L"startsafezone";
+						Helper::ExecuteConsoleCommand(StartSafeZone);
+
+						static auto SafeZonesStartTimeOffset = GameState->GetOffset("SafeZonesStartTime");
+						*Get<float>(GameState, SafeZonesStartTimeOffset) = 0.f;
+					}
+				}
+
 				if ((Fortnite_Version >= 12.41 && Fortnite_Season < 20) && ImGui::Button("Summon Vehicles"))
 				{
 					Defines::bShouldSpawnVehicles = true;

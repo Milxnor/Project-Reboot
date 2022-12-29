@@ -1284,6 +1284,9 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 		if (!Defines::bWipeInventoryOnAircraft)
 			Inventory::WipeInventory(Controller, false);
 
+		if (Pawn)
+			Helper::SetShield(Pawn, 100);
+
 		std::cout << "A!\n";
 
 		static UObject* AthenaAmmoDataRockets = FindObject(("/Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
@@ -1329,8 +1332,8 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 
 		std::cout << "D!\n";
 
-		Inventory::GiveItem(Controller, AR.Definition, EFortQuickBars::Primary, 1, 1, true);
-		Inventory::GiveItem(Controller, Shotgun.Definition, EFortQuickBars::Primary, 2, 1, true);
+		Inventory::GiveItem(Controller, AR.Definition, EFortQuickBars::Primary, 1, 1, true, Helper::GetMaxBullets(AR.Definition));
+		Inventory::GiveItem(Controller, Shotgun.Definition, EFortQuickBars::Primary, 2, 1, true, Helper::GetMaxBullets(Shotgun.Definition));
 
 		std::cout << "CC!\n";
 
@@ -1356,7 +1359,7 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 						SMG = Looting::GetRandomItem(ItemType::Weapon);
 					}
 
-					Inventory::GiveItem(Controller, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
+					Inventory::GiveItem(Controller, SMG.Definition, EFortQuickBars::Primary, 3, 1, true, Helper::GetMaxBullets(SMG.Definition));
 				}
 				else
 				{
@@ -1367,7 +1370,7 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 						Sniper = Looting::GetRandomItem(ItemType::Weapon);
 					}
 
-					Inventory::GiveItem(Controller, Sniper.Definition, EFortQuickBars::Primary, 3, 1, true);
+					Inventory::GiveItem(Controller, Sniper.Definition, EFortQuickBars::Primary, 3, 1, true, Helper::GetMaxBullets(Sniper.Definition));
 				}
 
 				std::cout << "E!\n";
@@ -1386,7 +1389,7 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 						SMG = Looting::GetRandomItem(ItemType::Weapon);
 					}
 
-					Inventory::GiveItem(Controller, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
+					Inventory::GiveItem(Controller, SMG.Definition, EFortQuickBars::Primary, 3, 1, true, Helper::GetMaxBullets(SMG.Definition));
 				}
 
 				{
@@ -1397,7 +1400,7 @@ bool ServerAttemptAircraftJump(UObject* Controller, UFunction*, void* Parameters
 						Sniper = Looting::GetRandomItem(ItemType::Weapon);
 					}
 
-					Inventory::GiveItem(Controller, Sniper.Definition, EFortQuickBars::Primary, 4, 1, true);
+					Inventory::GiveItem(Controller, Sniper.Definition, EFortQuickBars::Primary, 4, 1, true, Helper::GetMaxBullets(Sniper.Definition));
 				}
 
 				std::cout << "G!\n";
@@ -1490,7 +1493,8 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 
 	std::cout << "Phase: " << (int)Phase << '\n';
 
-	/* if ((int)Phase == 3 && Defines::bIsLateGame)
+	/*
+	if ((int)Phase == 3 && Defines::bIsLateGame)
 	{
 		std::cout << "Nice!\n";
 
@@ -1512,7 +1516,8 @@ bool OnGamePhaseChanged(UObject* MatchAnaylitics, UFunction*, void* Parameters)
 
 		static auto SafeZonesStartTimeOffset = GameState->GetOffset("SafeZonesStartTime");
 		*Get<float>(GameState, SafeZonesStartTimeOffset) = 0.f;
-	} */
+	}
+	*/
 
 	return false;
 }
