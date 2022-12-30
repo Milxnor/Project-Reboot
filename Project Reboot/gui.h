@@ -626,7 +626,10 @@ void MainUI()
 
 				if (ImGui::Button("Start Bus Countdown"))
 				{
-					*WarmupCountdownEndTime = TimeSeconds + 9;
+					if (Defines::bIsLateGame)
+						Defines::bShouldStartBus = true;
+					else
+						*WarmupCountdownEndTime = TimeSeconds + 9;
 				}
 
 				/* if (ImGui::Button("test looting"))

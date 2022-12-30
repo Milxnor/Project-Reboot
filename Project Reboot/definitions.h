@@ -53,6 +53,7 @@ namespace Defines
 	inline bool bShouldSpawnVehicles = false;
 	inline bool bShouldSpawnForagedItems = false;
 	inline bool bIsRestarting = false;
+	inline bool bShouldStartBus = false;
 	inline UObject* Portal = nullptr;
 
 	inline float test1 = 0;

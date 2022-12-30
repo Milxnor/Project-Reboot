@@ -779,6 +779,14 @@ void Server::Hooks::TickFlush(UObject* thisNetDriver, float DeltaSeconds)
 	}
 	*/
 
+	if (Defines::bShouldStartBus)
+	{
+		Defines::bShouldStartBus = false;
+		FString cmd = L"startaircraft";
+
+		Helper::ExecuteConsoleCommand(cmd);
+	}
+
 	if (Defines::bShouldSpawnForagedItems)
 	{
 		Defines::bShouldSpawnForagedItems = false;
