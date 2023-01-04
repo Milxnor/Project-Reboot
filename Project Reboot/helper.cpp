@@ -330,6 +330,36 @@ UObject* Helper::GetRandomCID()
 	return skin;
 }
 
+UObject* Helper::GetRandomRecruitCID()
+{
+	static auto CIDClass = FindObject("/Script/FortniteGame.AthenaCharacterItemDefinition");
+
+	static auto AllObjects = Helper::GetAllObjectsOfClass(CIDClass);
+
+	UObject* skin = nullptr; 
+	
+	if (Fortnite_Version <= 10.40) // c1
+	{
+		while (!skin || !(skin->GetFullName().contains("Default")))
+		{
+			auto random = (int)GetRandomFloat(1, AllObjects.size() - 1);
+			random = random <= 0 ? 1 : random; 
+			skin = AllObjects.at(random);
+		}
+	}
+	if (Fortnite_Version > 10.40) // c2
+	{
+		while (!skin || !(skin->GetFullName().contains("RebirthDefault")) || (skin->GetFullName().contains("RebirthDefault_Henchman")))
+		{
+			auto random = (int)GetRandomFloat(1, AllObjects.size() - 1);
+			random = random <= 0 ? 1 : random; 
+			skin = AllObjects.at(random);
+		}
+	}
+	
+	return skin;
+}
+
 float Helper::GetMaxHealth(UObject* BuildingActor)
 {
 	static auto GetMaxHealth = FindObject<UFunction>("/Script/FortniteGame.BuildingActor.GetMaxHealth");
@@ -369,7 +399,7 @@ UObject* Helper::SpawnPawn(UObject* Controller, BothVector Location, bool bAssig
 		}
 		else
 		{
-			ApplyCID(Pawn, Helper::GetRandomCID());
+			ApplyCID(Pawn, Helper::GetRandomRecruitCID());
 		}
 	}
 
