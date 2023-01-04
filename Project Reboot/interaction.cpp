@@ -183,19 +183,27 @@ bool Interaction::ServerAttemptInteract(UObject* cController, UFunction*, void* 
 			auto AmmoInRow = Looting::GetRandomItem(ItemType::Ammo);
 			auto AmmoDef = AmmoInRow.Definition;
 
-			if (AmmoDef)
-			{
-				auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
-				Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
-			}
-
 			auto AmmoInRow2 = Looting::GetRandomItem(ItemType::Ammo);
 			auto AmmoDef2 = AmmoInRow2.Definition;
-
-			if (AmmoDef2)
+			
+			if (AmmoDef == AmmoDef2) // if 2 of the same type of ammo spawns, just merge the stacks
 			{
-				auto DropCount2 = AmmoInRow2.DropCount; // *AmmoDef->Member<int>(("DropCount"));
-				Helper::SummonPickup(nullptr, AmmoDef2, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount2, true, false);
+				auto DropCount = 2 * AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
+				Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
+			}
+			else
+			{
+				if (AmmoDef)
+				{
+					auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
+					Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
+				}
+
+				if (AmmoDef2)
+				{
+					auto DropCount2 = AmmoInRow2.DropCount; // *AmmoDef->Member<int>(("DropCount"));
+					Helper::SummonPickup(nullptr, AmmoDef2, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount2, true, false);
+				}
 			}
 		}
 
