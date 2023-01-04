@@ -34,6 +34,7 @@ namespace Helper
 	UObject* GetPawnFromController(UObject* Controller);
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor);
 	bool ApplyCID(UObject* Pawn, UObject* CID);
+	UObject* GetRandomRecruitCID();
 	UObject* GetRandomCID();
 	float GetMaxHealth(UObject* BuildingActor);
 	UObject* SpawnPawn(UObject* Controller, BothVector Location, bool bAssignCharacterParts = false);
