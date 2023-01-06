@@ -71,7 +71,25 @@ void Events::LoadEvent()
 {
 	__int64 Condition = true;
 
-	if (Fortnite_Version == 6.21)
+	if (Fortnite_Version == 5.30)
+	{
+		UObject* AEC = FindObject(("/Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+
+		if (AEC)
+		{
+			auto ProgressionFunc = FindObject<UFunction>("/Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.OnRep_CrackProgression");
+			auto CrackOpacityOffset = AEC->GetOffset("CrackOpacity");
+			*Get<float>(AEC, CrackOpacityOffset) = 0.0f; // Hide the initial crack
+			AEC->ProcessEvent(ProgressionFunc);
+
+			auto CorruptionFunc = FindObject<UFunction>("/Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.OnRep_Corruption");
+			auto CorruptionOffset = AEC->GetOffset("Corruption");
+			*Get<float>(AEC, CorruptionOffset) = 1.0f; // Show the smaller purple crack
+			AEC->ProcessEvent(CorruptionFunc);
+		}
+	}
+
+	else if (Fortnite_Version == 6.21)
 	{
 		UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 
@@ -222,7 +240,25 @@ void Events::StartEvent()
 	struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer PlaylistContextTags; } bbparms{ Helper::GetGameState(), *Helper::GetPlaylist(),
 		FGameplayTagContainer() };
 
-	if (Fortnite_Version == 5.41) // Impact lake with cube
+	if (Fortnite_Version == 5.30) // Cube spawning event
+	{
+		auto AEC = FindObject("/Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54");
+		auto FinalAECFunc = FindObject<UFunction>("/Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.Final");
+		AEC->ProcessEvent(FinalAECFunc);
+
+		static auto bCubeSpawned = false;
+
+		if (!bCubeSpawned)
+		{
+			auto Cube = FindObject("/Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2");
+			auto FinalCubeFunc = FindObject<UFunction>("/Game/Athena/Prototype/Blueprints/Cube/CUBE.CUBE_C.Final");
+			Cube->ProcessEvent(FinalCubeFunc);
+
+			bCubeSpawned = true;
+		}
+	}
+
+	else if (Fortnite_Version == 5.41) // Impact lake with cube
 	{
 		auto cube = FindObject("/Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2");
 

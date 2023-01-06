@@ -1258,9 +1258,12 @@ void PregameUI()
 
 	if (ImGui::Checkbox("Going to play event", &Defines::bIsGoingToPlayMainEvent))
 	{
-		Defines::Playlist = Defines::bIsGoingToPlayMainEvent ? Events::GetEventPlaylistName() :
-			Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
-			: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+		if (Fortnite_Version != 5.30 && Fortnite_Version != 5.41) // TODO: Figure out why it makes the server crash after a player joins on 5.30, 5.41 and possibly other versions.
+		{
+			Defines::Playlist = Defines::bIsGoingToPlayMainEvent ? Events::GetEventPlaylistName() :
+				Defines::bIsPlayground ? "/Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
+				: "/Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+		}
 	}
 
 	if (ImGui::Checkbox("Playground", &Defines::bIsPlayground))
