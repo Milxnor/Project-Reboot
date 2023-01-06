@@ -266,6 +266,9 @@ static bool InitializePatterns()
 
 		if (Fortnite_Season == 4)
 			ObjectsPattern = "48 8B 05 ? ? ? ? 48 8D 14 C8 EB 03 49 8B D6 8B 42 08 C1 E8 1D A8 01 0F 85 ? ? ? ? F7 86 ? ? ? ? ? ? ? ?";
+		
+		if (Fortnite_Version == 4.1)
+			CanActivateAbilityPattern = "4C 89 4C 24 ? 89 54 24 10 55 53 57 41 54 48 8D 6C 24";
 	}
 
 	if (Engine_Version == 421)
@@ -298,6 +301,9 @@ static bool InitializePatterns()
 		NoMCPPattern = "E8 ? ? ? ? 84 C0 75 CE";
 					
 		bIsNoMCPRelative = true; */
+		
+		if (Fortnite_Version == 5.10)
+			InternalTryActivateAbilityPattern = "4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 48 8D 05 ? ? ? ? 44 38 3D ? ? ? ? 8B";
 
 		if (Fortnite_Version <= 6.02)
 			ObjectsPattern = "48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1";

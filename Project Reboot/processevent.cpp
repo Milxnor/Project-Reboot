@@ -845,7 +845,7 @@ bool ClientOnPawnDied(UObject* DeadController, UFunction* fn, void* Parameters)
 	if (GamePhase > EAthenaGamePhase::Warmup)
 	{
 		// if (*TeamsLeft <= 1) // && (int)Playlist->WinCondition <= 1
-		if (*PlayersLeftPtr <= 1)
+		if (*PlayersLeftPtr <= 1 && !Defines::bIsPlayground)
 		{
 			static auto ClientNotifyWon = FindObject<UFunction>("/Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
 
