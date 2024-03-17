@@ -1,15 +1,27 @@
-# Project-Reboot
+![Banner](https://i.imgur.com/p0P4tcI.png)
 
-S5-S12
+Project Reboot is an tough battled and widely used game server for Fortnite.  Below are the key points about this project:
 
-S3 and S4 have support but haven't been tested much.<br>
-S13-S18 work perfectly fine, but the safezone does not work.
+## Features
 
-this is the rewrite of https://github.com/milxnor/universal-walking-simulator
-<br>
-Project Reboot rewrite, it was looking good, and then I kinda forgot that I was supposed to make it nice so now it doesn't look so nice.<br>
-Rewrite soon
-<br>
-This project is still missing a lot of stuff that the old project has, for example lategame, this will be added soon.<br><br>
+1. **S5-S12 Support**: The project includes support for Fortnite seasons 5 through 12.
+2. **S13-S18 Compatibility**: Seasons 13 through 18 work perfectly fine, but the safezone feature doesn't function as expected.
+3. **Rewrite and Improvements**: Project Reboot is a rewrite of the original Universal Walking Simulator. It's an ongoing effort to enhance and optimize the gameplay experience.
+4. **Lategame Enhancements**: Although still missing some features from the old project, lategame improvements are planned for the future.
 
-If you want a good experience, I would still recommend using the  https://github.com/milxnor/universal-walking-simulator for now, this is more experimental.
+## Installation
+
+1. Clone this repository: `git clone https://github.com/Milxnor/Project-Reboot.git`
+2. Build the project using your preferred build tools. (Use Visual Studio 2022)
+3. Run the server using the Reboot Launcher
+## Contributing
+
+Contributions are welcome! Feel free to create pull requests or report issues on the GitHub repository.
+
+## License
+
+This project is licensed under the BSD-3-Clause license.
+
+---
+
+**Note**: Project Reboot is a work in progress, and further updates and enhancements are planned. Explore, experiment, and contribute to make it even better! 🚀
